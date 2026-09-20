@@ -88,6 +88,8 @@ modules:
         destination: /etc/scx_loader/config.toml
       - source: etc/dconf/db/local.d/00-macos-themes
         destination: /etc/dconf/db/local.d/00-macos-themes
+      - source: etc/udev/rules.d/50-usb-serial.rules
+        destination: /etc/udev/rules.d/50-usb-serial.rules 
         
   - type: systemd
     system:
