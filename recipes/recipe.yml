@@ -33,7 +33,14 @@ modules:
       - libtiff-devel
       - libjpeg-turbo-devel
       - curl
+      - wine
+      - winetricks
+      - p7zip
       - unzip
+      - desktop-file-utils
+      - gnutls
+      - gnutls.i686
+      - jq
       - dconf-editor
       - gnome-tweaks
       - gnome-shell-extensions
@@ -112,6 +119,7 @@ modules:
       - install-daggerfall-unity.sh
       - install-soh.sh
       - install-2s2h.sh
+      - install-samodmanager.sh
   - type: dnf
     repos:
       copr:
@@ -137,6 +145,8 @@ modules:
           - org.torproject.torbrowser-launcher
           - org.freedownloadmanager.Manager
           - io.github.heidefinnischen.cuneo
+          - as.may.moat
+          - io.github.kolunmi.Bazaar
           - org.gnome.Loupe
           - com.visualstudio.code
           - ai.lmstudio.lm-studio
@@ -144,6 +154,12 @@ modules:
           - com.valvesoftware.Steam.CompatibilityTool.Proton
           - com.valvesoftware.Steam.Utility.steamtinkerlaunch
           - org.openmw.OpenMW
+          - com.infochunk.OpenMadoola
+          - io.jor.nanosaur
+          - io.jor.nanosaur2
+          - io.github.hedge_dev.hedgemodmanager
+          - com.epicgames.ut99
+          - com.epicgames.ut2004
           - com.vysp3r.ProtonPlus
           - com.github.Matoking.protontricks
           - io.github.sharkwouter.Minigalaxy
