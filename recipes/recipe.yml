@@ -21,6 +21,8 @@ modules:
       - wget
       - gcc
       - make
+      - podman
+      - podman-compose
       - fuse-devel
       - R
       - libxml2-devel
