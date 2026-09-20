@@ -79,10 +79,13 @@ modules:
       - theming.sh
       - install-hotline.sh
       - install-snow.sh
+      - install-smb-remastered.sh
       - configure-stellarium.sh
       - install-ibus-cuneiform.sh
       - install-sumer-r-package.sh
       - install-daggerfall-unity.sh
+      - install-soh.sh
+      - install-2s2h.sh
   - type: dnf
     repos:
       copr:
