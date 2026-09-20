@@ -1,0 +1,10 @@
+[org/gnome/desktop/interface]
+gtk-theme='OS-X-Mavericks'
+icon-theme='Gnomintosh'
+cursor-theme='Gnomintosh'
+
+[org/gnome/desktop/wm/preferences]
+theme='OS-X-Mavericks'
+
+[org/gnome/shell]
+enabled-extensions=['user-theme@gnome-shell-extensions.gcampax.github.com', 'dash-to-dock@micxgx.gmail.com', 'liquid-glass@thinkingcoding1231.gmail.com']
