@@ -13,6 +13,8 @@ image-version: latest # You can pin to a specific version of Fedora as well
 # you can include multiple instances of the same module
 modules:
 - type: rpm-ostree
+   repos:
+      - copr:bieszczaders/kernel-cachyos-addons
    install:
       # Base build tools and dependencies
       - git
@@ -32,6 +34,8 @@ modules:
       - dconf-editor
       - gnome-tweaks
       - gnome-shell-extensions
+      - scx-scheds
+      - scx-tools
       # Fonts and utilities
       - gdouros-akkadian-fonts
       - sassc
@@ -67,12 +71,27 @@ modules:
       - alsa-lib-devel
       - pkgconf-pkg-config
       
+ - type: kargs
+    arch: x86_64, aarch64   # optional; omit to apply to all architectures
+    kargs:
+      - preempt=full
+      - mitigations=auto
+      - threadirqs
+      - nowatchdog
+      
   - type: files
     files:
       - source: system
         destination: / # copies files/system/* (* means everything inside it) into your image's root folder /
+      - source: etc/scx_loader/config.toml
+        destination: /etc/scx_loader/config.toml
       - source: etc/dconf/db/local.d/00-macos-themes
         destination: /etc/dconf/db/local.d/00-macos-themes
+        
+  - type: systemd
+    system:
+      enabled:
+        - scx_loader.service      
         
  - type: script
     scripts:
