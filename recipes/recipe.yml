@@ -116,7 +116,9 @@ modules:
       - source: usr/share/applications/ground-station.desktop
         destination: /usr/share/applications/ground-station.desktop
       - source: etc/flatpak/overrides/ai.lmstudio.lm-studio
-        destination: /etc/flatpak/overrides/ai.lmstudio.lm-studio 
+        destination: /etc/flatpak/overrides/ai.lmstudio.lm-studio
+      - source: usr/share/ublue-os/just/60-custom.just
+        destination: /usr/share/ublue-os/just/60-custom.just
         
   - type: systemd
     system:
