@@ -19,6 +19,9 @@ modules:
       # Base build tools and dependencies
       - git
       - wget
+      - gcc
+      - make
+      - fuse-devel
       - R
       - libxml2-devel
       - openssl-devel
@@ -53,7 +56,6 @@ modules:
       # ibus dependencies for cuneiform input method
       - ibus
       - ibus-table
-      - make
       - python3
       # Build tools for Tauri
       - nodejs
@@ -95,6 +97,7 @@ modules:
  - type: script
     scripts:
       - theming.sh
+      - install-apple2pi.sh
       - install-hotline.sh
       - install-snow.sh
       - install-smb-remastered.sh
