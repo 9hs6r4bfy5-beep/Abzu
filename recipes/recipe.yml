@@ -17,12 +17,23 @@ modules:
       # Base build tools and dependencies
       - git
       - wget
+      - R
+      - libxml2-devel
+      - openssl-devel
+      - libcurl-devel
+      - libpng-devel
+      - freetype-devel
+      - harfbuzz-devel
+      - fribidi-devel
+      - libtiff-devel
+      - libjpeg-turbo-devel
       - curl
       - unzip
       - dconf-editor
       - gnome-tweaks
       - gnome-shell-extensions
       # Fonts and utilities
+      - gdouros-akkadian-fonts
       - sassc
       - gtk-murrine-engine
       - gnome-themes-extra
@@ -83,7 +94,7 @@ modules:
     remove:
       packages: 
         - firefox
-        - firefox-langpacks # also remove firefox dependency (not required for all packages, this is a special case)
+        - firefox-langpacks
 
   - type: default-flatpaks
     configurations:
@@ -104,6 +115,7 @@ modules:
           - com.github.Matoking.protontricks
           - com.discordapp.Discord
           - org.lyx.LyX
+          - dk.gqrx.gqrx
           - org.audacityteam.Audacity
           - org.kde.krita
           - org.kde.haruna
