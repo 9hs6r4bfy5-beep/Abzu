@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Ground Station
+Comment=Browser-based satellite tracking and SDR suite
+Exec=xdg-open http://localhost:7000
+Icon=satellite
+Terminal=false
+Categories=Science;HamRadio;Network;
+StartupNotify=true
