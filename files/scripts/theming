@@ -1,0 +1,87 @@
+#!/usr/bin/env bash
+# theming.sh - Installs macOS Aqua and Liquid Glass themes
+set -euo pipefail
+
+# Define target directories for system-wide installation
+THEME_DIR="/usr/share/themes"
+ICON_DIR="/usr/share/icons"
+FONT_DIR="/usr/share/fonts"
+GNOME_EXT_DIR="/usr/share/gnome-shell/extensions"
+
+# Create directories if they don't exist
+mkdir -p "${THEME_DIR}" "${ICON_DIR}" "${FONT_DIR}" "${GNOME_EXT_DIR}"
+
+echo "--- Starting Theming Installation ---"
+
+# -----------------------------------------------------------------------------
+# 1. Install macOS-inspired GTK Themes
+# -----------------------------------------------------------------------------
+
+echo "Installing B00merang Mavericks theme..."
+# The B00merang themes are simple to install: download, unzip, and move.
+wget -q https://github.com/B00merang-Project/OS-X-Mavericks/archive/refs/heads/master.zip -O /tmp/mavericks.zip
+unzip -q /tmp/mavericks.zip -d /tmp/
+cp -r /tmp/OS-X-Mavericks-master "${THEME_DIR}/OS-X-Mavericks"
+rm -rf /tmp/mavericks.zip /tmp/OS-X-Mavericks-master
+
+echo "Installing B00merang Leopard theme..."
+wget -q https://github.com/B00merang-Project/OS-X-Leopard/archive/refs/heads/master.zip -O /tmp/leopard.zip
+unzip -q /tmp/leopard.zip -d /tmp/
+cp -r /tmp/OS-X-Leopard-master "${THEME_DIR}/OS-X-Leopard"
+rm -rf /tmp/leopard.zip /tmp/OS-X-Leopard-master
+
+
+# -----------------------------------------------------------------------------
+# 2. Install the Gnomintosh Theme Suite
+# -----------------------------------------------------------------------------
+# Gnomintosh is a comprehensive suite that uses a guided script for installation.
+# We need to automate its choices for a non-interactive build.
+# We will clone it and then manually move its assets to the correct system directories.
+
+echo "Installing Gnomintosh theme suite..."
+git clone --depth 1 https://github.com/jothi-prasath/gnomintosh.git /tmp/gnomintosh
+
+# The Gnomintosh repo contains themes, icons, cursors, and wallpapers.
+# We will copy them directly to system directories.
+if [ -d "/tmp/gnomintosh/themes" ]; then
+    cp -r /tmp/gnomintosh/themes/* "${THEME_DIR}/"
+fi
+if [ -d "/tmp/gnomintosh/icons" ]; then
+    cp -r /tmp/gnomintosh/icons/* "${ICON_DIR}/"
+fi
+if [ -d "/tmp/gnomintosh/cursors" ]; then
+    cp -r /tmp/gnomintosh/cursors/* "${ICON_DIR}/"
+fi
+if [ -d "/tmp/gnomintosh/fonts" ]; then
+    cp -r /tmp/gnomintosh/fonts/* "${FONT_DIR}/"
+fi
+# Gnomintosh also includes a dconf configuration to set its theme.
+# We will apply this via a separate module or a user script later.
+# For now, the theme files are in the right place.
+
+rm -rf /tmp/gnomintosh
+
+# -----------------------------------------------------------------------------
+# 3. Install "Liquid Glass" GNOME Shell Extension
+# -----------------------------------------------------------------------------
+# This extension provides the transparency, blur, and refractive effects for the top bar and dock.
+# It is not yet on extensions.gnome.org, so we install it manually.
+
+echo "Installing Liquid Glass GNOME Shell Extension..."
+EXT_UUID="liquid-glass@thinkingcoding1231.gmail.com"
+git clone --depth 1 https://github.com/ryohsuke1231/liquid-glass.git /tmp/liquid-glass
+mkdir -p "${GNOME_EXT_DIR}/${EXT_UUID}"
+cp -r /tmp/liquid-glass/liquid-glass@thinkingcoding1231.gmail.com/* "${GNOME_EXT_DIR}/${EXT_UUID}/"
+rm -rf /tmp/liquid-glass
+
+# The extension is now installed system-wide.
+# To enable it and other extensions by default for a new user,
+# a dconf profile can be used. This is handled in a separate step.
+
+# -----------------------------------------------------------------------------
+# 4. Final Cleanup
+# -----------------------------------------------------------------------------
+
+echo "--- Theming Installation Complete ---"
+# Clean up any remaining temporary files
+rm -rf /tmp/*
