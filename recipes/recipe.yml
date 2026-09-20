@@ -99,6 +99,12 @@ modules:
         destination: /etc/udev/rules.d/50-usb-serial.rules
       - source: etc/skel/.config/zaparoo/config.toml
         destination: /etc/skel/.config/zaparoo/config.toml
+      - source: usr/local/bin/picocalc
+        destination: /usr/local/bin/picocalc
+      - source: usr/share/applications/picocalc.desktop
+        destination: /usr/share/applications/picocalc.desktop
+      - source: etc/skel/.config/autostart/hidamari.desktop
+        destination: /etc/skel/.config/autostart/hidamari.desktop 
         
   - type: systemd
     system:
@@ -141,6 +147,7 @@ modules:
         # If no repo information is specified, Flathub will be used by default
         install: # system flatpaks we want all users to have and not remove
           - app.twintaillauncher.ttl
+          - io.github.jeffshee.Hidamari
           - net.waterfox.waterfox
           - org.torproject.torbrowser-launcher
           - org.freedownloadmanager.Manager
