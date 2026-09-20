@@ -17,6 +17,7 @@ modules:
       # Base build tools and dependencies
       - git
       - wget
+      - curl
       - unzip
       - dconf-editor
       - gnome-tweaks
@@ -35,7 +36,6 @@ modules:
       - npm
       - cargo
       - rust
-      - git
       - webkit2gtk4.1-devel
       - openssl-devel
       - libappindicator-gtk3-devel
@@ -43,7 +43,9 @@ modules:
       - gtk3-devel
       - libxdo-devel
       - file
-      - curl
+      # Build dependencies for Snow
+      - alsa-lib-devel
+      - pkgconf-pkg-config
       
   - type: files
     files:
@@ -56,6 +58,7 @@ modules:
     scripts:
       - theming.sh
       - install-hotline.sh
+      - install-snow.sh
   - type: dnf
     repos:
       copr:
@@ -78,6 +81,7 @@ modules:
         install: # system flatpaks we want all users to have and not remove
           - net.waterfox.waterfox
           - org.torproject.torbrowser-launcher
+          - org.freedownloadmanager.Manager
           - org.gnome.Loupe
           - com.valvesoftware.Steam
           - com.valvesoftware.Steam.CompatibilityTool.Proton
@@ -88,6 +92,7 @@ modules:
           - org.lyx.LyX
           - org.audacityteam.Audacity
           - org.kde.krita
+          - org.kde.haruna
           
       - scope: user # Also add Flathub user repo, but no user packages
 
