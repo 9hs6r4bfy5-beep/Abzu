@@ -1,0 +1,28 @@
+[Unit]
+Description=Ground Station (Podman)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+Restart=unless-stopped
+TimeoutStartSec=300
+
+# Pull the latest image before starting
+ExecStartPre=/usr/bin/podman pull --platform linux/amd64 ghcr.io/sgoudelis/ground-station:latest
+
+# Run the container
+# --device=/dev/bus/usb is sufficient for RTL-SDR and most USB SDRs.
+# Use --privileged only if your specific hardware requires it.
+ExecStart=/usr/bin/podman run --rm \
+    --name ground-station \
+    --device=/dev/bus/usb \
+    -v %h/.local/share/ground-station:/app/backend/data \
+    -p 7000:7000 \
+    ghcr.io/sgoudelis/ground-station:latest
+
+ExecStop=/usr/bin/podman stop --ignore --time 10 ground-station
+ExecStopPost=/usr/bin/podman rm --ignore -f ground-station
+
+[Install]
+WantedBy=default.target
