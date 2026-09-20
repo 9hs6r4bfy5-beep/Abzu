@@ -89,7 +89,9 @@ modules:
       - source: etc/dconf/db/local.d/00-macos-themes
         destination: /etc/dconf/db/local.d/00-macos-themes
       - source: etc/udev/rules.d/50-usb-serial.rules
-        destination: /etc/udev/rules.d/50-usb-serial.rules 
+        destination: /etc/udev/rules.d/50-usb-serial.rules
+      - source: etc/skel/.config/zaparoo/config.toml
+        destination: /etc/skel/.config/zaparoo/config.toml
         
   - type: systemd
     system:
