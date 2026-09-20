@@ -28,19 +28,34 @@ modules:
       # Hardware Support
       - akmod-wl
       - akmod-nvidia
-      # Gaming Tools
-      - steam
       # Other packages
       - intel-sde
+      # Build tools for Tauri
+      - nodejs
+      - npm
+      - cargo
+      - rust
+      - git
+      - webkit2gtk4.1-devel
+      - openssl-devel
+      - libappindicator-gtk3-devel
+      - librsvg2-devel
+      - gtk3-devel
+      - libxdo-devel
+      - file
+      - curl
       
   - type: files
     files:
       - source: system
         destination: / # copies files/system/* (* means everything inside it) into your image's root folder /
+      - source: etc/dconf/db/local.d/00-macos-themes
+        destination: /etc/dconf/db/local.d/00-macos-themes
         
  - type: script
     scripts:
       - theming.sh
+      - install-hotline.sh
   - type: dnf
     repos:
       copr:
@@ -62,7 +77,18 @@ modules:
         # If no repo information is specified, Flathub will be used by default
         install: # system flatpaks we want all users to have and not remove
           - net.waterfox.waterfox
+          - org.torproject.torbrowser-launcher
           - org.gnome.Loupe
+          - com.valvesoftware.Steam
+          - com.valvesoftware.Steam.CompatibilityTool.Proton
+          - com.valvesoftware.Steam.Utility.steamtinkerlaunch
+          - com.vysp3r.ProtonPlus
+          - com.github.Matoking.protontricks
+          - com.discordapp.Discord
+          - org.lyx.LyX
+          - org.audacityteam.Audacity
+          - org.kde.krita
+          
       - scope: user # Also add Flathub user repo, but no user packages
 
   - type: signing # this sets up the proper policy & signing files for signed images to work fully
