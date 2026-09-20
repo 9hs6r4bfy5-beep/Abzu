@@ -103,6 +103,7 @@ modules:
       - install-hotline.sh
       - install-snow.sh
       - install-smb-remastered.sh
+      - install-zaparoo.sh
       - configure-stellarium.sh
       - install-ibus-cuneiform.sh
       - install-sumer-r-package.sh
