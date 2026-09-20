@@ -129,6 +129,7 @@ modules:
       - install-apple2pi.sh
       - install-hotline.sh
       - install-snow.sh
+      - install-fono.sh
       - install-smb-remastered.sh
       - install-zaparoo.sh
       - configure-stellarium.sh
