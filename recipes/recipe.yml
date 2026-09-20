@@ -59,6 +59,7 @@ modules:
       - theming.sh
       - install-hotline.sh
       - install-snow.sh
+      - configure-stellarium.sh
   - type: dnf
     repos:
       copr:
@@ -93,6 +94,7 @@ modules:
           - org.audacityteam.Audacity
           - org.kde.krita
           - org.kde.haruna
+          - org.stellarium.Stellarium
           
       - scope: user # Also add Flathub user repo, but no user packages
 
