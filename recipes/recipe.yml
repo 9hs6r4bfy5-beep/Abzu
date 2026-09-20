@@ -1,34 +1,57 @@
 ---
 # yaml-language-server: $schema=https://schema.blue-build.org/recipe-v1.json
 # image will be published to ghcr.io/<user>/<name>
-name: template
+name: Abzû
 # description will be included in the image's metadata
-description: This is my personal OS image.
+description: An elegant, powerful operating system for desktops, workstations and homelabs that honours and preserves the ancient traditions.
 
 # the base image to build on top of (FROM) and the version tag to use
-base-image: ghcr.io/ublue-os/silverblue-main
+base-image: ghcr.io/secureblue/silverblue-main-hardened
 image-version: latest # You can pin to a specific version of Fedora as well
 
 # module configuration, executed in order
 # you can include multiple instances of the same module
 modules:
+- type: rpm-ostree
+   install:
+      # Base build tools and dependencies
+      - git
+      - wget
+      - unzip
+      - dconf-editor
+      - gnome-tweaks
+      - gnome-shell-extensions
+      # Fonts and utilities
+      - sassc
+      - gtk-murrine-engine
+      - gnome-themes-extra
+      # Hardware Support
+      - akmod-wl
+      - akmod-nvidia
+      # Gaming Tools
+      - steam
+      # Other packages
+      - intel-sde
+      
   - type: files
     files:
       - source: system
         destination: / # copies files/system/* (* means everything inside it) into your image's root folder /
-
+        
+ - type: script
+    scripts:
+      - theming.sh
   - type: dnf
     repos:
       copr:
         - atim/starship
+        
     install:
       packages:
         - micro
         - starship
     remove:
-      packages:
-        # example: removing firefox (in favor of the flatpak)
-        # "firefox" is the main package, "firefox-langpacks" is a dependency
+      packages: 
         - firefox
         - firefox-langpacks # also remove firefox dependency (not required for all packages, this is a special case)
 
@@ -38,7 +61,7 @@ modules:
         scope: system
         # If no repo information is specified, Flathub will be used by default
         install: # system flatpaks we want all users to have and not remove
-          - org.mozilla.firefox
+          - net.waterfox.waterfox
           - org.gnome.Loupe
       - scope: user # Also add Flathub user repo, but no user packages
 
