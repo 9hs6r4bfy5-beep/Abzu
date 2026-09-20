@@ -106,7 +106,9 @@ modules:
       - source: usr/share/applications/picocalc.desktop
         destination: /usr/share/applications/picocalc.desktop
       - source: etc/skel/.config/autostart/hidamari.desktop
-        destination: /etc/skel/.config/autostart/hidamari.desktop 
+        destination: /etc/skel/.config/autostart/hidamari.desktop
+      - source: etc/skel/.config/systemd/user/ground-station.service
+        destination: /etc/skel/.config/systemd/user/ground-station.service  
         
   - type: systemd
     system:
