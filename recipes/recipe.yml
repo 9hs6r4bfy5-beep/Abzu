@@ -82,6 +82,7 @@ modules:
       - configure-stellarium.sh
       - install-ibus-cuneiform.sh
       - install-sumer-r-package.sh
+      - install-daggerfall-unity.sh
   - type: dnf
     repos:
       copr:
@@ -106,13 +107,17 @@ modules:
           - net.waterfox.waterfox
           - org.torproject.torbrowser-launcher
           - org.freedownloadmanager.Manager
+          - io.github.heidefinnischen.cuneo
           - org.gnome.Loupe
           - com.visualstudio.code
+          - ai.lmstudio.lm-studio
           - com.valvesoftware.Steam
           - com.valvesoftware.Steam.CompatibilityTool.Proton
           - com.valvesoftware.Steam.Utility.steamtinkerlaunch
+          - org.openmw.OpenMW
           - com.vysp3r.ProtonPlus
           - com.github.Matoking.protontricks
+          - io.github.sharkwouter.Minigalaxy
           - com.discordapp.Discord
           - org.lyx.LyX
           - dk.gqrx.gqrx
