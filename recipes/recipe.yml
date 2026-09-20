@@ -31,6 +31,15 @@ modules:
       - akmod-nvidia
       # Other packages
       - intel-sde
+      # Sumerian / Cuneiform tools
+      - yagf
+      - cuneiform-qt
+      - gdouros-akkadian-fonts
+      # ibus dependencies for cuneiform input method
+      - ibus
+      - ibus-table
+      - make
+      - python3
       # Build tools for Tauri
       - nodejs
       - npm
@@ -60,6 +69,8 @@ modules:
       - install-hotline.sh
       - install-snow.sh
       - configure-stellarium.sh
+      - install-ibus-cuneiform.sh
+      - install-sumer-r-package.sh
   - type: dnf
     repos:
       copr:
@@ -80,10 +91,12 @@ modules:
         scope: system
         # If no repo information is specified, Flathub will be used by default
         install: # system flatpaks we want all users to have and not remove
+          - app.twintaillauncher.ttl
           - net.waterfox.waterfox
           - org.torproject.torbrowser-launcher
           - org.freedownloadmanager.Manager
           - org.gnome.Loupe
+          - com.visualstudio.code
           - com.valvesoftware.Steam
           - com.valvesoftware.Steam.CompatibilityTool.Proton
           - com.valvesoftware.Steam.Utility.steamtinkerlaunch
