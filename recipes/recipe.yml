@@ -23,6 +23,9 @@ modules:
       - make
       - podman
       - podman-compose
+      - python3-devel
+      - fuse
+      - fuse-libs
       - fuse-devel
       - R
       - libxml2-devel
@@ -132,6 +135,7 @@ modules:
       - install-hotline.sh
       - install-snow.sh
       - install-fono.sh
+      - install-icloud-linux.sh
       - install-smb-remastered.sh
       - install-zaparoo.sh
       - configure-stellarium.sh
