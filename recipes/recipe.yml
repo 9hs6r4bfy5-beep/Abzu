@@ -162,6 +162,8 @@ modules:
         destination: /
       - source: etc/skel
         destination: /etc/skel 
+      - source: usr/share/applications/cunai.desktop
+      - destination: usr/share/applications/cunai.desktop
         
   - type: systemd
     system:
