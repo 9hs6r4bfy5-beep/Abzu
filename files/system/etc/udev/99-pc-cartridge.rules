@@ -1,0 +1,13 @@
+# /etc/udev/rules.d/99-pc-cartridge.rules
+# Trigger the cartridge launcher when a PC Cartridge SSD is inserted.
+# Adjust idVendor/idProduct to match your SATA dock.
+# Adjust the filesystem label to match your cartridges.
+
+ACTION=="add", \
+  SUBSYSTEM=="block", \
+  SUBSYSTEMS=="usb", \
+  ATTRS{idVendor}=="YOUR_VENDOR_ID", \
+  ATTRS{idProduct}=="YOUR_PRODUCT_ID", \
+  ENV{ID_FS_LABEL}=="PC-CART", \
+  TAG+="systemd", \
+  ENV{SYSTEMD_WANTS}="cartridge-launch@%k.service"
