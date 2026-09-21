@@ -25,6 +25,19 @@ modules:
       - podman-compose
       - python3-devel
       - python3-virtualenv
+      - gcc-c++
+      - cmake
+      - ninja-build
+      - pkgconf-pkg-config
+      - wayland-devel
+      - avahi-devel
+      - openssl-devel
+      - glib2-devel
+      - gtk3-devel
+      - gtk-layer-shell-devel
+      - libnotify-devel
+      - npm
+      - zip
       - fuse
       - fuse-libs
       - fuse-devel
@@ -137,6 +150,7 @@ modules:
     scripts:
       - theming.sh
       - install-apple2pi.sh
+      - install-tether.sh
       - install-hotline.sh
       - install-snow.sh
       - install-fono.sh
@@ -175,6 +189,10 @@ modules:
           - net.waterfox.waterfox
           - org.torproject.torbrowser-launcher
           - org.freedownloadmanager.Manager
+          - io.github.diegopvlk.Dosage
+          - org.gnuhealth.mygnuhealth
+          - org.gnome.clocks
+          - org.gnome.Weather
           - io.github.heidefinnischen.cuneo
           - as.may.moat
           - io.github.kolunmi.Bazaar
