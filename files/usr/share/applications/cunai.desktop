@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=CunAI
+Comment=Offline-first Sumerian dictionary and semantic search
+Exec=/opt/cunai/cunai.AppImage
+Icon=accessories-dictionary
+Terminal=false
+Categories=Education;Science;Literature;
+StartupNotify=true
