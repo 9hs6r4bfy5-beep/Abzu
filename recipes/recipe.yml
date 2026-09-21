@@ -72,6 +72,12 @@ modules:
       - gnome-shell-extensions
       - scx-scheds
       - scx-tools
+      - jq
+      - policycoreutils-python-utils
+      - gdisk
+      - dosfstools
+      - ntfs-3g
+      - exfatprogs
       # Fonts and utilities
       - gdouros-akkadian-fonts
       - sassc
@@ -152,11 +158,16 @@ modules:
         destination: /usr/share/ublue-os/just/60-custom.just
       - source: etc/systemd/system/bluetooth.service.d/override.conf
         destination: /etc/systemd/system/bluetooth.service.d/override.conf
+      - source: system
+        destination: /
+      - source: etc/skel
+        destination: /etc/skel 
         
   - type: systemd
     system:
       enabled:
-        - scx_loader.service      
+        - scx_loader.service
+        - cartridge-launch@.service
         
  - type: script
     scripts:
@@ -177,6 +188,7 @@ modules:
       - install-soh.sh
       - install-2s2h.sh
       - install-samodmanager.sh
+      - install-cartridge.sh
   - type: dnf
     repos:
       copr:
