@@ -204,6 +204,7 @@ modules:
           - com.valvesoftware.Steam
           - com.valvesoftware.Steam.CompatibilityTool.Proton
           - com.valvesoftware.Steam.Utility.steamtinkerlaunch
+          - com.steamgriddb.SGDBoop
           - org.openmw.OpenMW
           - com.infochunk.OpenMadoola
           - io.jor.nanosaur
