@@ -24,6 +24,7 @@ modules:
       - podman
       - podman-compose
       - python3-devel
+      - python3-virtualenv
       - fuse
       - fuse-libs
       - fuse-devel
@@ -56,6 +57,10 @@ modules:
       - sassc
       - gtk-murrine-engine
       - gnome-themes-extra
+      # GNOME Online Accounts and Evolution for CalDAV/CardDAV
+      - gnome-online-accounts
+      - evolution
+      - evolution-data-server
       # Hardware Support
       - akmod-wl
       - akmod-nvidia
