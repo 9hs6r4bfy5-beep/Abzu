@@ -134,6 +134,8 @@ modules:
         destination: /etc/skel/.config/fono/secrets.toml  
       - source: etc/skel/.config/zaparoo/config.toml
         destination: /etc/skel/.config/zaparoo/config.toml
+      - source: etc/skel/.config/beets/config.yaml
+        destination: /etc/skel/.config/beets/config.yaml
       - source: usr/local/bin/picocalc
         destination: /usr/local/bin/picocalc
       - source: usr/share/applications/picocalc.desktop
