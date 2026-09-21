@@ -20,12 +20,13 @@ modules:
       - git
       - wget
       - gcc
+      - gcc-c++
       - make
       - podman
       - podman-compose
+      - python3-pip
       - python3-devel
       - python3-virtualenv
-      - gcc-c++
       - cmake
       - ninja-build
       - pkgconf-pkg-config
@@ -50,7 +51,13 @@ modules:
       - harfbuzz-devel
       - fribidi-devel
       - libtiff-devel
+      - libffi-devel
       - libjpeg-turbo-devel
+      - ffmpeg-free
+      - libdiscid
+      - libchromaprint
+      - openssl-devel
+      - redhat-rpm-config
       - curl
       - wine
       - winetricks
@@ -77,6 +84,7 @@ modules:
       # Hardware Support
       - akmod-wl
       - akmod-nvidia
+      - gmtp
       # Other packages
       - intel-sde
       # Sumerian / Cuneiform tools
@@ -158,6 +166,7 @@ modules:
       - install-fono.sh
       - install-icloud-linux.sh
       - install-smb-remastered.sh
+      - install-beets.sh
       - install-zaparoo.sh
       - configure-stellarium.sh
       - install-ibus-cuneiform.sh
@@ -196,6 +205,7 @@ modules:
           - org.gnome.clocks
           - org.gnome.Weather
           - io.github.heidefinnischen.cuneo
+          - org.strawberrymusicplayer.Strawberry
           - as.may.moat
           - io.github.kolunmi.Bazaar
           - org.gnome.Loupe
