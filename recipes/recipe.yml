@@ -178,6 +178,7 @@ modules:
       - install-snow.sh
       - install-fono.sh
       - install-icloud-linux.sh
+      - install-cunai.sh
       - install-smb-remastered.sh
       - install-beets.sh
       - install-zaparoo.sh
