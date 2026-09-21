@@ -5,7 +5,7 @@ echo "--- Installing Tether ---"
 
 # Download the latest AppImage from the GitHub releases page
 # Check https://github.com/zackb/tether/releases for the latest version
-TETHER_VERSION="0.2.11"
+TETHER_VERSION="0.2.34"
 DOWNLOAD_URL="https://github.com/zackb/tether/releases/download/v${TETHER_VERSION}/tether-${TETHER_VERSION}-x86_64.AppImage"
 
 mkdir -p /opt/tether
