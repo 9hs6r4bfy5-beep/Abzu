@@ -1,0 +1,83 @@
+# ~/.config/beets/config.yaml
+# Beets configuration for Abzu
+
+# Where your organized music library lives.
+# This should be separate from your raw downloads folder.
+directory: ~/Music/Library
+
+# Where Beets stores its SQLite database.
+library: ~/.config/beets/library.db
+
+# Plugins to load. Start with these; you can add more later.
+plugins:
+  - fetchart
+  - lyrics
+  - lastgenre
+  - chroma
+  - replaygain
+  - info
+  - edit
+
+# Import behavior
+import:
+  # Copy files into the library directory (rather than moving or linking).
+  # This preserves your original downloads as a backup.
+  copy: yes
+
+  # Write updated metadata back to the files' tags.
+  write: yes
+
+  # Automatically apply MusicBrainz matches without prompting
+  # when the match confidence is high. Set to "no" if you want
+  # to manually approve every match.
+  autotag: yes
+
+  # Move files into the library using this path format.
+  # This example organizes by Artist/Album/Track - Title.
+  # Adjust to your preference. Common formats:
+  #   %albumartist%/%album%/%track% %title%
+  #   %artist%/%year% - %album%/%track% %title%
+  #   %genre%/%artist%/%album%/%track% %title%
+  # See https://beets.readthedocs.io/en/stable/reference/pathformat.html
+  # for the full list of fields.
+  # The default is:
+  #   %albumartist%/%album%/%track% %title%
+
+# Fetchart plugin: download album art
+fetchart:
+  auto: yes
+  sources:
+    - filesystem
+    - coverart
+    - itunes
+    - amazon
+    - albumart
+
+# Lyrics plugin: fetch lyrics
+lyrics:
+  auto: yes
+  sources:
+    - google
+    - genius
+    - musixmatch
+    - lyrics.com
+
+# Lastgenre plugin: fetch genres from Last.fm
+lastgenre:
+  auto: yes
+  source: album
+  fallback: "Unknown Genre"
+
+# Chroma plugin: acoustic fingerprinting for accurate matching
+chroma:
+  auto: yes
+
+# ReplayGain plugin: analyze and store volume normalization data
+replaygain:
+  auto: yes
+  backend: ffmpeg
+
+# Web plugin: a simple web interface for browsing your library
+web:
+  host: 127.0.0.1
+  port: 8337
