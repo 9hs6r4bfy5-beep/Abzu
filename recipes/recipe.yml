@@ -140,6 +140,8 @@ modules:
         destination: /etc/flatpak/overrides/ai.lmstudio.lm-studio
       - source: usr/share/ublue-os/just/60-custom.just
         destination: /usr/share/ublue-os/just/60-custom.just
+      - source: etc/systemd/system/bluetooth.service.d/override.conf
+        destination: /etc/systemd/system/bluetooth.service.d/override.conf
         
   - type: systemd
     system:
