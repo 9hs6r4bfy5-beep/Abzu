@@ -17,6 +17,10 @@ plugins:
   - replaygain
   - info
   - edit
+  - duplicates
+  - missing
+  - badfiles
+  - convert
 
 # Import behavior
 import:
