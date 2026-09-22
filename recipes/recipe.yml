@@ -81,6 +81,7 @@ modules:
       # Fonts and utilities
       - gdouros-akkadian-fonts
       - sassc
+      - gtk2-engines
       - gtk-murrine-engine
       - gnome-themes-extra
       # GNOME Online Accounts and Evolution for CalDAV/CardDAV
