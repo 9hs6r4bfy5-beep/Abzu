@@ -121,9 +121,50 @@ modules:
  - type: kargs
     arch: x86_64, aarch64   # optional; omit to apply to all architectures
     kargs:
+      # Kernel chages for latency in gaming
       - preempt=full
       - mitigations=auto
       - threadirqs
+      # Memory initialization hardening (mitigates use-after-free)
+      - init_on_alloc=1
+      - init_on_free=1
+
+      # Kernel pointer and memory layout hardening
+      - hash_pointers=always
+      - page_alloc.shuffle=1
+      - randomize_kstack_offset=on
+
+      # IOMMU enforcement (mitigates DMA attacks)
+      - iommu=force
+      - intel_iommu=on
+      - iommu.passthrough=0
+      - iommu.strict=1
+
+      # Kernel lockdown and module signing
+      - lockdown=confidentiality
+      - module.sig_enforce=1
+
+      # Speculative execution mitigations
+      - l1d_flush=on
+      - l1tf=full,force
+      - spec_store_bypass_disable=on
+      - spectre_v2=on
+      - ssbd=force-on
+
+      # CPU vulnerability mitigation (includes SMT disabling if needed)
+      - mitigations=auto,nosmt
+
+      # Slab allocator hardening
+      - slab_debug=FZ
+      - slab_nomerge
+
+      # Entropy source hardening
+      - random.trust_bootloader=off
+      - random.trust_cpu=off
+
+      # Initramfs malware injection mitigation
+      - rd.shell=0
+      - rd.emergency=halt
       
   - type: files
     files:
