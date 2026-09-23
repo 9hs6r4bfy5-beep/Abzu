@@ -26,15 +26,11 @@ modules:
       - refind
       - podman
       - podman-compose
-      - python3-pip
-      - python3-devel
-      - python3-virtualenv
       - cmake
       - ninja-build
       - pkgconf-pkg-config
       - wayland-devel
       - avahi-devel
-      - openssl-devel
       - glib2-devel
       - gtk3-devel
       - gtk-layer-shell-devel
@@ -266,9 +262,9 @@ modules:
           - org.kde.krita
           - org.kde.haruna
           - org.stellarium.Stellarium
-
-  - type: iso
           
       - scope: user # Also add Flathub user repo, but no user packages
+
+- type: iso
 
   - type: signing # this sets up the proper policy & signing files for signed images to work fully
