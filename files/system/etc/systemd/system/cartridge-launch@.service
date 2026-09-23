@@ -6,11 +6,4 @@ ConditionPathIsMountPoint=/run/media/%k
 
 [Service]
 Type=oneshot
-# Run as the primary user (the one logged into the graphical session).
-# This avoids permission issues with GNOME's automounter.
-User=%u
-Group=%u
-# Wait for the desktop environment to mount the drive.
-ExecStartPre=/usr/bin/bash -c 'for i in $(seq 1 30); do [ -d "/run/media/$USER/%k" ] && exit 0; sleep 1; done; exit 1'
-# Run the launcher helper against the mounted cartridge.
-ExecStart=/usr/local/bin/cartridge-launcher-helper /run/media/%u/%k
+ExecStart=/usr/local/bin/cartridge-launch-wrapper %k
