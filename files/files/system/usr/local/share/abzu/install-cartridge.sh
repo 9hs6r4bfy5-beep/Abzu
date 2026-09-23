@@ -25,7 +25,6 @@ usermod -aG plugdev cartridge 2>/dev/null || true
 
 # Install the launcher helper.
 # Extract this from the upstream project's linux/ directory.
-install -m 0755 /usr/local/share/pc-cartridge/cartridge-launcher-helper /usr/local/bin/cartridge-launcher-helper
 
 # Create the trust list directory and seed it with a valid JSON structure.
 # The launcher helper reads this file to verify script hashes.
