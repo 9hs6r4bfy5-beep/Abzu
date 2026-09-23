@@ -22,6 +22,7 @@ modules:
       - gcc
       - gcc-c++
       - make
+      - mactel-boot
       - refind
       - podman
       - podman-compose
@@ -208,6 +209,7 @@ modules:
         
  - type: script
     scripts:
+      - install-refind.sh
       - theming.sh
       - install-intel-sde.sh
       - install-apple2pi.sh
