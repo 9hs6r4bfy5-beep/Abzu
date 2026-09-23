@@ -209,7 +209,6 @@ modules:
         
  - type: script
     scripts:
-      - install-refind.sh
       - theming.sh
       - install-intel-sde.sh
       - install-apple2pi.sh
@@ -229,7 +228,6 @@ modules:
       - install-soh.sh
       - install-2s2h.sh
       - install-samodmanager.sh
-      - install-cartridge.sh
   - type: dnf
     repos:
       copr:
