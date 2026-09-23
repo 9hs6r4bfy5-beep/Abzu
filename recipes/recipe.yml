@@ -68,7 +68,6 @@ modules:
       - desktop-file-utils
       - gnutls
       - gnutls.i686
-      - jq
       - dconf-editor
       - gnome-tweaks
       - gnome-shell-extensions
@@ -151,7 +150,7 @@ modules:
       - ssbd=force-on
 
       # CPU vulnerability mitigation (includes SMT disabling if needed)
-      - mitigations=auto,nosmt
+      - nosmt
 
       # Slab allocator hardening
       - slab_debug=FZ
