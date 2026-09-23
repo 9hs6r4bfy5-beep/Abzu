@@ -7,7 +7,7 @@ description: An elegant, powerful operating system for desktops, workstations an
 
 # the base image to build on top of (FROM) and the version tag to use
 base-image: ghcr.io/secureblue/silverblue-main-hardened
-image-version: latest # You can pin to a specific version of Fedora as well
+image-version: 44 # You can pin to a specific version of Fedora as well
 
 # module configuration, executed in order
 # you can include multiple instances of the same module
@@ -91,10 +91,7 @@ modules:
       - evolution-data-server
       # Hardware Support
       - akmod-wl
-      - akmod-nvidia
       - gmtp
-      # Other packages
-      - intel-sde
       # Sumerian / Cuneiform tools
       - yagf
       - cuneiform-qt
@@ -208,7 +205,6 @@ modules:
     system:
       enabled:
         - scx_loader.service
-        - cartridge-launch@.service
         
  - type: script
     scripts:
@@ -240,11 +236,7 @@ modules:
       packages:
         - micro
         - starship
-    remove:
-      packages: 
-        - firefox
-        - firefox-langpacks
-
+        
   - type: default-flatpaks
     configurations:
       - notify: true # Send notification after install/uninstall is finished (true/false)
