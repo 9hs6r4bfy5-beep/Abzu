@@ -1,4 +1,3 @@
-# /etc/udev/rules.d/99-pc-cartridge.rules
 # Trigger the cartridge launcher when a PC Cartridge SSD is inserted.
 # Adjust idVendor/idProduct to match your SATA dock.
 # Adjust the filesystem label to match your cartridges.
