@@ -11,7 +11,7 @@ python3 -m pipx ensurepath
 # The [fetchart,lyrics,lastgenre,chroma,web] extras pull in dependencies
 # for album art fetching, lyrics, genre tagging, acoustic fingerprinting,
 # and the web UI.
-~/.local/bin/pipx install 'beets[fetchart,lyrics,lastgenre,chroma,web]'
+~/.local/bin/pipx install 'beets[fetchart,lyrics,lastgenre,chroma,web,replaygain]'
 
 echo "--- Beets installed via pipx ---"
 echo "Run 'beet config -e' after first login to create your configuration."
