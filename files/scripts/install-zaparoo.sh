@@ -24,11 +24,12 @@ chmod +x /usr/local/bin/zaparoo
 # is typically already in the PATH for user shells.
 
 # Verify the installation
-if [ -f "${HOME}/.local/bin/zaparoo" ]; then
-    echo "Zaparoo Core installed successfully to ${HOME}/.local/bin"
+if [ -x /usr/local/bin/zaparoo ]; then
+    echo "Zaparoo Core installed successfully to /usr/local/bin/zaparoo"
 else
     echo "Installation failed: zaparoo binary not found."
     exit 1
+fi
 fi
 
 echo "--- Zaparoo Core installation complete ---"
