@@ -95,14 +95,11 @@ modules:
       # ibus dependencies for cuneiform input method
       - ibus
       - ibus-table
-      - python3
       # Build tools for Tauri
       - nodejs
-      - npm
       - cargo
       - rust
       - webkit2gtk4.1-devel
-      - openssl-devel
       - libappindicator-gtk3-devel
       - librsvg2-devel
       - gtk3-devel
