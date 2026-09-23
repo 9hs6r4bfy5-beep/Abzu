@@ -280,6 +280,8 @@ modules:
           - org.kde.krita
           - org.kde.haruna
           - org.stellarium.Stellarium
+
+  - type: iso
           
       - scope: user # Also add Flathub user repo, but no user packages
 
