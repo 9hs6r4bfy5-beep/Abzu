@@ -6,7 +6,18 @@ echo "--- Installing Zaparoo Core ---"
 # The official installer is a script that downloads the correct binary for
 # your architecture and sets up the systemd user service.
 # It is designed to be safe for immutable systems by installing to ~/.local.
-curl -fsSL https://zaparoo.org/install.sh | bash
+# Download the Zaparoo binary directly
+ZAPAROO_VERSION="2.0.0"  # Check https://github.com/ZaparooProject/zaparoo-core/releases for latest
+ARCH=$(uname -m)
+case "${ARCH}" in
+    x86_64) ARCH_TAG="amd64" ;;
+    aarch64) ARCH_TAG="arm64" ;;
+    *) echo "Unsupported architecture: ${ARCH}"; exit 1 ;;
+esac
+
+curl -fsSL -o /usr/local/bin/zaparoo \
+    "https://github.com/ZaparooProject/zaparoo-core/releases/download/v${ZAPAROO_VERSION}/zaparoo_${ZAPAROO_VERSION}_linux_${ARCH_TAG}"
+chmod +x /usr/local/bin/zaparoo
 
 # The installer places the binary in ~/.local/bin.
 # We need to make sure this path is available. On Atomic Fedora, ~/.local/bin
