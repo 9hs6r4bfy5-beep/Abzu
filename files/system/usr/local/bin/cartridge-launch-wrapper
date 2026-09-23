@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+DEVICE="${1:?Usage: cartridge-launch-wrapper <device>}"
+
+# Find the graphical user session (the first active session with a seat)
+ACTIVE_USER=$(loginctl list-sessions --no-legend \
+    | awk '$4 == "seat0" && $5 == "active" {print $3}' \
+    | head -n 1)
+
+if [ -z "${ACTIVE_USER}" ]; then
+    echo "No active graphical session found. Skipping cartridge launch."
+    exit 0
+fi
+
+# The mount point is under /run/media/<user>/<device>
+MOUNT_POINT="/run/media/${ACTIVE_USER}/${DEVICE}"
+
+# Wait up to 30 seconds for the mount to appear
+for _ in $(seq 1 30); do
+    if [ -d "${MOUNT_POINT}" ] && mountpoint -q "${MOUNT_POINT}"; then
+        break
+    fi
+    sleep 1
+done
+
+if ! mountpoint -q "${MOUNT_POINT}"; then
+    echo "Mount point ${MOUNT_POINT} did not appear."
+    exit 1
+fi
+
+# Run the launcher helper as the active user
+runuser -u "${ACTIVE_USER}" -- /usr/local/bin/cartridge-launcher-helper "${MOUNT_POINT}"
