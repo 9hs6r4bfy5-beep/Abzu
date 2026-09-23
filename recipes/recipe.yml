@@ -209,6 +209,7 @@ modules:
  - type: script
     scripts:
       - theming.sh
+      - install-intel-sde.sh
       - install-apple2pi.sh
       - install-tether.sh
       - install-hotline.sh
