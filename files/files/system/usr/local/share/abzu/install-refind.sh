@@ -29,7 +29,7 @@ echo "Detected EFI architecture: ${EFI_ARCH}"
 if ! mountpoint -q /boot/efi; then
     echo "Mounting ESP..."
     mkdir -p /boot/efi
-    ESP_DEVICE=$(findmnt -n -o SOURCE /boot 2>/dev/null || true)
+   ESP_DEVICE=$(findmnt -n -o SOURCE /boot/efi 2>/dev/null || true)
     if [ -n "${ESP_DEVICE}" ]; then
         mount "${ESP_DEVICE}" /boot/efi 2>/dev/null || true
     fi
