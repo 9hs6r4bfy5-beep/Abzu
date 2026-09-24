@@ -30,6 +30,5 @@ else
     echo "Installation failed: zaparoo binary not found."
     exit 1
 fi
-fi
 
 echo "--- Zaparoo Core installation complete ---"
