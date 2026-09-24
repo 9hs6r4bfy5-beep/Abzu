@@ -138,9 +138,6 @@ modules:
       - spectre_v2=on
       - ssbd=force-on
 
-      # CPU vulnerability mitigation (includes SMT disabling if needed)
-      - nosmt
-
       # Slab allocator hardening
       - slab_debug=FZ
       - slab_nomerge
