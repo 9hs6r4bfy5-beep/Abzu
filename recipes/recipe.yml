@@ -12,10 +12,10 @@ image-version: 44 # You can pin to a specific version of Fedora as well
 # module configuration, executed in order
 # you can include multiple instances of the same module
 modules:
-- type: rpm-ostree
-   repos:
+  - type: rpm-ostree
+    repos:
       - copr:bieszczaders/kernel-cachyos-addons
-   install:
+    install:
       # Base build tools and dependencies
       - git
       - wget
@@ -41,6 +41,8 @@ modules:
       - fuse-libs
       - fuse-devel
       - R
+      - python3-devel
+      - python3-pip
       - libxml2-devel
       - libcurl-devel
       - libpng-devel
@@ -50,6 +52,7 @@ modules:
       - libtiff-devel
       - libffi-devel
       - libjpeg-turbo-devel
+      - openssl-devel
       - ffmpeg-free
       - libdiscid
       - libchromaprint
@@ -62,6 +65,7 @@ modules:
       - desktop-file-utils
       - gnutls
       - gnutls.i686
+      - xz
       - dconf-editor
       - gnome-tweaks
       - gnome-shell-extensions
@@ -88,7 +92,6 @@ modules:
       # Sumerian / Cuneiform tools
       - yagf
       - cuneiform-qt
-      - gdouros-akkadian-fonts
       # ibus dependencies for cuneiform input method
       - ibus
       - ibus-table
