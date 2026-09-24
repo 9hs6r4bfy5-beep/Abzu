@@ -7,7 +7,8 @@ echo "--- Installing Zaparoo Core ---"
 # your architecture and sets up the systemd user service.
 # It is designed to be safe for immutable systems by installing to ~/.local.
 # Download the Zaparoo binary directly
-ZAPAROO_VERSION="2.0.0"  # Check https://github.com/ZaparooProject/zaparoo-core/releases for latest
+ZAPAROO_VERSION=$(curl -fsSL https://api.github.com/repos/ZaparooProject/zaparoo-core/releases/latest \
+    | grep -oP '"tag_name": "v\K[^"]+') # Check https://github.com/ZaparooProject/zaparoo-core/releases for latest
 ARCH=$(uname -m)
 case "${ARCH}" in
     x86_64) ARCH_TAG="amd64" ;;
