@@ -2,7 +2,6 @@
 Description=PC Cartridge Launcher for %k
 After=dev-%k.device
 Requires=dev-%k.device
-ConditionPathIsMountPoint=/run/media/%k
 
 [Service]
 Type=oneshot
