@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DEVICE="${1:?Usage: cartridge-launch-wrapper<device>}"
+DEVICE="${1:?Usage: cartridge-launch-wrapper <device>}"
 
 # Find the graphical user session (the first active session with a seat)
 ACTIVE_USER=$(loginctl list-sessions --no-legend \
