@@ -8,7 +8,7 @@ echo "--- Installing Intel Software Development Emulator ---"
 SDE_VERSION="10.13.1"
 SDE_DATE="2026-07-28"
 SDE_ARCHIVE="sde-external-${SDE_VERSION}-${SDE_DATE}-lin.tar.xz"
-SDE_URL="https://github.com/rapidfuzz/intel-sde/releases/download/${SDE_VERSION}/${SDE_ARCHIVE}"
+SDE_URL="https://github.com/BasedInc/sde/releases/download/v10.13.1/sde-external-10.13.1-2026-07-28-lin.tar.xz"
 
 # Download and extract
 mkdir -p /opt/intel-sde
