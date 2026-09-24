@@ -41,3 +41,11 @@ zaparoo-setup:
     systemctl --user enable --now zaparoo.service
     echo "Zaparoo service installed and started."
     echo "For NFC hardware support, run: sudo /usr/local/bin/zaparoo -install hardware"
+
+# Enable the Ground Station user service
+ground-station-setup:
+    #!/usr/bin/bash
+    set -euo pipefail
+    systemctl --user daemon-reload
+    systemctl --user enable --now ground-station.service
+    echo "Ground Station enabled at http://localhost:7000"
