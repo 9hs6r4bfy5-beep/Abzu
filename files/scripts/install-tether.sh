@@ -10,7 +10,7 @@ TETHER_VERSION=$(curl -fsSL https://api.github.com/repos/zackb/tether/releases/l
 
 mkdir -p /opt/tether
 cd /opt/tether
-curl -L -o tether.AppImage "${DOWNLOAD_URL}"
+curl -L -o tether.AppImage {DOWNLOAD_URL="https://github.com/zackb/tether/releases/download/${TETHER_VERSION}/tether-${TETHER_VERSION}-x86_64.AppImage"
 chmod +x tether.AppImage
 
 # Create desktop entry
