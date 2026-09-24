@@ -20,9 +20,8 @@ curl -fsSL -o /usr/local/bin/zaparoo \
     "https://github.com/ZaparooProject/zaparoo-core/releases/download/v${ZAPAROO_VERSION}/zaparoo_${ZAPAROO_VERSION}_linux_${ARCH_TAG}"
 chmod +x /usr/local/bin/zaparoo
 
-# The installer places the binary in ~/.local/bin.
-# We need to make sure this path is available. On Atomic Fedora, ~/.local/bin
-# is typically already in the PATH for user shells.
+# The Zaparoo binary is installed to /usr/local/bin so it is available
+# system-wide. The user service is set up separately via a ujust command.
 
 # Verify the installation
 if [ -x /usr/local/bin/zaparoo ]; then
