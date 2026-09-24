@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+echo "Setting Abzu Plymouth theme as default..."
+plymouth-set-default-theme abzu
 # theming.sh - Installs macOS-inspired themes for a custom Fedora Atomic image.
 # Covers Cheetah (pinstripes, blue scrollbars), Mavericks, Leopard, and Gnomintosh,
 # plus the Liquid Glass GNOME Shell extension.
