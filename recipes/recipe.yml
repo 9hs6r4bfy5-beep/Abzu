@@ -153,28 +153,14 @@ modules:
       - rd.shell=0
       - rd.emergency=halt
       
-  - type: files
+   - type: files
     files:
       - source: system
         destination: /
-      - source: etc/skel/.config/fono/config.toml
-        destination: /etc/skel/.config/fono/config.toml
-      - source: etc/skel/.config/fono/secrets.toml
-        destination: /etc/skel/.config/fono/secrets.toml
-      - source: etc/skel/.config/beets/config.yaml
-        destination: /etc/skel/.config/beets/config.yaml
-      - source: usr/local/bin/picocalc
-        destination: /usr/local/bin/picocalc
-      - source: usr/share/applications/picocalc.desktop
-        destination: /usr/share/applications/picocalc.desktop
-      - source: etc/skel/.config/autostart/hidamari.desktop
-        destination: /etc/skel/.config/autostart/hidamari.desktop
+      - source: etc/skel
+        destination: /etc/skel
       - source: etc/flatpak/overrides/ai.lmstudio.lm-studio
         destination: /etc/flatpak/overrides/ai.lmstudio.lm-studio
-      - source: usr/share/applications/cunai.desktop
-        destination: /usr/share/applications/cunai.desktop
-      - source: systemd/system/bluetooth.service.d/override.conf
-        destination: /etc/systemd/system/bluetooth.service.d/override.conf
         
   - type: systemd
     system:
