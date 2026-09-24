@@ -3,6 +3,13 @@ set -euo pipefail
 
 echo "--- Installing PC Cartridge System components ---"
 
+if [ ! -f /usr/local/bin/cartridge-launcher-helper ]; then
+    curl -fsSL -o /usr/local/share/pc-cartridge/cartridge-launcher-helper \
+        "https://raw.githubusercontent.com/LewdM3at/PC-Cartridge-System/main/linux/cartridge-launcher-helper"
+    install -m 0755 /usr/local/share/pc-cartridge/cartridge-launcher-helper \
+        /usr/local/bin/cartridge-launcher-helper
+fi
+
 # Download the launcher helper from the upstream repository.
 mkdir -p /usr/local/share/pc-cartridge
 curl -fsSL -o /usr/local/share/pc-cartridge/cartridge-launcher-helper \
