@@ -18,3 +18,14 @@ icloud-tools-setup:
     echo "  ~/.local/share/icloud-cli-tools-venv/bin/icloud --help"
     echo ""
     echo "You will be prompted for your Apple ID and an app-specific password."
+
+# Set up Zaparoo user service
+zaparoo-setup:
+    #!/usr/bin/bash
+    set -euo pipefail
+    /usr/local/bin/zaparoo -install service
+    /usr/local/bin/zaparoo -install desktop
+    systemctl --user daemon-reload
+    systemctl --user enable --now zaparoo.service
+    echo "Zaparoo service installed and started."
+    echo "For NFC hardware support, run: sudo /usr/local/bin/zaparoo -install hardware"
