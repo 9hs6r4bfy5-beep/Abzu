@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=PicoCalc
+Comment=VisiCalc clone
+Exec=/usr/local/bin/picocalc
+Icon=applications-office
+Terminal=true
+Categories=Office;Spreadsheet;
