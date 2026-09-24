@@ -49,3 +49,16 @@ ground-station-setup:
     systemctl --user daemon-reload
     systemctl --user enable --now ground-station.service
     echo "Ground Station enabled at http://localhost:7000"
+
+# Launch gMTP with MTP support check
+gmtp-sync:
+    #!/usr/bin/bash
+    set -euo pipefail
+    echo "Checking MTP support..."
+    if ! rpm -q gvfs-mtp &>/dev/null; then
+        echo "gvfs-mtp is not installed. MTP devices may not be detected."
+        echo "It should be part of the base image; if missing, please report this."
+    fi
+    echo "Ensure your Walkman is connected and unlocked, then launching gMTP..."
+    # Launch gmtp (RPM version)
+    flatpak run app.gmtp.gMTP &
