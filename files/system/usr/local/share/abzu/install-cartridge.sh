@@ -9,12 +9,13 @@ echo "--- Installing PC Cartridge System components ---"
 mkdir -p /usr/local/share/pc-cartridge
 
 curl -fsSL -o /usr/local/share/pc-cartridge/cartridge-launcher-helper \
+    "https://raw.githubusercontent.com/LewdM3at/PC-Cartridge-System/main/linux/cartridge-launcher-helper"
 
 "https://raw.githubusercontent.com/LewdM3at/PC-Cartridge-System/main/linux/cartridge-launcher-helper"
 
 chmod +x /usr/local/share/pc-cartridge/cartridge-launcher-helper
 
-install -m 0755 /usr/local/share/pc-cartridge/cartridge-launcher-helper \
+install -m 0755 /usr/local/share/pc-cartridge/cartridge-launcher-helper /usr/local/bin/cartridge-launcher-helper
 
 /usr/local/bin/cartridge-launcher-helper
 
