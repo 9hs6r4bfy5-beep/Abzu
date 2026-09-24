@@ -7,14 +7,9 @@ echo "--- Installing Zaparoo Core ---"
 # your architecture and sets up the systemd user service.
 # It is designed to be safe for immutable systems by installing to ~/.local.
 # Download the Zaparoo binary directly
-ZAPAROO_VERSION=$(curl -fsSL https://api.github.com/repos/ZaparooProject/zaparoo-core/releases/latest \
-    | grep -oP '"tag_name": "v\K[^"]+') # Check https://github.com/ZaparooProject/zaparoo-core/releases for latest
-ARCH=$(uname -m)
-case "${ARCH}" in
-    x86_64) ARCH_TAG="amd64" ;;
-    aarch64) ARCH_TAG="arm64" ;;
-    *) echo "Unsupported architecture: ${ARCH}"; exit 1 ;;
-esac
+DOWNLOAD_URL=$(curl -fsSL https://api.github.com/repos/ZaparooProject/zaparoo-core/releases/latest \
+    | jq -r '.assets[] | select(.name | contains("linux") and contains("amd64")) | .browser_download_url')
+curl -fsSL -o /usr/local/bin/zaparoo "${DOWNLOAD_URL}"
 
 curl -fsSL -o /usr/local/bin/zaparoo \
     "https://github.com/ZaparooProject/zaparoo-core/releases/download/v${ZAPAROO_VERSION}/zaparoo_${ZAPAROO_VERSION}_linux_${ARCH_TAG}"
