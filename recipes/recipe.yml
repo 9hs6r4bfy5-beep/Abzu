@@ -42,7 +42,6 @@ modules:
       - fuse-devel
       - R
       - libxml2-devel
-      - openssl-devel
       - libcurl-devel
       - libpng-devel
       - freetype-devel
@@ -54,7 +53,6 @@ modules:
       - ffmpeg-free
       - libdiscid
       - libchromaprint
-      - openssl-devel
       - redhat-rpm-config
       - curl
       - wine
@@ -102,12 +100,10 @@ modules:
       - webkit2gtk4.1-devel
       - libappindicator-gtk3-devel
       - librsvg2-devel
-      - gtk3-devel
       - libxdo-devel
       - file
       # Build dependencies for Snow
       - alsa-lib-devel
-      - pkgconf-pkg-config
       
  - type: kargs
     arch: x86_64, aarch64   # optional; omit to apply to all architectures
