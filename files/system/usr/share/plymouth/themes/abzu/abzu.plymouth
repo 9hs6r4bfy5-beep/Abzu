@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=Abzu
+Description=A deep-water splash honouring Nammu, mother of the Abzu.
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/abzu
+ScriptFile=/usr/share/plymouth/themes/abzu/abzu.script
