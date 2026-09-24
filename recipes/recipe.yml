@@ -108,7 +108,6 @@ modules:
       - alsa-lib-devel
       
  - type: kargs
-    arch: x86_64, aarch64   # optional; omit to apply to all architectures
     kargs:
       # Kernel chages for latency in gaming
       - preempt=full
