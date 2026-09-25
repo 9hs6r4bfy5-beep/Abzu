@@ -1,5 +1,4 @@
 # yaml-language-server: $schema=https://schema.blue-build.org/recipe-v1.json
-
 name: abzu
 description: An elegant, powerful operating system for desktops, workstations and homelabs that honours and preserves the ancient traditions.
 
@@ -140,8 +139,12 @@ modules:
 
   - type: files
     files:
-      - source: system
-        destination: /
+      - source: system/etc
+        destination: /etc
+      - source: system/var
+        destination: /var
+      - source: system/usr/share
+        destination: /usr/share
       - source: etc/skel
         destination: /etc/skel
       - source: etc/flatpak/overrides/ai.lmstudio.lm-studio
