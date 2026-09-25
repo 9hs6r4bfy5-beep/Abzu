@@ -1,15 +1,19 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# --- Memory constraints for the Rust/Tauri build -------------------------
-# The GitHub Actions runner has ~16 GB RAM and 4 CPUs. A parallel Tauri
-# release build (rustc x4, LTO on, opt-level=3) can exceed that and cause
-# rustc to be killed with SIGABRT. The following limits keep peak memory
-# usage well under the ceiling at the cost of a slower build.
-export CARGO_BUILD_JOBS=2
+# --- Memory constraints for the Rust/Tauri release build -----------------
+# The GitHub Actions runner has ~16 GB RAM. The Hotline Tauri crate links
+# OpenSSL, aws-lc, ring, libsodium, tokio, reqwest, tauri, rustls, etc.,
+# and LLVM's optimizer on the final crate exceeds available memory at
+# default settings (see: "rustc-LLVM ERROR: out of memory"). The following
+# pushes memory down hard at the cost of a much slower build.
+export CARGO_BUILD_JOBS=1
 export CARGO_PROFILE_RELEASE_LTO=false
-export CARGO_PROFILE_RELEASE_CODEGEN_UNITS=16
-export CARGO_PROFILE_RELEASE_OPT_LEVEL=2
+export CARGO_PROFILE_RELEASE_CODEGEN_UNITS=256
+export CARGO_PROFILE_RELEASE_OPT_LEVEL=1
+export CARGO_PROFILE_RELEASE_DEBUG=false
+export CARGO_PROFILE_RELEASE_INCREMENTAL=false
+export CARGO_PROFILE_RELEASE_STRIP=true
 export NODE_OPTIONS=--max-old-space-size=2048
 # -------------------------------------------------------------------------
 
@@ -29,7 +33,6 @@ npm run build:linux
 
 # The `--target x86_64-unknown-linux-gnu` flag causes Cargo to place the
 # binary under target/x86_64-unknown-linux-gnu/release/, not target/release/.
-# Check both locations so this works regardless of how the build was invoked.
 BIN_SRC=""
 for candidate in \
     "src-tauri/target/x86_64-unknown-linux-gnu/release/hotline-tauri" \
