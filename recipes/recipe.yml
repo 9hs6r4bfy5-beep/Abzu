@@ -109,15 +109,8 @@ modules:
         # Shell and editor tools
         - micro
         - starship
-        # NOTE: akmod-wl is no longer listed here.
-        # The Broadcom wl module is built via the dedicated 'akmods' module below.
-
-  # Build the Broadcom wl kernel module correctly (as a non-root akmods user,
-  # and injected into the ostree deployment rather than built during dnf).
-  - type: akmods
-    base: main
-    install:
-      - wl
+        # Broadcom wl kernel module (from RPM Fusion nonfree)
+        - akmod-wl
 
   - type: kargs
     kargs:
