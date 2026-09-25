@@ -7,15 +7,20 @@ base-image: ghcr.io/secureblue/silverblue-main-hardened
 image-version: 44
 
 modules:
-  # Enable repositories using BlueBuild's built-in repo support
+  # Enable RPM Fusion BEFORE the dnf module runs.
+  #
+  # We deliberately avoid BlueBuild's "nonfree: rpmfusion" option because it
+  # also tries to enable the 'fedora-cisco-openh264' repo, which does not
+  # exist on secureblue and causes the dnf module to fail. Installing the
+  # release RPMs directly is equivalent and does not touch that repo.
+  - type: script
+    scripts:
+      - enable-rpmfusion.sh
+
   - type: dnf
     repos:
-      # Enable RPM Fusion via the dedicated nonfree option
-      nonfree: rpmfusion
-      # Enable COPR repositories with an explicit chroot.
-      # secureblue reports its OS ID as "secureblue", so COPR's auto-detection
-      # would look for "secureblue-44-x86_64" (which does not exist). Pinning
-      # the chroot to "fedora-44-x86_64" bypasses that and works correctly.
+      # COPR repos pinned to fedora-44-x86_64 because secureblue reports its
+      # OS ID as "secureblue", which COPR does not recognise.
       copr:
         - name: bieszczaders/kernel-cachyos-addons
           chroot: fedora-44-x86_64
