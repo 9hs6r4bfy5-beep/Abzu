@@ -43,15 +43,37 @@ jobs:
       # exceeds the runner's 16 GiB of RAM and aborts with
       # "rustc-LLVM ERROR: out of memory / Allocation failed".
       # Swap gives LLVM room to spill instead of crashing.
+      #
+      # This step is idempotent: it handles a stale /swapfile left over
+      # from a previous run (which would otherwise cause "Text file busy")
+      # by first disabling and removing any existing swap file.
       - name: Add 16 GiB swap
         run: |
-          sudo fallocate -l 16G /swapfile || \
-            sudo dd if=/dev/zero of=/swapfile bs=1M count=16384
+          echo "--- Before: memory and swap ---"
+          free -h
+          swapon --show || true
+
+          # If /swapfile already exists, disable and remove it first.
+          if swapon --show=NAME --noheadings | grep -q '^/swapfile$'; then
+            echo "Disabling existing swap at /swapfile"
+            sudo swapoff /swapfile
+          fi
+          if [ -e /swapfile ]; then
+            echo "Removing existing /swapfile"
+            sudo rm -f /swapfile
+          fi
+
+          # Create a fresh 16 GiB swap file. Prefer fallocate; fall back
+          # to dd on filesystems where fallocate is unsupported.
+          echo "Creating /swapfile (16 GiB)"
+          sudo fallocate -l 16G /swapfile \
+            || sudo dd if=/dev/zero of=/swapfile bs=1M count=16384 status=progress
           sudo chmod 600 /swapfile
           sudo mkswap /swapfile
           sudo swapon /swapfile
           sudo sysctl vm.swappiness=60
-          echo "--- Memory and swap after setup ---"
+
+          echo "--- After: memory and swap ---"
           free -h
           swapon --show
 
