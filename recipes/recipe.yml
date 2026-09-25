@@ -1,23 +1,25 @@
----
 # yaml-language-server: $schema=https://schema.blue-build.org/recipe-v1.json
-# image will be published to ghcr.io/<user>/<name>
+
 name: abzu
-# description will be included in the image's metadata
 description: An elegant, powerful operating system for desktops, workstations and homelabs that honours and preserves the ancient traditions.
 
-# the base image to build on top of (FROM) and the version tag to use
 base-image: ghcr.io/secureblue/silverblue-main-hardened
-image-version: 44 # You can pin to a specific version of Fedora as well
+image-version: 44
 
-# module configuration, executed in order
-# you can include multiple instances of the same module
 modules:
-  - type: script
-    scripts:
-      - enable-repos.sh
-      
+  # Enable repositories first using BlueBuild's built-in repo support
   - type: dnf
     repos:
+      # Enable RPM Fusion
+      - rpmfusion-free
+      - rpmfusion-nonfree
+      # Enable COPR repositories with explicit releasever and arch
+      - copr: bieszczaders/kernel-cachyos-addons
+        releasever: 44
+        arch: x86_64
+      - copr: atim/starship
+        releasever: 44
+        arch: x86_64
     install:
       packages:
         # Base build tools and dependencies
@@ -110,6 +112,7 @@ modules:
         # Shell and editor tools
         - micro
         - starship
+
   - type: kargs
     kargs:
       # Kernel changes for latency in gaming
@@ -174,7 +177,7 @@ modules:
       - install-cunai.sh
       - install-smb-remastered.sh
       - install-beets.sh
-      - install-zaparoo.sh
+      - zaparoo.sh
       - configure-stellarium.sh
       - install-ibus-cuneiform.sh
       - install-sumer-r-package.sh
@@ -226,9 +229,7 @@ modules:
           - org.kde.krita
           - org.kde.haruna
           - org.stellarium.Stellarium
-
       - scope: user
 
   - type: initramfs
-
   - type: signing
