@@ -12,101 +12,106 @@ image-version: 44 # You can pin to a specific version of Fedora as well
 # module configuration, executed in order
 # you can include multiple instances of the same module
 modules:
-  - type: rpm-ostree
+  - type: dnf
     repos:
-      - copr:bieszczaders/kernel-cachyos-addons
+      copr:
+        - bieszczaders/kernel-cachyos-addons
+        - atim/starship
     install:
-      # Base build tools and dependencies
-      - git
-      - wget
-      - gcc
-      - gcc-c++
-      - make
-      - mactel-boot
-      - refind
-      - podman
-      - podman-compose
-      - cmake
-      - ninja-build
-      - pkgconf-pkg-config
-      - wayland-devel
-      - avahi-devel
-      - glib2-devel
-      - gtk3-devel
-      - gtk-layer-shell-devel
-      - libnotify-devel
-      - npm
-      - zip
-      - fuse
-      - fuse-libs
-      - fuse-devel
-      - R
-      - python3-devel
-      - python3-pip
-      - libxml2-devel
-      - libcurl-devel
-      - libpng-devel
-      - freetype-devel
-      - harfbuzz-devel
-      - fribidi-devel
-      - libtiff-devel
-      - libffi-devel
-      - libjpeg-turbo-devel
-      - openssl-devel
-      - ffmpeg-free
-      - libdiscid
-      - libchromaprint
-      - redhat-rpm-config
-      - curl
-      - wine
-      - winetricks
-      - p7zip
-      - unzip
-      - desktop-file-utils
-      - gnutls
-      - gnutls.i686
-      - xz
-      - dconf-editor
-      - gnome-tweaks
-      - gnome-shell-extensions
-      - scx-scheds
-      - scx-tools
-      - jq
-      - policycoreutils-python-utils
-      - gdisk
-      - dosfstools
-      - ntfs-3g
-      - exfatprogs
-      # Fonts and utilities
-      - gdouros-akkadian-fonts
-      - sassc
-      - gtk2-engines
-      - gtk-murrine-engine
-      - gnome-themes-extra
-      # GNOME Online Accounts and Evolution for CalDAV/CardDAV
-      - gnome-online-accounts
-      - evolution
-      - evolution-data-server
-      # Hardware Support
-      - akmod-wl
-      # Sumerian / Cuneiform tools
-      - yagf
-      - cuneiform-qt
-      # ibus dependencies for cuneiform input method
-      - ibus
-      - ibus-table
-      # Build tools for Tauri
-      - nodejs
-      - cargo
-      - rust
-      - webkit2gtk4.1-devel
-      - libappindicator-gtk3-devel
-      - librsvg2-devel
-      - libxdo-devel
-      - file
-      # Build dependencies for Snow
-      - alsa-lib-devel
-
+      packages:
+        # Base build tools and dependencies
+        - git
+        - wget
+        - gcc
+        - gcc-c++
+        - make
+        - mactel-boot
+        - refind
+        - podman
+        - podman-compose
+        - cmake
+        - ninja-build
+        - pkgconf-pkg-config
+        - wayland-devel
+        - avahi-devel
+        - glib2-devel
+        - gtk3-devel
+        - gtk-layer-shell-devel
+        - libnotify-devel
+        - npm
+        - zip
+        - fuse
+        - fuse-libs
+        - fuse-devel
+        - R
+        - python3-devel
+        - python3-pip
+        - libxml2-devel
+        - libcurl-devel
+        - libpng-devel
+        - freetype-devel
+        - harfbuzz-devel
+        - fribidi-devel
+        - libtiff-devel
+        - libffi-devel
+        - libjpeg-turbo-devel
+        - openssl-devel
+        - ffmpeg-free
+        - libdiscid
+        - libchromaprint
+        - redhat-rpm-config
+        - curl
+        - wine
+        - winetricks
+        - p7zip
+        - unzip
+        - desktop-file-utils
+        - gnutls
+        - gnutls.i686
+        - xz
+        - dconf-editor
+        - gnome-tweaks
+        - gnome-shell-extensions
+        - scx-scheds
+        - scx-tools
+        - jq
+        - policycoreutils-python-utils
+        - gdisk
+        - dosfstools
+        - ntfs-3g
+        - exfatprogs
+        # Fonts and utilities
+        - gdouros-akkadian-fonts
+        - sassc
+        - gtk2-engines
+        - gtk-murrine-engine
+        - gnome-themes-extra
+        # GNOME Online Accounts and Evolution for CalDAV/CardDAV
+        - gnome-online-accounts
+        - evolution
+        - evolution-data-server
+        # Hardware Support
+        - akmod-wl
+        # Sumerian / Cuneiform tools
+        - yagf
+        - cuneiform-qt
+        # ibus dependencies for cuneiform input method
+        - ibus
+        - ibus-table
+        # Build tools for Tauri
+        - nodejs
+        - cargo
+        - rust
+        - webkit2gtk4.1-devel
+        - libappindicator-gtk3-devel
+        - librsvg2-devel
+        - libxdo-devel
+        - file
+        # Build dependencies for Snow
+        - alsa-lib-devel
+        # Shell and editor tools
+        - micro
+        - starship
   - type: kargs
     kargs:
       # Kernel changes for latency in gaming
@@ -179,15 +184,6 @@ modules:
       - install-soh.sh
       - install-2s2h.sh
       - install-samodmanager.sh
-
-  - type: dnf
-    repos:
-      copr:
-        - atim/starship
-    install:
-      packages:
-        - micro
-        - starship
 
   - type: default-flatpaks
     configurations:
