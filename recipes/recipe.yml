@@ -17,6 +17,7 @@ modules:
       - enable-coprs.sh
       
   - type: dnf
+    repos:
     install:
       packages:
         # Base build tools and dependencies
@@ -26,7 +27,7 @@ modules:
         - gcc-c++
         - make
         - mactel-boot
-        - refind
+        - rEFInd
         - podman
         - podman-compose
         - cmake
@@ -71,7 +72,6 @@ modules:
         - xz
         - dconf-editor
         - gnome-tweaks
-        - gnome-shell-extensions
         - scx-scheds
         - scx-tools
         - jq
@@ -85,7 +85,6 @@ modules:
         - sassc
         - gtk2-engines
         - gtk-murrine-engine
-        - gnome-themes-extra
         # GNOME Online Accounts and Evolution for CalDAV/CardDAV
         - gnome-online-accounts
         - evolution
@@ -94,7 +93,6 @@ modules:
         - akmod-wl
         # Sumerian / Cuneiform tools
         - yagf
-        - cuneiform-qt
         # ibus dependencies for cuneiform input method
         - ibus
         - ibus-table
