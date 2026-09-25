@@ -14,7 +14,7 @@ image-version: 44 # You can pin to a specific version of Fedora as well
 modules:
   - type: script
     scripts:
-      - enable-coprs.sh
+      - enable-repos.sh
       
   - type: dnf
     repos:
