@@ -1,8 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Install Hotline Navigator from source
-# The Tauri client lives in the hotline-tauri directory of the main repo
+# --- Memory constraints for the Rust/Tauri build -------------------------
+# The GitHub Actions runner has ~16 GB RAM and 4 CPUs. A parallel Tauri
+# release build (rustc x4, LTO on, opt-level=3) can exceed that and cause
+# rustc to be killed with SIGABRT. The following limits keep peak memory
+# usage well under the ceiling at the cost of a slower build.
+export CARGO_BUILD_JOBS=2
+export CARGO_PROFILE_RELEASE_LTO=false
+export CARGO_PROFILE_RELEASE_CODEGEN_UNITS=16
+export CARGO_PROFILE_RELEASE_OPT_LEVEL=2
+export NODE_OPTIONS=--max-old-space-size=2048
+# -------------------------------------------------------------------------
 
 echo "--- Building Hotline Navigator ---"
 
@@ -18,18 +27,32 @@ npm install
 # Build the production bundle for Linux x86_64
 npm run build:linux
 
-# The built binary will be in src-tauri/target/release/
-# Copy it to a system location
-if [ -f "src-tauri/target/release/hotline-tauri" ]; then
-    cp "src-tauri/target/release/hotline-tauri" /usr/local/bin/hotline-navigator
+# The `--target x86_64-unknown-linux-gnu` flag causes Cargo to place the
+# binary under target/x86_64-unknown-linux-gnu/release/, not target/release/.
+# Check both locations so this works regardless of how the build was invoked.
+BIN_SRC=""
+for candidate in \
+    "src-tauri/target/x86_64-unknown-linux-gnu/release/hotline-tauri" \
+    "src-tauri/target/release/hotline-tauri"
+do
+    if [ -f "$candidate" ]; then
+        BIN_SRC="$candidate"
+        break
+    fi
+done
+
+if [ -n "$BIN_SRC" ]; then
+    cp "$BIN_SRC" /usr/local/bin/hotline-navigator
     chmod +x /usr/local/bin/hotline-navigator
-    echo "Hotline Navigator installed to /usr/local/bin/hotline-navigator"
+    echo "Hotline Navigator installed to /usr/local/bin/hotline-navigator (from $BIN_SRC)"
 else
-    echo "Build failed: binary not found"
+    echo "Build failed: binary not found in either expected location"
+    echo "Contents of src-tauri/target/ (for debugging):"
+    ls -R src-tauri/target/ || true
     exit 1
 fi
 
-# Optional: Create a desktop entry
+# Create a desktop entry
 mkdir -p /usr/share/applications
 cat > /usr/share/applications/hotline-navigator.desktop << 'EOF'
 [Desktop Entry]
