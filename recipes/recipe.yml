@@ -12,10 +12,15 @@ modules:
     repos:
       # Enable RPM Fusion via the dedicated nonfree option
       nonfree: rpmfusion
-      # Enable COPR repositories
+      # Enable COPR repositories with an explicit chroot.
+      # secureblue reports its OS ID as "secureblue", so COPR's auto-detection
+      # would look for "secureblue-44-x86_64" (which does not exist). Pinning
+      # the chroot to "fedora-44-x86_64" bypasses that and works correctly.
       copr:
-        - bieszczaders/kernel-cachyos-addons
-        - atim/starship
+        - name: bieszczaders/kernel-cachyos-addons
+          chroot: fedora-44-x86_64
+        - name: atim/starship
+          chroot: fedora-44-x86_64
     install:
       packages:
         # Base build tools and dependencies
