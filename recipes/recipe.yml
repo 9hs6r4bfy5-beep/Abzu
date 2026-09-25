@@ -106,52 +106,45 @@ modules:
       - file
       # Build dependencies for Snow
       - alsa-lib-devel
-      
- - type: kargs
+
+  - type: kargs
     kargs:
-      # Kernel chages for latency in gaming
+      # Kernel changes for latency in gaming
       - preempt=full
       - mitigations=auto
       - threadirqs
       # Memory initialization hardening (mitigates use-after-free)
       - init_on_alloc=1
       - init_on_free=1
-
       # Kernel pointer and memory layout hardening
       - hash_pointers=always
       - page_alloc.shuffle=1
       - randomize_kstack_offset=on
-
       # IOMMU enforcement (mitigates DMA attacks)
       - iommu=force
       - intel_iommu=on
       - iommu.passthrough=0
       - iommu.strict=1
-
       # Kernel lockdown and module signing
       - lockdown=confidentiality
       - module.sig_enforce=1
-
       # Speculative execution mitigations
       - l1d_flush=on
       - l1tf=full,force
       - spec_store_bypass_disable=on
       - spectre_v2=on
       - ssbd=force-on
-
       # Slab allocator hardening
       - slab_debug=FZ
       - slab_nomerge
-
       # Entropy source hardening
       - random.trust_bootloader=off
       - random.trust_cpu=off
-
       # Initramfs malware injection mitigation
       - rd.shell=0
       - rd.emergency=halt
-      
-   - type: files
+
+  - type: files
     files:
       - source: system
         destination: /
@@ -159,13 +152,13 @@ modules:
         destination: /etc/skel
       - source: etc/flatpak/overrides/ai.lmstudio.lm-studio
         destination: /etc/flatpak/overrides/ai.lmstudio.lm-studio
-        
+
   - type: systemd
     system:
       enabled:
         - scx_loader.service
-        
- - type: script
+
+  - type: script
     scripts:
       - theming.sh
       - install-intel-sde.sh
@@ -186,22 +179,21 @@ modules:
       - install-soh.sh
       - install-2s2h.sh
       - install-samodmanager.sh
+
   - type: dnf
     repos:
       copr:
         - atim/starship
-        
     install:
       packages:
         - micro
         - starship
-        
+
   - type: default-flatpaks
     configurations:
-      - notify: true # Send notification after install/uninstall is finished (true/false)
+      - notify: true
         scope: system
-        # If no repo information is specified, Flathub will be used by default
-        install: # system flatpaks we want all users to have and not remove
+        install:
           - app.twintaillauncher.ttl
           - io.github.jeffshee.Hidamari
           - net.waterfox.waterfox
@@ -240,9 +232,9 @@ modules:
           - org.kde.krita
           - org.kde.haruna
           - org.stellarium.Stellarium
-          
-      - scope: user # Also add Flathub user repo, but no user packages
 
-- type: initramfs
+      - scope: user
 
-- type: signing # this sets up the proper policy & signing files for signed images to work fully
+  - type: initramfs
+
+  - type: signing
