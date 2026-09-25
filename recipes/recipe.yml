@@ -7,15 +7,13 @@ base-image: ghcr.io/secureblue/silverblue-main-hardened
 image-version: 44
 
 modules:
-  # Enable repositories first using BlueBuild's built-in repo support
+  # Enable repositories using BlueBuild's built-in repo support
   - type: dnf
     repos:
-      install:
-        # RPM Fusion release RPMs (must be installed by URL, not by name)
-        - https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-44.noarch.rpm
-        - https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-44.noarch.rpm
+      # Enable RPM Fusion via the dedicated nonfree option
+      nonfree: rpmfusion
+      # Enable COPR repositories
       copr:
-        # COPR repos as plain "user/project" strings
         - bieszczaders/kernel-cachyos-addons
         - atim/starship
     install:
