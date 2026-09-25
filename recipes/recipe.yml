@@ -8,19 +8,12 @@ image-version: 44
 
 modules:
   # Enable RPM Fusion BEFORE the dnf module runs.
-  #
-  # We deliberately avoid BlueBuild's "nonfree: rpmfusion" option because it
-  # also tries to enable the 'fedora-cisco-openh264' repo, which does not
-  # exist on secureblue and causes the dnf module to fail. Installing the
-  # release RPMs directly is equivalent and does not touch that repo.
   - type: script
     scripts:
       - enable-rpmfusion.sh
 
   - type: dnf
     repos:
-      # COPR repos pinned to fedora-44-x86_64 because secureblue reports its
-      # OS ID as "secureblue", which COPR does not recognise.
       copr:
         - name: bieszczaders/kernel-cachyos-addons
           chroot: fedora-44-x86_64
@@ -97,8 +90,6 @@ modules:
         - gnome-online-accounts
         - evolution
         - evolution-data-server
-        # Hardware Support
-        - akmod-wl
         # Sumerian / Cuneiform tools
         - yagf
         # ibus dependencies for cuneiform input method
@@ -118,41 +109,41 @@ modules:
         # Shell and editor tools
         - micro
         - starship
+        # NOTE: akmod-wl is no longer listed here.
+        # The Broadcom wl module is built via the dedicated 'akmods' module below.
+
+  # Build the Broadcom wl kernel module correctly (as a non-root akmods user,
+  # and injected into the ostree deployment rather than built during dnf).
+  - type: akmods
+    base: main
+    install:
+      - wl
 
   - type: kargs
     kargs:
-      # Kernel changes for latency in gaming
       - preempt=full
       - mitigations=auto
       - threadirqs
-      # Memory initialization hardening (mitigates use-after-free)
       - init_on_alloc=1
       - init_on_free=1
-      # Kernel pointer and memory layout hardening
       - hash_pointers=always
       - page_alloc.shuffle=1
       - randomize_kstack_offset=on
-      # IOMMU enforcement (mitigates DMA attacks)
       - iommu=force
       - intel_iommu=on
       - iommu.passthrough=0
       - iommu.strict=1
-      # Kernel lockdown and module signing
       - lockdown=confidentiality
       - module.sig_enforce=1
-      # Speculative execution mitigations
       - l1d_flush=on
       - l1tf=full,force
       - spec_store_bypass_disable=on
       - spectre_v2=on
       - ssbd=force-on
-      # Slab allocator hardening
       - slab_debug=FZ
       - slab_nomerge
-      # Entropy source hardening
       - random.trust_bootloader=off
       - random.trust_cpu=off
-      # Initramfs malware injection mitigation
       - rd.shell=0
       - rd.emergency=halt
 
