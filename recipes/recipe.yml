@@ -12,11 +12,11 @@ image-version: 44 # You can pin to a specific version of Fedora as well
 # module configuration, executed in order
 # you can include multiple instances of the same module
 modules:
+  - type: script
+    scripts:
+      - enable-coprs.sh
+      
   - type: dnf
-    repos:
-      copr:
-        - bieszczaders/kernel-cachyos-addons/fedora-44-x86_64
-        - atim/starship/fedora-44-x86_64
     install:
       packages:
         # Base build tools and dependencies
