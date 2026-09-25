@@ -13,28 +13,27 @@ cd /opt/smb-remastered
 echo "Downloading ${SMB_ASSET} from release ${SMB_TAG}..."
 curl -fL -o smb-remastered.bin "${DOWNLOAD_URL}"
 
-# Diagnostic logging so that if the format ever surprises us again, the
-# log tells us exactly what we received.
+# Diagnostics. Use -N 16 so od reads exactly 16 bytes and exits on its
+# own; a pipe into `head` would cause SIGPIPE and, under `set -o
+# pipefail`, abort the script before extraction runs.
 echo "Downloaded $(stat -c %s smb-remastered.bin) bytes"
-echo "Detected type: $(file -b smb-remastered.bin)"
 echo "First 16 bytes:"
-od -A x -t x1z -v smb-remastered.bin | head -1
+od -A x -t x1z -N 16 smb-remastered.bin
 
-# Extract using whichever tool matches the actual format.
-# 7z (from p7zip, already in the recipe) handles zip, tar, gzip, xz,
-# zstd, 7z, rar, bzip2, and more. unzip is the fallback.
+# Extract. The archive is a standard ZIP (magic bytes PK\x03\x04), so
+# unzip is the natural choice, with 7z as a fallback in case the format
+# ever changes.
 EXTRACTED=0
-if 7z x -y smb-remastered.bin >/dev/null 2>&1; then
-    EXTRACTED=1
-    echo "Extracted with 7z."
-elif unzip -o smb-remastered.bin >/dev/null 2>&1; then
+if command -v unzip >/dev/null 2>&1 && unzip -o smb-remastered.bin >/dev/null 2>&1; then
     EXTRACTED=1
     echo "Extracted with unzip."
+elif command -v 7z >/dev/null 2>&1 && 7z x -y smb-remastered.bin >/dev/null 2>&1; then
+    EXTRACTED=1
+    echo "Extracted with 7z."
 fi
 
 if [ "$EXTRACTED" -ne 1 ]; then
-    echo "Could not extract the downloaded archive with 7z or unzip."
-    echo "The download itself succeeded; the archive format is the problem."
+    echo "Could not extract the downloaded archive."
     echo "Contents of /opt/smb-remastered:"
     ls -la
     exit 1
@@ -42,16 +41,16 @@ fi
 
 rm -f smb-remastered.bin
 
-# The executable name and layout vary between builds. Search the first
-# two directory levels for anything that looks like the game binary.
+# Locate the executable. Use -print -quit to stop at the first match,
+# avoiding the head/SIGPIPE problem that bit us in the diagnostics above.
 EXEC_PATH=$(find . -maxdepth 3 -type f \
     \( -name "SuperMarioRemastered*" -o -name "SMB1R*" -o -name "*.x86_64" \) \
-    | head -1)
+    -print -quit)
 
 if [ -z "$EXEC_PATH" ]; then
     echo "Could not locate the game executable after extraction."
     echo "Contents of /opt/smb-remastered:"
-    find . -maxdepth 3 -type f | head -40
+    find . -maxdepth 3 -type f
     exit 1
 fi
 
