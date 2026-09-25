@@ -1,7 +1,6 @@
 # yaml-language-server: $schema=https://schema.blue-build.org/recipe-v1.json
 name: abzu
 description: An elegant, powerful operating system for desktops, workstations and homelabs that honours and preserves the ancient traditions.
-
 base-image: ghcr.io/secureblue/silverblue-main-hardened
 image-version: 44
 
@@ -57,6 +56,8 @@ modules:
         - libffi-devel
         - libjpeg-turbo-devel
         - openssl-devel
+        - perl-FindBin
+        - perl-IPC-Cmd
         - ffmpeg-free
         - libdiscid
         - libchromaprint
