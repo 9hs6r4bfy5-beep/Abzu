@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-echo "Setting Abzu Plymouth theme as default..."
-plymouth-set-default-theme abzu
-
 # theming.sh - Installs macOS-inspired themes for a custom Fedora Atomic image.
 # Covers Cheetah (pinstripes, blue scrollbars), Mavericks, Leopard, and Gnomintosh,
 # plus the Liquid Glass GNOME Shell extension.
@@ -22,12 +19,9 @@ echo "--- Starting Theming Installation ---"
 # -----------------------------------------------------------------------------
 # 1. Install B00merang Mac OS X Cheetah theme
 # -----------------------------------------------------------------------------
-# The original Aqua: light grey pinstriped window frames, striking blue scrollbars.
-# Requires gtk-murrine-engine and gtk2-engines (installed via rpm-ostree).
 echo "Installing B00merang Mac OS X Cheetah theme..."
 wget -q https://github.com/B00merang-Project/Mac-OS-X-Cheetah/archive/master.zip -O /tmp/cheetah.zip
 unzip -q /tmp/cheetah.zip -d /tmp/
-# The archive extracts to "Mac-OS-X-Cheetah-master"; rename for a cleaner theme name.
 if [ -d "/tmp/Mac-OS-X-Cheetah-master" ]; then
   mv /tmp/Mac-OS-X-Cheetah-master /tmp/Mac-OS-X-Cheetah
 fi
@@ -55,9 +49,6 @@ rm -rf /tmp/leopard.zip /tmp/OS-X-Leopard-master
 # -----------------------------------------------------------------------------
 # 4. Install the Gnomintosh Theme Suite
 # -----------------------------------------------------------------------------
-# Gnomintosh bundles themes, icons, cursors, and fonts.
-# We copy its assets directly to system directories rather than running its
-# interactive installer, which is unsuitable for a non-interactive image build.
 echo "Installing Gnomintosh theme suite..."
 git clone --depth 1 https://github.com/jothi-prasath/gnomintosh.git /tmp/gnomintosh
 if [ -d "/tmp/gnomintosh/themes" ]; then
@@ -77,7 +68,6 @@ rm -rf /tmp/gnomintosh
 # -----------------------------------------------------------------------------
 # 5. Install "Liquid Glass" GNOME Shell Extension
 # -----------------------------------------------------------------------------
-# Provides transparency, blur, and refractive effects for the top bar and dock.
 echo "Installing Liquid Glass GNOME Shell Extension..."
 EXT_UUID="liquid-glass@thinkingcoding1231.gmail.com"
 git clone --depth 1 https://github.com/ryohsuke1231/liquid-glass.git /tmp/liquid-glass
