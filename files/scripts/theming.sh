@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 echo "Setting Abzu Plymouth theme as default..."
 plymouth-set-default-theme abzu
+
 # theming.sh - Installs macOS-inspired themes for a custom Fedora Atomic image.
 # Covers Cheetah (pinstripes, blue scrollbars), Mavericks, Leopard, and Gnomintosh,
 # plus the Liquid Glass GNOME Shell extension.
+
 set -euo pipefail
 
 # Define target directories for system-wide installation
@@ -22,13 +24,12 @@ echo "--- Starting Theming Installation ---"
 # -----------------------------------------------------------------------------
 # The original Aqua: light grey pinstriped window frames, striking blue scrollbars.
 # Requires gtk-murrine-engine and gtk2-engines (installed via rpm-ostree).
-
 echo "Installing B00merang Mac OS X Cheetah theme..."
 wget -q https://github.com/B00merang-Project/Mac-OS-X-Cheetah/archive/master.zip -O /tmp/cheetah.zip
 unzip -q /tmp/cheetah.zip -d /tmp/
 # The archive extracts to "Mac-OS-X-Cheetah-master"; rename for a cleaner theme name.
 if [ -d "/tmp/Mac-OS-X-Cheetah-master" ]; then
-    mv /tmp/Mac-OS-X-Cheetah-master /tmp/Mac-OS-X-Cheetah
+  mv /tmp/Mac-OS-X-Cheetah-master /tmp/Mac-OS-X-Cheetah
 fi
 cp -r /tmp/Mac-OS-X-Cheetah "${THEME_DIR}/Mac-OS-X-Cheetah"
 rm -rf /tmp/cheetah.zip /tmp/Mac-OS-X-Cheetah
@@ -36,7 +37,6 @@ rm -rf /tmp/cheetah.zip /tmp/Mac-OS-X-Cheetah
 # -----------------------------------------------------------------------------
 # 2. Install B00merang Mavericks theme
 # -----------------------------------------------------------------------------
-
 echo "Installing B00merang Mavericks theme..."
 wget -q https://github.com/B00merang-Project/OS-X-Mavericks/archive/refs/heads/master.zip -O /tmp/mavericks.zip
 unzip -q /tmp/mavericks.zip -d /tmp/
@@ -46,7 +46,6 @@ rm -rf /tmp/mavericks.zip /tmp/OS-X-Mavericks-master
 # -----------------------------------------------------------------------------
 # 3. Install B00merang Leopard theme
 # -----------------------------------------------------------------------------
-
 echo "Installing B00merang Leopard theme..."
 wget -q https://github.com/B00merang-Project/OS-X-Leopard/archive/refs/heads/master.zip -O /tmp/leopard.zip
 unzip -q /tmp/leopard.zip -d /tmp/
@@ -59,30 +58,26 @@ rm -rf /tmp/leopard.zip /tmp/OS-X-Leopard-master
 # Gnomintosh bundles themes, icons, cursors, and fonts.
 # We copy its assets directly to system directories rather than running its
 # interactive installer, which is unsuitable for a non-interactive image build.
-
 echo "Installing Gnomintosh theme suite..."
 git clone --depth 1 https://github.com/jothi-prasath/gnomintosh.git /tmp/gnomintosh
-
 if [ -d "/tmp/gnomintosh/themes" ]; then
-    cp -r /tmp/gnomintosh/themes/* "${THEME_DIR}/"
+  cp -r /tmp/gnomintosh/themes/* "${THEME_DIR}/"
 fi
 if [ -d "/tmp/gnomintosh/icons" ]; then
-    cp -r /tmp/gnomintosh/icons/* "${ICON_DIR}/"
+  cp -r /tmp/gnomintosh/icons/* "${ICON_DIR}/"
 fi
 if [ -d "/tmp/gnomintosh/cursors" ]; then
-    cp -r /tmp/gnomintosh/cursors/* "${ICON_DIR}/"
+  cp -r /tmp/gnomintosh/cursors/* "${ICON_DIR}/"
 fi
 if [ -d "/tmp/gnomintosh/fonts" ]; then
-    cp -r /tmp/gnomintosh/fonts/* "${FONT_DIR}/"
+  cp -r /tmp/gnomintosh/fonts/* "${FONT_DIR}/"
 fi
-
 rm -rf /tmp/gnomintosh
 
 # -----------------------------------------------------------------------------
 # 5. Install "Liquid Glass" GNOME Shell Extension
 # -----------------------------------------------------------------------------
 # Provides transparency, blur, and refractive effects for the top bar and dock.
-
 echo "Installing Liquid Glass GNOME Shell Extension..."
 EXT_UUID="liquid-glass@thinkingcoding1231.gmail.com"
 git clone --depth 1 https://github.com/ryohsuke1231/liquid-glass.git /tmp/liquid-glass
@@ -93,6 +88,23 @@ rm -rf /tmp/liquid-glass
 # -----------------------------------------------------------------------------
 # 6. Final Cleanup
 # -----------------------------------------------------------------------------
+# IMPORTANT: Do NOT use `rm -rf /tmp/*` here.
+# BlueBuild bind-mounts /tmp/files, /tmp/modules, and /tmp/scripts (read-only)
+# into the build container. Attempting to remove them fails with
+# "Device or resource busy" or "Read-only file system", and because
+# `set -euo pipefail` is active, that failure aborts the build.
+#
+# Every directory this script created in /tmp has already been removed
+# individually above. The explicit list below is a safety net in case any
+# future edit leaves something behind. The trailing `|| true` guarantees
+# that even if one of these paths is missing or busy, the script still
+# exits with status 0 and the build continues.
+rm -rf \
+  /tmp/cheetah.zip /tmp/Mac-OS-X-Cheetah /tmp/Mac-OS-X-Cheetah-master \
+  /tmp/mavericks.zip /tmp/OS-X-Mavericks-master \
+  /tmp/leopard.zip /tmp/OS-X-Leopard-master \
+  /tmp/gnomintosh /tmp/liquid-glass \
+  2>/dev/null || true
 
 echo "--- Theming Installation Complete ---"
-rm -rf /tmp/*
+exit 0
