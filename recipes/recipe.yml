@@ -10,16 +10,14 @@ modules:
   # Enable repositories first using BlueBuild's built-in repo support
   - type: dnf
     repos:
-      # Enable RPM Fusion
-      - rpmfusion-free
-      - rpmfusion-nonfree
-      # Enable COPR repositories with explicit releasever and arch
-      - copr: bieszczaders/kernel-cachyos-addons
-        releasever: 44
-        arch: x86_64
-      - copr: atim/starship
-        releasever: 44
-        arch: x86_64
+      install:
+        # RPM Fusion release RPMs (must be installed by URL, not by name)
+        - https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-44.noarch.rpm
+        - https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-44.noarch.rpm
+      copr:
+        # COPR repos as plain "user/project" strings
+        - bieszczaders/kernel-cachyos-addons
+        - atim/starship
     install:
       packages:
         # Base build tools and dependencies
