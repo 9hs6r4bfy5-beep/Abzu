@@ -109,8 +109,6 @@ modules:
         # Shell and editor tools
         - micro
         - starship
-        # Broadcom wl kernel module (from RPM Fusion nonfree)
-        - akmod-wl
 
   - type: kargs
     kargs:
@@ -175,6 +173,7 @@ modules:
       - install-soh.sh
       - install-2s2h.sh
       - install-samodmanager.sh
+      - build-wl-kmod.sh
 
   - type: default-flatpaks
     configurations:
@@ -185,6 +184,7 @@ modules:
           - io.github.jeffshee.Hidamari
           - net.waterfox.waterfox
           - org.torproject.torbrowser-launcher
+          - org.freedesktop.Platform
           - org.freedownloadmanager.Manager
           - io.github.diegopvlk.Dosage
           - org.gnuhealth.mygnuhealth
