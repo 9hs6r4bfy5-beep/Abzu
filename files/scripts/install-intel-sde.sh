@@ -5,31 +5,45 @@ echo "--- Installing Intel Software Development Emulator ---"
 
 # --- Configuration -----------------------------------------------------------
 SDE_DIR="/opt/intel-sde"
-SDE_VERSION="9.44.0"
-SDE_DATE="2024-09-25"
+SDE_VERSION="9.58.0"
+SDE_DATE="2025-06-16"
 SDE_TARBALL="sde-external-${SDE_VERSION}-${SDE_DATE}-lin.tar.xz"
 
-# IMPORTANT: Intel rotates the numeric mirror ID in this URL with every release.
-# Verify the current link at:
-#   https://www.intel.com/content/www/us/en/developer/articles/tool/software-development-emulator.html
-# (look for the "Linux (tar.xz)" download link and copy its URL here)
-SDE_URL="https://downloadmirror.intel.com/813591/${SDE_TARBALL}"
+# Primary source: Intel's official mirror (may return HTTP 403 for curl/wget)
+SDE_URL="https://downloadmirror.intel.com/859732/${SDE_TARBALL}"
+
+# Fallback source: GitHub mirror (more reliable for automated builds)
+SDE_MIRROR_URL="https://github.com/rapidfuzz/intel-sde/releases/download/v${SDE_VERSION}/${SDE_TARBALL}"
 
 # --- Ensure the target directory exists BEFORE cd ----------------------------
 mkdir -p "${SDE_DIR}"
 cd "${SDE_DIR}"
 
-# --- Use a pre-placed tarball if one exists, otherwise download it ----------
+# --- Try a pre-placed tarball first ------------------------------------------
 if compgen -G "sde-external-*.tar.xz" > /dev/null; then
     echo "Using pre-placed SDE tarball in ${SDE_DIR}"
 else
     echo "Downloading Intel SDE ${SDE_VERSION} (${SDE_DATE})"
-    echo "  from ${SDE_URL}"
-    if ! curl -fL --retry 3 --retry-delay 5 -o "${SDE_TARBALL}" "${SDE_URL}"; then
-        echo "ERROR: Failed to download Intel SDE." >&2
-        echo "       The Intel mirror URL has likely rotated." >&2
-        echo "       Update SDE_URL in this script from the page above." >&2
-        exit 1
+
+    # Attempt 1: Intel's official mirror
+    echo "  Trying Intel mirror: ${SDE_URL}"
+    if curl -fL --retry 2 --retry-delay 5 \
+         -A "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36" \
+         -o "${SDE_TARBALL}" "${SDE_URL}"; then
+        echo "  Downloaded from Intel mirror successfully."
+    else
+        echo "  Intel mirror failed (HTTP 403 likely). Trying GitHub mirror..."
+        # Attempt 2: GitHub mirror
+        if curl -fL --retry 3 --retry-delay 5 \
+             -o "${SDE_TARBALL}" "${SDE_MIRROR_URL}"; then
+            echo "  Downloaded from GitHub mirror successfully."
+        else
+            echo "ERROR: Failed to download Intel SDE from all sources." >&2
+            echo "       Intel mirror: ${SDE_URL}" >&2
+            echo "       GitHub mirror: ${SDE_MIRROR_URL}" >&2
+            echo "       Update the URLs in this script." >&2
+            exit 1
+        fi
     fi
 fi
 
@@ -48,6 +62,10 @@ if [ -x "${SDE_DIR}/sde" ]; then
     echo "Intel SDE installed to ${SDE_DIR}/"
 else
     echo "ERROR: Intel SDE installation failed" >&2
+    exit 1
+fi
+
+echo "--- Intel SDE installation complete ---"
     exit 1
 fi
 
