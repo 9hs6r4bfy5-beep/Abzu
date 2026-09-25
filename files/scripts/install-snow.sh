@@ -1,16 +1,38 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# --- Memory constraints for the Rust release build -----------------------
+# Snow's Cargo.toml defaults to opt-level=3, and the upstream build
+# instructions suggest LTO=fat. Both are the heaviest possible settings
+# for LLVM and cause "rustc-LLVM ERROR: out of memory" on the 16 GB
+# GitHub Actions runner. These environment variables override the
+# profile settings in Snow's Cargo.toml, because Cargo gives environment
+# variables higher precedence than profile definitions.
+export CARGO_BUILD_JOBS=1
+export CARGO_PROFILE_RELEASE_LTO=false
+export CARGO_PROFILE_RELEASE_CODEGEN_UNITS=256
+export CARGO_PROFILE_RELEASE_OPT_LEVEL=0
+export CARGO_PROFILE_RELEASE_DEBUG=0
+export CARGO_PROFILE_RELEASE_DEBUG_ASSERTIONS=false
+export CARGO_PROFILE_RELEASE_OVERFLOW_CHECKS=false
+export CARGO_PROFILE_RELEASE_INCREMENTAL=false
+export CARGO_PROFILE_RELEASE_PANIC=abort
+export CARGO_PROFILE_RELEASE_STRIP=symbols
+export RUSTFLAGS="-C debuginfo=0 -C link-arg=-Wl,--no-keep-memory"
+# -------------------------------------------------------------------------
+
 echo "--- Building Snow Macintosh Emulator ---"
 
 # Clone the Snow repository
 git clone --depth 1 https://github.com/twvd/snow.git /tmp/snow
 cd /tmp/snow
 
-# Build in release mode with LTO enabled for a smaller, faster binary
-# The BUILDING.md recommends release builds and notes that LTO
-# increases compile time but produces a more optimized executable.
-CARGO_PROFILE_RELEASE_LTO=fat cargo build -r
+# Build in release mode. We deliberately do NOT pass
+# CARGO_PROFILE_RELEASE_LTO=fat on the command line anymore, because
+# that inline assignment would override the export above and re-enable
+# the memory-hungry fat LTO. The exports above are sufficient; they
+# also override Snow's opt-level=3 default from its Cargo.toml.
+cargo build -r
 
 # The binary is placed in target/release/snowemu
 if [ -f "target/release/snowemu" ]; then
