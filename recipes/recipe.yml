@@ -168,7 +168,7 @@ modules:
       - install-cunai.sh
       - install-smb-remastered.sh
       - install-beets.sh
-      - zaparoo.sh
+      - install-zaparoo.sh
       - configure-stellarium.sh
       - install-ibus-cuneiform.sh
       - install-sumer-r-package.sh
