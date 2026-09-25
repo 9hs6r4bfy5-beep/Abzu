@@ -15,8 +15,8 @@ modules:
   - type: dnf
     repos:
       copr:
-        - bieszczaders/kernel-cachyos-addons
-        - atim/starship
+        - bieszczaders/kernel-cachyos-addons/fedora-44-x86_64
+        - atim/starship/fedora-44-x86_64
     install:
       packages:
         # Base build tools and dependencies
