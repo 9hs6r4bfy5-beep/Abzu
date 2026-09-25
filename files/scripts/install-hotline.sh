@@ -18,8 +18,6 @@ export CARGO_PROFILE_RELEASE_INCREMENTAL=false
 export CARGO_PROFILE_RELEASE_PANIC=abort
 export CARGO_PROFILE_RELEASE_STRIP=symbols
 export NODE_OPTIONS=--max-old-space-size=2048
-# Tell the linker to re-read object files instead of keeping them all
-# in memory. Slower link, much lower peak RSS.
 export RUSTFLAGS="-C debuginfo=0 -C link-arg=-Wl,--no-keep-memory"
 # -------------------------------------------------------------------------
 
@@ -34,8 +32,12 @@ cd /tmp/hotline/hotline-tauri
 # Install Node.js dependencies
 npm install
 
-# Build the production bundle for Linux x86_64
-npm run build:linux
+# Build the frontend and compile the Rust binary.
+# We deliberately use --no-bundle: the script only needs the raw binary
+# (which it copies to /usr/local/bin below), not the .deb or .AppImage
+# packages. Skipping bundling also avoids failures from linuxdeploy, which
+# needs FUSE and doesn't work reliably inside the build container.
+npx tauri build --target x86_64-unknown-linux-gnu --no-bundle
 
 # The `--target x86_64-unknown-linux-gnu` flag causes Cargo to place the
 # binary under target/x86_64-unknown-linux-gnu/release/, not target/release/.
