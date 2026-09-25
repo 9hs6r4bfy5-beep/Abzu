@@ -14,7 +14,7 @@ set -euo pipefail
 FEDORA_VERSION=44
 
 echo "=== Installing RPM Fusion release RPMs (Fedora ${FEDORA_VERSION}) ==="
-dnf install -y \
+dnf install -y --nogpgcheck \
   "https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-${FEDORA_VERSION}.noarch.rpm" \
   "https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-${FEDORA_VERSION}.noarch.rpm"
 echo "=== RPM Fusion release RPMs installed ==="
