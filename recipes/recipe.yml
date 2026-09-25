@@ -58,6 +58,7 @@ modules:
         - openssl-devel
         - perl-FindBin
         - perl-IPC-Cmd
+        - perl-Time-Piece          # ← ADDED: required for OpenSSL build
         - ffmpeg-free
         - libdiscid
         - libchromaprint
