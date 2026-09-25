@@ -9,7 +9,7 @@ SDE_VERSION="9.58.0"
 SDE_DATE="2025-06-16"
 SDE_TARBALL="sde-external-${SDE_VERSION}-${SDE_DATE}-lin.tar.xz"
 
-# Primary source: Intel's official mirror (may return HTTP 403 for curl/wget)
+# Primary source: Intel's official mirror
 SDE_URL="https://downloadmirror.intel.com/859732/${SDE_TARBALL}"
 
 # Fallback source: GitHub mirror (more reliable for automated builds)
@@ -32,16 +32,12 @@ else
          -o "${SDE_TARBALL}" "${SDE_URL}"; then
         echo "  Downloaded from Intel mirror successfully."
     else
-        echo "  Intel mirror failed (HTTP 403 likely). Trying GitHub mirror..."
-        # Attempt 2: GitHub mirror
+        echo "  Intel mirror failed. Trying GitHub mirror..."
         if curl -fL --retry 3 --retry-delay 5 \
              -o "${SDE_TARBALL}" "${SDE_MIRROR_URL}"; then
             echo "  Downloaded from GitHub mirror successfully."
         else
             echo "ERROR: Failed to download Intel SDE from all sources." >&2
-            echo "       Intel mirror: ${SDE_URL}" >&2
-            echo "       GitHub mirror: ${SDE_MIRROR_URL}" >&2
-            echo "       Update the URLs in this script." >&2
             exit 1
         fi
     fi
@@ -62,10 +58,6 @@ if [ -x "${SDE_DIR}/sde" ]; then
     echo "Intel SDE installed to ${SDE_DIR}/"
 else
     echo "ERROR: Intel SDE installation failed" >&2
-    exit 1
-fi
-
-echo "--- Intel SDE installation complete ---"
     exit 1
 fi
 
