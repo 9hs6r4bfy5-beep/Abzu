@@ -2,19 +2,25 @@
 set -euo pipefail
 
 # --- Memory constraints for the Rust/Tauri release build -----------------
-# The GitHub Actions runner has ~16 GB RAM. The Hotline Tauri crate links
-# OpenSSL, aws-lc, ring, libsodium, tokio, reqwest, tauri, rustls, etc.,
-# and LLVM's optimizer on the final crate exceeds available memory at
-# default settings (see: "rustc-LLVM ERROR: out of memory"). The following
-# pushes memory down hard at the cost of a much slower build.
+# The Hotline Tauri crate links OpenSSL, aws-lc, ring, libsodium, tokio,
+# reqwest, tauri and rustls into a single crate. LLVM's optimizer on that
+# crate exceeds the runner's container memory limit even at opt-level=1,
+# aborting with "rustc-LLVM ERROR: out of memory". The following pushes
+# memory usage to the absolute minimum.
 export CARGO_BUILD_JOBS=1
 export CARGO_PROFILE_RELEASE_LTO=false
 export CARGO_PROFILE_RELEASE_CODEGEN_UNITS=256
-export CARGO_PROFILE_RELEASE_OPT_LEVEL=1
-export CARGO_PROFILE_RELEASE_DEBUG=false
+export CARGO_PROFILE_RELEASE_OPT_LEVEL=0
+export CARGO_PROFILE_RELEASE_DEBUG=0
+export CARGO_PROFILE_RELEASE_DEBUG_ASSERTIONS=false
+export CARGO_PROFILE_RELEASE_OVERFLOW_CHECKS=false
 export CARGO_PROFILE_RELEASE_INCREMENTAL=false
-export CARGO_PROFILE_RELEASE_STRIP=true
+export CARGO_PROFILE_RELEASE_PANIC=abort
+export CARGO_PROFILE_RELEASE_STRIP=symbols
 export NODE_OPTIONS=--max-old-space-size=2048
+# Tell the linker to re-read object files instead of keeping them all
+# in memory. Slower link, much lower peak RSS.
+export RUSTFLAGS="-C debuginfo=0 -C link-arg=-Wl,--no-keep-memory"
 # -------------------------------------------------------------------------
 
 echo "--- Building Hotline Navigator ---"
