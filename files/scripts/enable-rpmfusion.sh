@@ -1,20 +1,22 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Install RPM Fusion release RPMs directly.
-#
-# We do this here instead of using BlueBuild's built-in "nonfree: rpmfusion"
-# option because that option also tries to enable the 'fedora-cisco-openh264'
-# repository, which secureblue has removed for security reasons. The failed
-# enable causes the entire dnf module to abort.
-#
-# Installing the release RPMs directly achieves the same end state (RPM Fusion
-# .repo files + GPG keys in place) without touching fedora-cisco-openh264.
+echo "--- Enabling RPM Fusion (including tainted repositories) ---"
 
-FEDORA_VERSION=44
+FEDORA_VERSION=$(rpm -E %fedora)
 
-echo "=== Installing RPM Fusion release RPMs (Fedora ${FEDORA_VERSION}) ==="
-dnf install -y --nogpgcheck \
-  "https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-${FEDORA_VERSION}.noarch.rpm" \
-  "https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-${FEDORA_VERSION}.noarch.rpm"
-echo "=== RPM Fusion release RPMs installed ==="
+# Standard free and nonfree release packages.
+dnf install -y \
+    "https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-${FEDORA_VERSION}.noarch.rpm" \
+    "https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-${FEDORA_VERSION}.noarch.rpm"
+
+# The tainted sub-repositories. These are needed for b43-firmware,
+# which is not redistributable in a form RPM Fusion can ship in the
+# ordinary nonfree repository.
+dnf install -y "rpmfusion-nonfree-release-tainted"
+
+# Refresh the repository metadata so the new tainted repos are visible
+# to the next dnf invocation (the recipe's dnf module).
+dnf makecache
+
+echo "--- RPM Fusion enabled, including tainted ---"
