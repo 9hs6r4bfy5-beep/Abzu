@@ -58,7 +58,7 @@ modules:
         - openssl-devel
         - perl-FindBin
         - perl-IPC-Cmd
-        - perl-Time-Piece          # ← ADDED: required for OpenSSL build
+        - perl-Time-Piece          # Required for OpenSSL build (Tauri/Hotline)
         - ffmpeg-free
         - libdiscid
         - libchromaprint
@@ -110,6 +110,15 @@ modules:
         # Shell and editor tools
         - micro
         - starship
+        # Wi-Fi firmware for Broadcom chips in older Intel Macs
+        # (BCM4321 / BCM4322 in 2008 MacBook Pro and 2011 Mac Pro).
+        # The b43-firmware package lives in RPM Fusion's "tainted"
+        # sub-repository, which requires rpmfusion-nonfree-release-tainted
+        # to be present for dnf to find it.
+        # Newer Macs (2019 Mac Pro, upgraded 2011 Mac Pro) use brcmfmac
+        # and ath10k, whose firmware is already provided by linux-firmware.
+        - rpmfusion-nonfree-release-tainted
+        - b43-firmware
 
   - type: kargs
     kargs:
@@ -181,7 +190,10 @@ modules:
       - install-soh.sh
       - install-2s2h.sh
       - install-samodmanager.sh
-      - build-wl-kmod.sh
+      # build-wl-kmod.sh removed: the proprietary Broadcom wl driver
+      # does not compile against modern kernels, including secureblue's.
+      # Wi-Fi on all supported Macs is handled by the open-source b43,
+      # brcmfmac, and ath10k drivers.
 
   - type: default-flatpaks
     configurations:
