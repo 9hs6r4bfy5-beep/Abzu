@@ -148,6 +148,7 @@ modules:
       - random.trust_cpu=off
       - rd.shell=0
       - rd.emergency=halt
+      - nomodeset
 
   - type: files
     files:
