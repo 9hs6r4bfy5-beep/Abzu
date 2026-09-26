@@ -213,7 +213,7 @@ modules:
           - org.gnome.Weather
           - io.github.heidefinnischen.cuneo
           - app.gmtp.gMTP
-          - org.strawberrymusicplayer.Strawberry
+          - org.strawberrymusicplayer.strawberry
           - as.may.moat
           - io.github.kolunmi.Bazaar
           - org.gnome.Loupe
