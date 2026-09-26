@@ -7,41 +7,35 @@ echo "--- Installing ibus-table-cuneiform ---"
 git clone --depth 1 https://github.com/srjskam/ibus-table-cuneiform.git /tmp/ibus-cuneiform
 cd /tmp/ibus-cuneiform
 
-# The upstream makefile hardcodes a URL for the Oracc sign list that has
-# since moved. The repository was renamed from 'ogsl' (Oracc Global Sign
-# List) to 'osl' (Oracc Sign List), and the file from 'ogsl.asl' to
-# 'osl.asl'. Patch the makefile to point at the new location before
-# running make, otherwise wget gets a 404 and make aborts.
-echo "Patching makefile to use the current Oracc sign list URL..."
-sed -i \
-    's|https://raw.githubusercontent.com/oracc/ogsl/master/00lib/ogsl.asl|https://raw.githubusercontent.com/oracc/osl/master/00lib/osl.asl|' \
-    makefile
+# --- Oracc sign list workaround ------------------------------------------
+# The upstream makefile downloads the Oracc sign list from a URL that no
+# longer exists: the repository was renamed from 'ogsl' (Oracc Global
+# Sign List) to 'osl' (Oracc Sign List), and the file from 'ogsl.asl' to
+# 'osl.asl'. Additionally, the Python script that consumes the file
+# (asl2ibus_table.py) hardcodes the local filename 'ogsl.asl' on line 9.
+#
+# Patching only the URL is not enough: wget saves files under the URL's
+# basename, so we would end up with 'osl.asl' on disk while the Python
+# script looks for 'ogsl.asl'. The cleanest fix is to pre-download the
+# current file ourselves, saving it under the name the Python script
+# expects. Make then skips its own download rule because the target
+# already exists.
+echo "Pre-downloading the Oracc sign list as ogsl.asl..."
+wget -O ogsl.asl \
+    https://raw.githubusercontent.com/oracc/osl/master/00lib/osl.asl
 
-# Verify the patch actually applied. If the upstream makefile changes its
-# URL format in the future, the sed above may silently do nothing, so we
-# check that the old URL is gone and the new one is present.
-if grep -q 'oracc/ogsl' makefile; then
-    echo "Warning: the makefile still references the old oracc/ogsl URL."
-    echo "The sed patch may not have matched. Full makefile:"
-    cat makefile
+if [ ! -s ogsl.asl ]; then
+    echo "Failed to download the Oracc sign list."
     exit 1
 fi
+echo "Downloaded $(wc -l < ogsl.asl) lines of sign data."
+# -------------------------------------------------------------------------
 
-if ! grep -q 'oracc/osl' makefile; then
-    echo "Warning: the makefile does not reference the new oracc/osl URL."
-    echo "The sed patch may not have matched. Full makefile:"
-    cat makefile
-    exit 1
-fi
-
-echo "makefile patched successfully."
-
-# Build and install the ibus table.
-# The makefile needs python3, ibus-table, and jupyter (for nbconvert).
-# These are provided by the recipe's dnf module.
+# Build and install. The makefile will see ogsl.asl is already present
+# and skip its own (broken) download step.
 make install
 
-# Clean up the build directory.
+# Clean up.
 cd /
 rm -rf /tmp/ibus-cuneiform
 
