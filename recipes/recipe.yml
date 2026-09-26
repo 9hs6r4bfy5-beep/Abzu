@@ -5,7 +5,10 @@ base-image: ghcr.io/secureblue/silverblue-main-hardened
 image-version: 44
 
 modules:
-  # Enable RPM Fusion BEFORE the dnf module runs.
+  # Enable RPM Fusion BEFORE the dnf module runs. This script installs the
+  # free, nonfree, and tainted release packages, then refreshes repository
+  # metadata so that the tainted repository's packages (notably
+  # b43-firmware) are resolvable by the dnf module below.
   - type: script
     scripts:
       - enable-rpmfusion.sh
@@ -110,14 +113,12 @@ modules:
         # Shell and editor tools
         - micro
         - starship
-        # Wi-Fi firmware for Broadcom chips in older Intel Macs
-        # (BCM4321 / BCM4322 in 2008 MacBook Pro and 2011 Mac Pro).
-        # The b43-firmware package lives in RPM Fusion's "tainted"
-        # sub-repository, which requires rpmfusion-nonfree-release-tainted
-        # to be present for dnf to find it.
-        # Newer Macs (2019 Mac Pro, upgraded 2011 Mac Pro) use brcmfmac
-        # and ath10k, whose firmware is already provided by linux-firmware.
-        - rpmfusion-nonfree-release-tainted
+        # Wi-Fi firmware for Broadcom BCM4321/BCM4322 chips in older
+        # Intel Macs (2008 MacBook Pro, 2011 Mac Pro). This package
+        # lives in RPM Fusion's "tainted" sub-repository, which is
+        # enabled by enable-rpmfusion.sh above. Newer Macs (2019 Mac
+        # Pro, upgraded 2011 Mac Pro) use brcmfmac and ath10k, whose
+        # firmware ships with linux-firmware from the base image.
         - b43-firmware
 
   - type: kargs
