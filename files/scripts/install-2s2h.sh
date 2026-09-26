@@ -12,9 +12,6 @@ RELEASE_JSON=$(curl -fsSL "${API_URL}")
 TAG=$(echo "${RELEASE_JSON}" | jq -r '.tag_name')
 echo "Latest release: ${TAG}"
 
-# Find the asset whose name ends with '-Linux.zip'. This is robust to
-# the release codename changing between versions (Battler Bravo,
-# Rena Alfa, etc.).
 ASSET_URL=$(echo "${RELEASE_JSON}" \
     | jq -r '.assets[] | select(.name | endswith("-Linux.zip")) | .browser_download_url')
 
@@ -30,20 +27,41 @@ mkdir -p /opt/2s2h
 cd /opt/2s2h
 curl -fL -o 2s2h.zip "${ASSET_URL}"
 
-# Verify we actually received a zip archive.
-if ! file 2s2h.zip | grep -qi 'zip archive'; then
-    echo "Downloaded file is not a zip archive."
-    file 2s2h.zip || true
+# Check the ZIP magic bytes directly. The 'file' utility in this
+# container misidentifies some valid archives as 'data', so we look at
+# the raw first four bytes instead: a ZIP starts with 'PK\x03\x04'.
+echo "Downloaded $(stat -c %s 2s2h.zip) bytes"
+FIRST_BYTES=$(od -A n -t x1 -N 4 2s2h.zip | tr -d ' \n')
+echo "First 4 bytes: ${FIRST_BYTES}"
+
+if [ "${FIRST_BYTES}" != "504b0304" ]; then
+    echo "Error: file does not begin with ZIP magic bytes (got ${FIRST_BYTES})."
+    echo "The download may have failed or returned an HTML page."
     exit 1
 fi
 
-echo "Extracting archive..."
-unzip -o 2s2h.zip
+# Extract. Prefer unzip, fall back to 7z (some archives have extra
+# headers that unzip rejects but 7z handles).
+EXTRACTED=0
+if unzip -o 2s2h.zip >/dev/null 2>&1; then
+    EXTRACTED=1
+    echo "Extracted with unzip."
+elif 7z x -y 2s2h.zip >/dev/null 2>&1; then
+    EXTRACTED=1
+    echo "Extracted with 7z."
+fi
+
+if [ "$EXTRACTED" -ne 1 ]; then
+    echo "Could not extract the archive with unzip or 7z."
+    echo "Listing of /opt/2s2h:"
+    ls -la
+    exit 1
+fi
+
 rm -f 2s2h.zip
 
-# Locate the AppImage inside the archive. Use -print -quit so we stop
-# at the first match without piping into head (which under pipefail
-# would abort the script on SIGPIPE).
+# Locate the AppImage. Use -print -quit so find stops at the first
+# match without piping into head (avoids SIGPIPE under pipefail).
 APPIMAGE=$(find . -maxdepth 3 -type f \
     \( -name '*.appimage' -o -name '*.AppImage' \) \
     -print -quit)
@@ -59,7 +77,6 @@ chmod +x "${APPIMAGE}"
 APPIMAGE_ABS="/opt/2s2h/${APPIMAGE#./}"
 echo "Found AppImage: ${APPIMAGE_ABS}"
 
-# Create desktop entry.
 mkdir -p /usr/share/applications
 cat > /usr/share/applications/2ship2harkinian.desktop << EOF
 [Desktop Entry]
