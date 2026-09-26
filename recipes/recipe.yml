@@ -157,6 +157,9 @@ modules:
       enabled:
         - scx_loader.service
 
+  - type: justfiles
+    validate: false
+
   - type: script
     scripts:
       - theming.sh
@@ -172,8 +175,8 @@ modules:
       - install-beets.sh
       - install-zaparoo.sh
       - configure-stellarium.sh
-      - install-ibus-cuneiform.sh
       - install-sumer-r-package.sh
+      - compile-cuneiform-ibus.sh
       - install-daggerfall-unity.sh
       - install-soh.sh
       - install-2s2h.sh
