@@ -94,7 +94,6 @@ modules:
         # Homelab / workstation
         - cockpit
         - cockpit-podman
-        - syncthing
         # Security tools (low-friction additions)
         - usbguard
         - usbguard-notifier
@@ -179,7 +178,6 @@ modules:
         - scx_loader.service
         - usbguard.service
         - cockpit.socket
-        - syncthing.service
 
   - type: justfiles
     validate: false
