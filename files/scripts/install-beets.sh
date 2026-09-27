@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "--- Installing pipx and Beets ---"
+echo "--- Installing Beets via pipx ---"
 
-python3 -m pip install --user pipx
-python3 -m pipx ensurepath
-~/.local/bin/pipx install --global 'beets[fetchart,lyrics,lastgenre,chroma,web,replaygain]'
+# pipx is installed via dnf in the recipe.
+pipx install --global 'beets[fetchart,lyrics,lastgenre,chroma,web,replaygain]'
 
 echo "--- Beets installed via pipx ---"
 echo "Run 'beet config -e' after first login to create your configuration."
