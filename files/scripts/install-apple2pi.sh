@@ -31,8 +31,8 @@ cd /tmp/apple2pi
 
 # -----------------------------------------------------------------------------
 # Replace the upstream fusea2pi.c and Makefile with our FUSE 3 versions.
-# These are stored in the image at /tmp/files/apple2pi/ because the
-# `files` module copies the repository's files/ directory into /tmp/files.
+# These are stored at /tmp/files/apple2pi/ because BlueBuild bind-mounts
+# the repository's files/ directory into /tmp/files during the build.
 # -----------------------------------------------------------------------------
 FUSEA2PI_SRC="/tmp/files/apple2pi/fusea2pi.c"
 MAKEFILE_SRC="/tmp/files/apple2pi/Makefile"
@@ -70,16 +70,33 @@ echo "  Linked libraries:"
 ldd /tmp/apple2pi/src/fusea2pi | grep -E 'fuse|pthread' || true
 
 # -----------------------------------------------------------------------------
-# Install.
+# Install binaries and share files.
 # -----------------------------------------------------------------------------
 echo "  Installing..."
 make -C src install
 
-# Make the service discoverable by systemd.
+# -----------------------------------------------------------------------------
+# Install and enable a2pi.service.
+#
+# Two symlinks are required:
+#   1. /etc/systemd/system/a2pi.service
+#      Makes the unit discoverable to systemd.
+#   2. /etc/systemd/system/multi-user.target.wants/a2pi.service
+#      Enables the unit so it starts at boot. This is exactly what
+#      `systemctl enable a2pi.service` would create.
+#
+# We create these manually because `systemctl` cannot run inside the
+# BlueBuild build container (no running systemd).
+# -----------------------------------------------------------------------------
 if [ -f /usr/share/a2pi/a2pi.service ]; then
     ln -sf /usr/share/a2pi/a2pi.service /etc/systemd/system/a2pi.service
-    echo "  Linked a2pi.service into /etc/systemd/system/"
+    mkdir -p /etc/systemd/system/multi-user.target.wants
+    ln -sf /usr/share/a2pi/a2pi.service \
+        /etc/systemd/system/multi-user.target.wants/a2pi.service
+    echo "  Installed /etc/systemd/system/a2pi.service"
+    echo "  Enabled  /etc/systemd/system/multi-user.target.wants/a2pi.service"
+else
+    echo "  WARNING: /usr/share/a2pi/a2pi.service not found; service not enabled." >&2
 fi
-
 
 echo "--- Apple II Pi built and installed (fusea2pi included) ---"
