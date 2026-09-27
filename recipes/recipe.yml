@@ -98,7 +98,6 @@ modules:
         # Security tools (low-friction additions)
         - usbguard
         - usbguard-notifier
-        - bubblejail
         # Fonts and utilities
         - gdouros-akkadian-fonts
         - sassc
