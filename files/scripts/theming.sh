@@ -9,15 +9,29 @@ GNOME_EXT_DIR="/usr/share/gnome-shell/extensions"
 
 mkdir -p "${THEME_DIR}" "${ICON_DIR}" "${GNOME_EXT_DIR}"
 
-# Provide a sane environment for the installers. In the build container,
-# HOME may be unset and TERM may be "dumb"; both can cause scripts that
-# use tput or write to $HOME/.cache to abort silently.
+# -----------------------------------------------------------------------------
+# Provide a sane environment for the WhiteSur installers.
+#
+# In the BlueBuild build container there is no login session, so `logname`
+# returns nothing and $USER / $LOGNAME are unset. WhiteSur's lib-core.sh
+# does:
+#     MY_USERNAME="$(logname 2>/dev/null || echo "${USER}")"
+#     MY_HOME="$(getent passwd "${MY_USERNAME}" | cut -d: -f6)"
+# With empty USER and logname, MY_HOME becomes empty and the installer
+# exits with code 2. Exporting USER and LOGNAME makes the fallback echo
+# "root", so getent resolves /root correctly.
+# -----------------------------------------------------------------------------
 export HOME="${HOME:-/root}"
+export USER="${USER:-root}"
+export LOGNAME="${LOGNAME:-root}"
 export TERM="${TERM:-xterm-256color}"
 export XDG_DATA_DIRS="${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
 
+# Ensure the fallback paths the installer may write to exist.
+mkdir -p "${HOME}/.config" "${HOME}/.local/share"
+
 echo "--- Starting Theming Installation ---"
-echo "  HOME=$HOME  TERM=$TERM"
+echo "  HOME=$HOME  USER=$USER  LOGNAME=$LOGNAME  TERM=$TERM"
 
 # -----------------------------------------------------------------------------
 # 1. B00merang Mac OS X Cheetah theme
@@ -50,7 +64,7 @@ cp -r /tmp/OS-X-Leopard-master "${THEME_DIR}/OS-X-Leopard"
 rm -rf /tmp/leopard.zip /tmp/OS-X-Leopard-master
 
 # -----------------------------------------------------------------------------
-# 4. WhiteSur GTK theme — with full trace and aggressive dependency-check patch
+# 4. WhiteSur GTK theme
 # -----------------------------------------------------------------------------
 echo "Installing WhiteSur GTK theme..."
 
@@ -69,56 +83,41 @@ if ! tar -xzf /tmp/whitesur-gtk.tar.gz -C /tmp/whitesur-gtk --strip-components=1
 fi
 rm -f /tmp/whitesur-gtk.tar.gz
 
-# Aggressive patch of the dependency check.
-# The `exit 1` in WhiteSur's lib-install.sh is on its own line inside a
-# function that prints a "DEPS ERROR" message first. Replace BOTH the
-# pattern on the message line AND every standalone `exit 1` that follows
-# it within a 15-line window.
+# Patch the dependency check in libs/lib-install.sh (separate file)
 if [ -f /tmp/whitesur-gtk/libs/lib-install.sh ]; then
-    cp /tmp/whitesur-gtk/libs/lib-install.sh /tmp/lib-install.sh.orig
-    sed -i '/DEPS ERROR/,+15 s/^\(\s*\)exit 1\b/\1: # patched out by theming.sh/' \
+    sed -i '/DEPS ERROR/,+15 s/^\(\s*\)exit 1\b/\1: # patched/' \
         /tmp/whitesur-gtk/libs/lib-install.sh
-    # Also neutralise any standalone `exit 1` in the dependency-check function.
-    sed -i 's/^\(\s*\)exit 1\s*$/\1: # patched out by theming.sh/' \
+    sed -i 's/^\(\s*\)exit 1\s*$/\1: # patched/' \
         /tmp/whitesur-gtk/libs/lib-install.sh
-    echo "  Patched lib-install.sh (original backed up to /tmp/lib-install.sh.orig)"
 fi
 
-# Run the installer with bash -x so every command is traced. Capture both
-# streams to a log file, then print the tail on failure.
-INSTALL_LOG=/tmp/whitesur-install.log
+INSTALL_LOG=/tmp/whitesur-gtk-install.log
 : > "$INSTALL_LOG"
-
 set +e
 (
     cd /tmp/whitesur-gtk
-    bash -x install.sh -d "${THEME_DIR}" -c dark
+    bash install.sh -d "${THEME_DIR}" -c dark
 ) >"$INSTALL_LOG" 2>&1
 INSTALL_EXIT=$?
 set -e
 
-echo "  Installer exit code: $INSTALL_EXIT"
-echo "  Installer log size: $(stat -c %s "$INSTALL_LOG") bytes"
-
+echo "  GTK installer exit code: $INSTALL_EXIT"
 if [ "$INSTALL_EXIT" -ne 0 ]; then
-    echo "  === Last 150 lines of installer trace ==="
-    tail -150 "$INSTALL_LOG" || true
-    echo "  === End of trace ==="
+    echo "  === Last 120 lines of GTK installer output ==="
+    tail -120 "$INSTALL_LOG" || true
+    echo "  === End ==="
     echo "ERROR: WhiteSur GTK installer failed (exit ${INSTALL_EXIT})" >&2
     exit 1
 fi
 
-# Verify the theme was actually installed
 if [ ! -d "${THEME_DIR}/WhiteSur-Dark" ] && [ ! -d "${THEME_DIR}/WhiteSur" ]; then
-    echo "  === Last 80 lines of installer output ==="
+    echo "  === Last 80 lines of GTK installer output ==="
     tail -80 "$INSTALL_LOG" || true
-    echo "  === End of output ==="
-    echo "ERROR: Installer exited 0 but no WhiteSur theme found in ${THEME_DIR}" >&2
+    echo "ERROR: GTK installer exited 0 but no WhiteSur theme found." >&2
     ls -la "${THEME_DIR}/" >&2 || true
     exit 1
 fi
-
-rm -rf /tmp/whitesur-gtk /tmp/whitesur-install.log
+rm -rf /tmp/whitesur-gtk /tmp/whitesur-gtk-install.log
 echo "WhiteSur GTK theme installed."
 
 # -----------------------------------------------------------------------------
@@ -148,6 +147,7 @@ set +e
 INSTALL_EXIT=$?
 set -e
 
+echo "  Icon installer exit code: $INSTALL_EXIT"
 if [ "$INSTALL_EXIT" -ne 0 ]; then
     echo "  === Last 80 lines of icon installer output ==="
     tail -80 "$INSTALL_LOG" || true
@@ -184,6 +184,7 @@ set +e
 INSTALL_EXIT=$?
 set -e
 
+echo "  Cursor installer exit code: $INSTALL_EXIT"
 if [ "$INSTALL_EXIT" -ne 0 ]; then
     echo "  === Last 80 lines of cursor installer output ==="
     tail -80 "$INSTALL_LOG" || true
