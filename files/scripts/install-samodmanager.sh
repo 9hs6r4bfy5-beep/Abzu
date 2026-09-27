@@ -3,26 +3,41 @@ set -euo pipefail
 
 echo "--- Installing Sonic Adventure Mod Manager ---"
 
-# The installer is designed to run as a regular user.
-# If this script runs as root during the build, we need to target the user's home.
-# For a first-login approach, this script should be run by the user.
-
-# For the image build, we will clone the repo and place the installer
-# where the user can easily access it.
+# The installer is designed to run as a regular user, in a graphical
+# session. On an Atomic/immutable system we cannot run it at build time,
+# so we clone the installer repo into a system location and drop a
+# desktop launcher into /etc/skel/Desktop. The user runs the launcher
+# once after first login.
 
 INSTALLER_DIR="/usr/local/share/sa-modmanager-installer"
+REPO_URL="https://github.com/alexankitty/sa-modmanager-installer-linux.git"
 
-# Clone the repository (or download the zip) during the build
-git clone --depth 1 https://github.com/alexankitty/sa-modmanager-installer-linux.git "${INSTALLER_DIR}"
+# Clone the installer repository.
+rm -rf "${INSTALLER_DIR}"
+mkdir -p "$(dirname "${INSTALLER_DIR}")"
+if ! git clone --depth 1 "${REPO_URL}" "${INSTALLER_DIR}"; then
+    echo "ERROR: Failed to clone ${REPO_URL}" >&2
+    exit 1
+fi
 
-# Make the scripts executable
+# Verify the expected scripts are present before chmod'ing them, so a
+# future rename in the upstream repo produces a clear error rather than
+# an obscure "No such file" from chmod.
+for script in SAModManagerSetupImmutable.sh SADXConvertImmutable.sh; do
+    if [ ! -f "${INSTALLER_DIR}/${script}" ]; then
+        echo "ERROR: Expected script not found: ${INSTALLER_DIR}/${script}" >&2
+        echo "Contents of ${INSTALLER_DIR}:" >&2
+        ls -la "${INSTALLER_DIR}" >&2 || true
+        exit 1
+    fi
+done
+
 chmod +x "${INSTALLER_DIR}/SAModManagerSetupImmutable.sh"
 chmod +x "${INSTALLER_DIR}/SADXConvertImmutable.sh"
 
-# Create a desktop launcher that runs the installer on first use.
-# This is the most practical approach for an Atomic system.
-# The user clicks the launcher, and the script runs in their user context.
-
+# Create a desktop launcher that runs the installer in the user's session.
+# OnlyShowIn=GNOME; restricts the launcher to GNOME, matching the desktop
+# environment that Abzu ships.
 mkdir -p /etc/skel/Desktop
 cat > /etc/skel/Desktop/Install-SA-Mod-Manager.desktop << 'EOF'
 [Desktop Entry]
@@ -33,6 +48,7 @@ Exec=bash -c 'cd /usr/local/share/sa-modmanager-installer && ./SAModManagerSetup
 Icon=applications-games
 Terminal=true
 Categories=Game;
+OnlyShowIn=GNOME;
 EOF
 
 chmod +x /etc/skel/Desktop/Install-SA-Mod-Manager.desktop
