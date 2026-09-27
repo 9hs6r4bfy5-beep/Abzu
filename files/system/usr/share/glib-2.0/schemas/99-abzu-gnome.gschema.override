@@ -1,0 +1,44 @@
+# --------------------------------------------------------------------------
+# Abzu GSettings overrides
+#
+# These set system-wide defaults applied to every new user account created
+# after the image is installed. Existing users are unaffected.
+# --------------------------------------------------------------------------
+
+# --- Interface: Use Cheetah for GTK, WhiteSur for Shell, Icons, and Cursors ---
+[org.gnome.desktop.interface]
+gtk-theme='Mac-OS-X-Cheetah'
+icon-theme='WhiteSur'
+cursor-theme='WhiteSur-cursors'
+clock-format='12h'
+color-scheme='prefer-light'
+
+# --- Window Decorations: Cheetah theme and macOS-style button layout ---
+[org.gnome.desktop.wm.preferences]
+theme='Mac-OS-X-Cheetah'
+button-layout='close,minimize,maximize:'
+
+# --- GNOME Shell: Favorites, Extensions, and Shell Theme ---
+[org.gnome.shell]
+favorite-apps=['org.gnome.Nautilus.desktop', 'net.waterfox.waterfox.desktop', 'org.gnome.Console.desktop', 'com.valvesoftware.Steam.desktop', 'com.discordapp.Discord.desktop', 'org.gnome.Settings.desktop', 'hotline-navigator.desktop', 'snow.desktop', 'org.strawberrymusicplayer.strawberry.desktop', 'io.github.kolunmi.Bazaar.desktop', 'org.lyx.LyX.desktop', 'cuneiform-toggle.desktop']
+enabled-extensions=['user-theme@gnome-shell-extensions.gcampax.github.com', 'dash-to-dock@micxgx.gmail.com', 'liquid-glass@thinkingcoding1231.gmail.com']
+
+[org.gnome.shell.extensions.user-theme]
+# Use the WhiteSur shell theme. Its Dash to Dock styling will form the
+# base of the dock's appearance, which the Liquid Glass extension will
+# then augment.
+name='WhiteSur-Light'
+
+# --- Dash to Dock: macOS-style layout and behavior ---
+[org.gnome.shell.extensions.dash-to-dock]
+dock-position='BOTTOM'
+extend-height=false
+always-center-icons=true
+dash-max-icon-size=36
+autohide=true
+intellihide=true
+intellihide-mode='FOCUS_APPLICATION_WINDOWS'
+# Let the WhiteSur shell theme control the dock's background color and style.
+# The Liquid Glass extension will add the translucent effect on top.
+apply-custom-theme=true
+custom-background-color=false
