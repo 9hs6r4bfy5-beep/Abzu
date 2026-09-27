@@ -1,15 +1,36 @@
 #!/usr/bin/env bash
 set -euo pipefail
+
 echo "--- Installing Daggerfall Unity (AppImage) ---"
-# Download the latest AppImage from the pkgforge-dev repository
-# Check https://github.com/pkgforge-dev/Daggerfall-Unity-AppImage/releases for the latest URL
-DFU_VERSION="v1.1.1"
-DOWNLOAD_URL="https://github.com/pkgforge-dev/Daggerfall-Unity-AppImage/releases/download/${DFU_VERSION}/Daggerfall.Unity-${DFU_VERSION}-x86_64.AppImage"
+
+REPO="pkgforge-dev/Daggerfall-Unity-AppImage"
+
+echo "  Querying latest release of ${REPO}..."
+RELEASE_JSON=$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest") || {
+    echo "ERROR: Could not query releases for ${REPO}." >&2
+    exit 1
+}
+
+# Select the first .AppImage asset. The API returns the exact asset name,
+# so no filename guessing is required.
+ASSET_URL=$(echo "$RELEASE_JSON" \
+    | jq -r '.assets[] | select(.name | test("\\.AppImage$"; "i")) | .browser_download_url' \
+    | head -n 1)
+
+if [ -z "$ASSET_URL" ] || [ "$ASSET_URL" = "null" ]; then
+    echo "ERROR: No .AppImage asset found in the latest release of ${REPO}." >&2
+    echo "       Available assets:" >&2
+    echo "$RELEASE_JSON" | jq -r '.assets[].name' >&2 || true
+    exit 1
+fi
+
+echo "  Downloading: ${ASSET_URL}"
 mkdir -p /opt/daggerfall-unity
 cd /opt/daggerfall-unity
-curl -fL -o daggerfall-unity.AppImage "${DOWNLOAD_URL}"
+curl -fL -o daggerfall-unity.AppImage "${ASSET_URL}"
 chmod +x daggerfall-unity.AppImage
-# Create desktop entry
+
+# Create desktop entry.
 mkdir -p /usr/share/applications
 cat > /usr/share/applications/daggerfall-unity.desktop << 'EOF'
 [Desktop Entry]
@@ -21,4 +42,5 @@ Icon=daggerfall-unity
 Terminal=false
 Categories=Game;Roleplaying;
 EOF
+
 echo "--- Daggerfall Unity installed ---"
