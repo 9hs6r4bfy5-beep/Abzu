@@ -3,9 +3,7 @@
 # Covers Cheetah, Mavericks, Leopard, WhiteSur, and the Liquid Glass GNOME Shell extension.
 
 set -euo pipefail
-trap 'echo "theming.sh failed at line $LINENO (exit $?)" >&2' ERR
 
-# Define target directories
 THEME_DIR="/usr/share/themes"
 ICON_DIR="/usr/share/icons"
 GNOME_EXT_DIR="/usr/share/gnome-shell/extensions"
@@ -46,57 +44,38 @@ rm -rf /tmp/leopard.zip /tmp/OS-X-Leopard-master
 
 # -----------------------------------------------------------------------------
 # 4. WhiteSur GTK, icon, and cursor themes (system-wide)
-#    Uses the upstream install.sh scripts. Output is NOT silenced so that
-#    any failure is visible in the build log.
+#    Uses the official pre-built release archives instead of the installer.
+#    This avoids the installer's dependency checks and network calls.
 # -----------------------------------------------------------------------------
 echo "Installing WhiteSur theme suite (system-wide)..."
 
-# --- WhiteSur GTK Theme ---
-echo "  -> WhiteSur GTK theme"
-rm -rf /tmp/whitesur-gtk
-if ! git clone --depth 1 https://github.com/vinceliuice/WhiteSur-gtk-theme.git /tmp/whitesur-gtk; then
-    echo "ERROR: Failed to clone WhiteSur-gtk-theme" >&2
-    exit 1
-fi
-if [ ! -f /tmp/whitesur-gtk/install.sh ]; then
-    echo "ERROR: install.sh not found in WhiteSur-gtk-theme. Contents:" >&2
-    ls -la /tmp/whitesur-gtk >&2
-    exit 1
-fi
-(
-    cd /tmp/whitesur-gtk
-    echo "    Running: bash install.sh -d ${THEME_DIR} -c dark"
-    bash install.sh -d "${THEME_DIR}" -c dark
-) || { echo "ERROR: WhiteSur GTK installer failed" >&2; exit 1; }
-rm -rf /tmp/whitesur-gtk
+# --- WhiteSur GTK Theme (dark) ---
+echo "  -> WhiteSur GTK theme (dark)"
+curl -fL -o /tmp/whitesur-gtk-dark.tar.xz \
+    "https://github.com/vinceliuice/WhiteSur-gtk-theme/releases/latest/download/WhiteSur-Dark.tar.xz"
+tar -xJf /tmp/whitesur-gtk-dark.tar.xz -C "${THEME_DIR}"
+rm -f /tmp/whitesur-gtk-dark.tar.xz
+
+# --- WhiteSur GTK Theme (light) ---
+echo "  -> WhiteSur GTK theme (light)"
+curl -fL -o /tmp/whitesur-gtk-light.tar.xz \
+    "https://github.com/vinceliuice/WhiteSur-gtk-theme/releases/latest/download/WhiteSur-Light.tar.xz"
+tar -xJf /tmp/whitesur-gtk-light.tar.xz -C "${THEME_DIR}"
+rm -f /tmp/whitesur-gtk-light.tar.xz
 
 # --- WhiteSur Icon Theme ---
 echo "  -> WhiteSur icon theme"
-rm -rf /tmp/whitesur-icons
-if ! git clone --depth 1 https://github.com/vinceliuice/WhiteSur-icon-theme.git /tmp/whitesur-icons; then
-    echo "ERROR: Failed to clone WhiteSur-icon-theme" >&2
-    exit 1
-fi
-(
-    cd /tmp/whitesur-icons
-    echo "    Running: bash install.sh -d ${ICON_DIR}"
-    bash install.sh -d "${ICON_DIR}"
-) || { echo "ERROR: WhiteSur icon installer failed" >&2; exit 1; }
-rm -rf /tmp/whitesur-icons
+curl -fL -o /tmp/whitesur-icons.tar.xz \
+    "https://github.com/vinceliuice/WhiteSur-icon-theme/releases/latest/download/WhiteSur.tar.xz"
+tar -xJf /tmp/whitesur-icons.tar.xz -C "${ICON_DIR}"
+rm -f /tmp/whitesur-icons.tar.xz
 
 # --- WhiteSur Cursors ---
 echo "  -> WhiteSur cursors"
-rm -rf /tmp/whitesur-cursors
-if ! git clone --depth 1 https://github.com/vinceliuice/WhiteSur-cursors.git /tmp/whitesur-cursors; then
-    echo "ERROR: Failed to clone WhiteSur-cursors" >&2
-    exit 1
-fi
-(
-    cd /tmp/whitesur-cursors
-    echo "    Running: bash install.sh -d ${ICON_DIR}"
-    bash install.sh -d "${ICON_DIR}"
-) || { echo "ERROR: WhiteSur cursor installer failed" >&2; exit 1; }
-rm -rf /tmp/whitesur-cursors
+curl -fL -o /tmp/whitesur-cursors.tar.xz \
+    "https://github.com/vinceliuice/WhiteSur-cursors/releases/latest/download/WhiteSur-cursors.tar.xz"
+tar -xJf /tmp/whitesur-cursors.tar.xz -C "${ICON_DIR}"
+rm -f /tmp/whitesur-cursors.tar.xz
 
 echo "WhiteSur theme suite installed."
 
