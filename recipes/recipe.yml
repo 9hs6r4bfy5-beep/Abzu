@@ -202,13 +202,16 @@ modules:
       - source: etc/flatpak/overrides/ai.lmstudio.lm-studio
         destination: /etc/flatpak/overrides/ai.lmstudio.lm-studio
 
+  # Note: a2pi.service is intentionally NOT listed here. The systemd module
+  # runs before the script module, so at this point /usr/share/a2pi/a2pi.service
+  # does not yet exist. install-apple2pi.sh enables the service via symlinks
+  # after it installs the unit file.
   - type: systemd
     system:
       enabled:
         - scx_loader.service
         - usbguard.service
         - cockpit.socket
-        - a2pi.service
 
   - type: justfiles
     validate: false
