@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Toggle Cuneiform Input
+Comment=Switch the IBus input method to Cuneiform
+Exec=/usr/local/bin/cuneiform-toggle
+Icon=abzu-cuneiform
+Terminal=false
+Categories=Utility;Settings;
