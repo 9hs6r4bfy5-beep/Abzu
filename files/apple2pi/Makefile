@@ -8,7 +8,7 @@ SBIN=a2pid
 
 A2PIDEFS=-DSETSERCLK
 
-# Use pkg-config for FUSE 3 flags. This is more portable than hardcoding
+# Use pkg-config for FUSE 3 flags. More portable than hardcoding
 # -I/usr/include/fuse3 and -lfuse3. The .pc file is installed by fuse3-devel.
 FUSE3_CFLAGS := $(shell pkg-config --cflags fuse3)
 FUSE3_LIBS   := $(shell pkg-config --libs fuse3)
@@ -38,7 +38,6 @@ install:
 	-cp -R ../share/* $(SHAREDIR)
 	-ln -s $(SHAREDIR)/A2PI-1.8.PO $(SHAREDIR)/A2VD1.PO
 	-ln -s $(SHAREDIR)/UTILS.PO $(SHAREDIR)/A2VD2.PO
-	-systemctl enable --system $(SHAREDIR)/a2pi.service
 
 uninstall:
 	-cd $(BINDIR); rm -f $(BIN) a2mount a2setvd
