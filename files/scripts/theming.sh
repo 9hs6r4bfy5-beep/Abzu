@@ -4,7 +4,6 @@
 
 set -euo pipefail
 
-# Print the exact line number if anything fails, for easier debugging
 trap 'echo "theming.sh failed at line $LINENO (exit $?)" >&2' ERR
 
 THEME_DIR="/usr/share/themes"
@@ -46,83 +45,49 @@ cp -r /tmp/OS-X-Leopard-master "${THEME_DIR}/OS-X-Leopard"
 rm -rf /tmp/leopard.zip /tmp/OS-X-Leopard-master
 
 # -----------------------------------------------------------------------------
-# 4. WhiteSur GTK theme (dark + light)
-#    Downloads pre-compiled archives from the repository's stable-release/
-#    directory. These are committed to Git, not attached to GitHub releases.
-#    If the stable archives are unavailable, falls back to cloning the source
-#    and running install.sh with the network check patched out.
+# 4. WhiteSur GTK theme (dark + light) — source build with patched dependency check
 # -----------------------------------------------------------------------------
-echo "Installing WhiteSur GTK theme..."
-
-WHITESUR_GTK_REPO="https://github.com/vinceliuice/WhiteSur-gtk-theme"
-
-install_whitesur_gtk_from_stable() {
-    local variant="$1"   # "Dark" or "Light"
-    local url="${WHITESUR_GTK_REPO}/raw/master/stable-release/WhiteSur-${variant}.tar.xz"
-    echo "  -> WhiteSur GTK theme (${variant,,}) [stable archive]"
-    if curl -fsSL -o "/tmp/whitesur-${variant,,}.tar.xz" "$url"; then
-        tar -xJf "/tmp/whitesur-${variant,,}.tar.xz" -C "${THEME_DIR}"
-        rm -f "/tmp/whitesur-${variant,,}.tar.xz"
-        return 0
-    fi
-    return 1
-}
-
-install_whitesur_gtk_from_source() {
-    echo "  -> WhiteSur GTK theme [source fallback]"
-    rm -rf /tmp/whitesur-gtk
-    if ! git clone --depth 1 "${WHITESUR_GTK_REPO}.git" /tmp/whitesur-gtk; then
-        echo "ERROR: Failed to clone WhiteSur-gtk-theme" >&2
-        exit 1
-    fi
-    # Patch out the internet-connectivity check block.
-    # The installer performs a TCP check to iana.org that fails in the
-    # restricted build container and aborts before compiling the theme.
-    sed -i '/Checking your internet connection/,+8d' /tmp/whitesur-gtk/install.sh
-    (
-        cd /tmp/whitesur-gtk
-        echo "    Running: bash install.sh -d ${THEME_DIR} -c dark -c light"
-        bash install.sh -d "${THEME_DIR}" -c dark -c light
-    ) || { echo "ERROR: WhiteSur GTK installer failed" >&2; exit 1; }
-    rm -rf /tmp/whitesur-gtk
-}
-
-if ! install_whitesur_gtk_from_stable "Dark"; then
-    echo "  Stable archive for Dark not found; falling back to source build."
-    install_whitesur_gtk_from_source
-else
-    install_whitesur_gtk_from_stable "Light" || true
+echo "Installing WhiteSur GTK theme (source build)..."
+rm -rf /tmp/whitesur-gtk
+if ! git clone --depth 1 https://github.com/vinceliuice/WhiteSur-gtk-theme.git /tmp/whitesur-gtk; then
+    echo "ERROR: Failed to clone WhiteSur-gtk-theme" >&2
+    exit 1
 fi
 
-# -----------------------------------------------------------------------------
-# 5. WhiteSur icon theme
-# -----------------------------------------------------------------------------
-echo "Installing WhiteSur icon theme..."
-WHITESUR_ICON_REPO="https://github.com/vinceliuice/WhiteSur-icon-theme"
-
-if ! curl -fsSL -o /tmp/whitesur-icons.tar.xz \
-    "${WHITESUR_ICON_REPO}/raw/master/stable-release/WhiteSur.tar.xz"; then
-    echo "  Stable archive not found; falling back to source build."
-    rm -rf /tmp/whitesur-icons
-    if ! git clone --depth 1 "${WHITESUR_ICON_REPO}.git" /tmp/whitesur-icons; then
-        echo "ERROR: Failed to clone WhiteSur-icon-theme" >&2
-        exit 1
-    fi
-    (
-        cd /tmp/whitesur-icons
-        echo "    Running: bash install.sh -d ${ICON_DIR}"
-        bash install.sh -d "${ICON_DIR}"
-    ) || { echo "ERROR: WhiteSur icon installer failed" >&2; exit 1; }
-    rm -rf /tmp/whitesur-icons
-else
-    tar -xJf /tmp/whitesur-icons.tar.xz -C "${ICON_DIR}"
-    rm -f /tmp/whitesur-icons.tar.xz
+# Patch the internet connectivity check in libs/lib-install.sh.
+# The check attempts a TCP connection to iana.org, which fails in the
+# restricted build container and aborts the installer. Replacing `exit 1`
+# with `:` on the DEPS ERROR line lets the installer continue.
+if [ -f /tmp/whitesur-gtk/libs/lib-install.sh ]; then
+    sed -i '/DEPS ERROR/ s/exit 1/:/' /tmp/whitesur-gtk/libs/lib-install.sh
+    echo "  Patched dependency check in libs/lib-install.sh"
 fi
 
+(
+    cd /tmp/whitesur-gtk
+    echo "    Running: bash install.sh -d ${THEME_DIR} -c dark -c light"
+    bash install.sh -d "${THEME_DIR}" -c dark -c light
+) || { echo "ERROR: WhiteSur GTK installer failed" >&2; exit 1; }
+rm -rf /tmp/whitesur-gtk
+
 # -----------------------------------------------------------------------------
-# 6. WhiteSur cursors
-#    No committed stable archive exists; the cursor installer is a simple
-#    copy operation with no network check, so it is safe to run directly.
+# 5. WhiteSur icon theme — source build
+# -----------------------------------------------------------------------------
+echo "Installing WhiteSur icon theme (source build)..."
+rm -rf /tmp/whitesur-icons
+if ! git clone --depth 1 https://github.com/vinceliuice/WhiteSur-icon-theme.git /tmp/whitesur-icons; then
+    echo "ERROR: Failed to clone WhiteSur-icon-theme" >&2
+    exit 1
+fi
+(
+    cd /tmp/whitesur-icons
+    echo "    Running: bash install.sh -d ${ICON_DIR}"
+    bash install.sh -d "${ICON_DIR}"
+) || { echo "ERROR: WhiteSur icon installer failed" >&2; exit 1; }
+rm -rf /tmp/whitesur-icons
+
+# -----------------------------------------------------------------------------
+# 6. WhiteSur cursors — source build
 # -----------------------------------------------------------------------------
 echo "Installing WhiteSur cursors..."
 rm -rf /tmp/whitesur-cursors
