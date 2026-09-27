@@ -22,34 +22,41 @@ modules:
           chroot: fedora-44-x86_64
     install:
       packages:
-        # Base build tools and dependencies
+        # Base build tools
         - git
         - wget
         - gcc
         - gcc-c++
         - make
-        - mactel-boot
-        - rEFInd
-        - podman
-        - podman-compose
-        - distrobox
         - cmake
         - ninja-build
         - pkgconf-pkg-config
+        - redhat-rpm-config
+        - curl
+        - jq
+        - sudo
+        - unzip
+        - zip
+        - p7zip
+        - xz
+        - file
+
+        # Boot and platform tools for Intel Macs
+        - mactel-boot
+        - rEFInd
+
+        # Container / virtualization tooling
+        - podman
+        - podman-compose
+        - distrobox
+
+        # Development libraries
         - wayland-devel
         - avahi-devel
         - glib2-devel
         - gtk3-devel
         - gtk-layer-shell-devel
         - libnotify-devel
-        - npm
-        - zip
-        - fuse
-        - fuse-libs
-        - fuse-devel
-        - R
-        - python3-devel
-        - python3-pip
         - libxml2-devel
         - libcurl-devel
         - libpng-devel
@@ -60,83 +67,96 @@ modules:
         - libffi-devel
         - libjpeg-turbo-devel
         - openssl-devel
-        - perl-FindBin
-        - perl-IPC-Cmd
-        - perl-Time-Piece
-        - ffmpeg-free
-        - libdiscid
-        - libchromaprint
-        - redhat-rpm-config
-        - curl
-        - wine
-        - winetricks
-        - p7zip
-        - unzip
-        - desktop-file-utils
         - gnutls
         - gnutls.i686
-        - xz
-        - dconf-editor
-        - gnome-tweaks
-        - gnome-extensions-app
-        - gnome-shell-extension-appindicator
-        - scx-scheds
-        - scx-tools
-        - policycoreutils-python-utils
-        - gdisk
-        - dosfstools
-        - ntfs-3g
-        - exfatprogs
-        - sassc
-        - inkscape
-        - optipng
-        - jq
-        - sudo
-        - b43-firmware
-        # Gaming
-        - gamemode
-        - mangohud
-        # Homelab / workstation
-        - cockpit
-        - cockpit-podman
-        # Security tools (low-friction additions)
-        - usbguard
-        - usbguard-notifier
-        # Fonts and utilities
-        - gdouros-akkadian-fonts
-        - gtk2-engines
-        - gtk-murrine-engine
-        # GNOME Online Accounts and Evolution for CalDAV/CardDAV
-        - gnome-online-accounts
-        - evolution
-        - evolution-data-server
-        # Sumerian / Cuneiform tools
-        - yagf
-        # ibus dependencies for cuneiform input method
-        - ibus
-        - ibus-table
-        # Build tools for Tauri
-        - nodejs
-        - cargo
-        - rust
+        - libuv-devel
         - webkit2gtk4.1-devel
         - libappindicator-gtk3-devel
         - librsvg2-devel
         - libxdo-devel
-        - file
-        # Build dependencies for Snow
         - alsa-lib-devel
-        # Shell and editor tools
+
+        # Perl modules (for various builds)
+        - perl-FindBin
+        - perl-IPC-Cmd
+        - perl-Time-Piece
+
+        # Python tooling
+        - python3-devel
+        - python3-pip
+        - pipx
+
+        # JavaScript / Rust / Tauri build tools
+        - npm
+        - nodejs
+        - cargo
+        - rust
+
+        # Theme build tools
+        - sassc
+        - inkscape
+        - optipng
+
+        # Multimedia and audio
+        - ffmpeg-free
+        - libdiscid
+        - libchromaprint
+
+        # Disk and filesystem tools
+        - gdisk
+        - dosfstools
+        - ntfs-3g
+        - exfatprogs
+
+        # Desktop / GNOME utilities
+        - desktop-file-utils
+        - dconf-editor
+        - gnome-tweaks
+        - gnome-extensions-app
+        - gnome-shell-extension-appindicator
+        - gnome-online-accounts
+        - evolution
+        - evolution-data-server
+        - gtk2-engines
+        - gtk-murrine-engine
+        - gdouros-akkadian-fonts
         - micro
         - starship
+
+        # Gaming and scheduler
+        - gamemode
+        - mangohud
+        - scx-scheds
+        - scx-tools
+
+        # Homelab / workstation
+        - cockpit
+        - cockpit-podman
+
+        # Security tools
+        - usbguard
+        - usbguard-notifier
+        - policycoreutils-python-utils
+
+        # Windows compatibility
+        - wine
+        - winetricks
+
+        # Sumerian / Cuneiform tools
+        - yagf
+        - ibus
+        - ibus-table
+
         # R package compilation (sumer)
+        - R
         - gsl-devel
         - gmp-devel
-        # Python tooling (beets via pipx)
-        - pipx
-        # Wi-Fi firmware for Broadcom BCM4321/BCM4322 chips in older
-        # Intel Macs. Lives in RPM Fusion's tainted sub-repository,
-        # which is enabled by enable-rpmfusion.sh above.
+        - libsass-devel
+        - v8-devel
+
+        # Wi-Fi firmware for Broadcom BCM4321/BCM4322 chips in older Intel
+        # Macs. Lives in RPM Fusion's tainted sub-repository, which is
+        # enabled by enable-rpmfusion.sh above.
         - b43-firmware
 
   - type: kargs
