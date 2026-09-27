@@ -3,43 +3,46 @@ set -euo pipefail
 
 echo "--- Building Apple II Pi ---"
 
-WORKDIR=/tmp/apple2pi
-rm -rf "${WORKDIR}"
+echo "  Diagnostic: FUSE headers present:"
+ls -la /usr/include/fuse* 2>/dev/null || echo "    (none)"
+rpm -qa | grep -i fuse || echo "    No 'fuse*' RPMs installed"
 
-git clone --depth=1 https://github.com/dschmenk/apple2pi.git "${WORKDIR}"
-cd "${WORKDIR}/src"
+# Apple2Pi includes an optional FUSE filesystem (fusea2pi) that links
+# against FUSE 2 (libfuse). On recent Fedora, the FUSE 2 development
+# headers may not be installable, in which case we skip that target.
+# The core utilities (a2joy, a2joymou, a2joypad, a2mon, a2term) build
+# with nothing more than a C compiler and standard headers.
 
-# Build everything in one pass. The default target compiles every binary,
-# including fusea2pi, a2pid, dskread, dskwrite, nibread, etc.
-make
-
-echo "--- Installing Apple II Pi binaries ---"
-
-# Install userspace utilities.
-install -d /usr/local/bin
-install -m 0755 \
-    a2joy a2joymou a2joypad a2mon a2term fusea2pi a2pidcmd \
-    dskread dskwrite bload brun nibread dskformat eddread \
-    a2mount a2setvd \
-    /usr/local/bin/
-
-# Install the daemon.
-install -d /usr/local/sbin
-install -m 0755 a2pid /usr/local/sbin/
-
-# Install shared data files.
-install -d /usr/share/a2pi
-cp -R ../share/. /usr/share/a2pi/
-
-# Convenience symlinks expected by the Apple II Pi ROM.
-ln -sf /usr/share/a2pi/A2PI-1.8.PO /usr/share/a2pi/A2VD1.PO
-ln -sf /usr/share/a2pi/UTILS.PO     /usr/share/a2pi/A2VD2.PO
-
-# Enable the systemd unit if present. Do not fail the build if the unit
-# is missing or cannot be enabled in the container environment.
-if [ -f /usr/share/a2pi/a2pi.service ]; then
-    systemctl enable --system /usr/share/a2pi/a2pi.service || \
-        echo "WARNING: could not enable a2pi.service (continuing)"
+rm -rf /tmp/apple2pi
+if ! git clone --depth 1 https://github.com/dschmenk/apple2pi.git /tmp/apple2pi; then
+    echo "ERROR: Failed to clone Apple2Pi" >&2
+    exit 1
 fi
 
-echo "--- Apple II Pi installation complete ---"
+cd /tmp/apple2pi
+
+# Decide whether FUSE 2 headers are available.
+FUSE2_OK=false
+if [ -f /usr/include/fuse.h ]; then
+    FUSE2_OK=true
+elif [ -f /usr/include/fuse/fuse.h ]; then
+    # Some distributions put the header under a subdirectory and rely on
+    # the Makefile's -I/usr/include/fuse flag to find it.
+    FUSE2_OK=true
+fi
+
+if [ "$FUSE2_OK" = true ]; then
+    echo "  FUSE 2 headers found; building all targets."
+else
+    echo "  FUSE 2 headers not found; skipping optional 'fusea2pi' target."
+    echo "  Headers checked: /usr/include/fuse.h, /usr/include/fuse/fuse.h"
+    # Remove fusea2pi from the Makefile's ALL variable and from any
+    # dependency lists, so 'make' and 'make install' do not attempt it.
+    # We edit a copy and only replace whole-word occurrences.
+    sed -i 's/\bfusea2pi\b//g' Makefile
+fi
+
+make
+make install
+
+echo "--- Apple II Pi built ---"
