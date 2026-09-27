@@ -13,7 +13,10 @@ if [ ! -f /usr/include/fuse3/fuse.h ]; then
     exit 1
 fi
 echo "  FUSE 3 header found: /usr/include/fuse3/fuse.h"
-echo "  pkg-config fuse3: $(pkg-config --modversion fuse3 2>/dev/null || echo 'not found')"
+echo "  pkg-config path: $(which pkg-config 2>/dev/null || echo 'NOT FOUND')"
+echo "  fuse3 cflags: $(pkg-config --cflags fuse3 2>/dev/null || echo 'NOT FOUND')"
+echo "  fuse3 libs:   $(pkg-config --libs fuse3 2>/dev/null || echo 'NOT FOUND')"
+echo "  fuse3 version: $(pkg-config --modversion fuse3 2>/dev/null || echo 'NOT FOUND')"
 
 # -----------------------------------------------------------------------------
 # Clone Apple2Pi.
@@ -71,5 +74,12 @@ ldd /tmp/apple2pi/src/fusea2pi | grep -E 'fuse|pthread' || true
 # -----------------------------------------------------------------------------
 echo "  Installing..."
 make -C src install
+
+# Make the service discoverable by systemd.
+if [ -f /usr/share/a2pi/a2pi.service ]; then
+    ln -sf /usr/share/a2pi/a2pi.service /etc/systemd/system/a2pi.service
+    echo "  Linked a2pi.service into /etc/systemd/system/"
+fi
+
 
 echo "--- Apple II Pi built and installed (fusea2pi included) ---"
