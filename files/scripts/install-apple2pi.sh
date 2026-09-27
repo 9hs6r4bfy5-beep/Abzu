@@ -1,18 +1,23 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "--- Building Apple II Pi ---"
+echo "--- Building Apple II Pi (with FUSE 3 fusea2pi) ---"
 
-echo "  Diagnostic: FUSE headers present:"
-ls -la /usr/include/fuse* 2>/dev/null || echo "    (none)"
-rpm -qa | grep -i fuse || echo "    No 'fuse*' RPMs installed"
+# -----------------------------------------------------------------------------
+# Verify that FUSE 3 development headers are present. They are provided by
+# the `fuse3-devel` package, which is installed via the dnf module.
+# -----------------------------------------------------------------------------
+if [ ! -f /usr/include/fuse3/fuse.h ]; then
+    echo "ERROR: FUSE 3 header /usr/include/fuse3/fuse.h not found." >&2
+    echo "       Ensure 'fuse3-devel' is installed via the dnf module." >&2
+    exit 1
+fi
+echo "  FUSE 3 header found: /usr/include/fuse3/fuse.h"
+echo "  pkg-config fuse3: $(pkg-config --modversion fuse3 2>/dev/null || echo 'not found')"
 
-# Apple2Pi includes an optional FUSE filesystem (fusea2pi) that links
-# against FUSE 2 (libfuse). On recent Fedora, the FUSE 2 development
-# headers may not be installable, in which case we skip that target.
-# The core utilities (a2joy, a2joymou, a2joypad, a2mon, a2term) build
-# with nothing more than a C compiler and standard headers.
-
+# -----------------------------------------------------------------------------
+# Clone Apple2Pi.
+# -----------------------------------------------------------------------------
 rm -rf /tmp/apple2pi
 if ! git clone --depth 1 https://github.com/dschmenk/apple2pi.git /tmp/apple2pi; then
     echo "ERROR: Failed to clone Apple2Pi" >&2
@@ -21,28 +26,50 @@ fi
 
 cd /tmp/apple2pi
 
-# Decide whether FUSE 2 headers are available.
-FUSE2_OK=false
-if [ -f /usr/include/fuse.h ]; then
-    FUSE2_OK=true
-elif [ -f /usr/include/fuse/fuse.h ]; then
-    # Some distributions put the header under a subdirectory and rely on
-    # the Makefile's -I/usr/include/fuse flag to find it.
-    FUSE2_OK=true
+# -----------------------------------------------------------------------------
+# Replace the upstream fusea2pi.c and Makefile with our FUSE 3 versions.
+# These are stored in the image at /tmp/files/apple2pi/ because the
+# `files` module copies the repository's files/ directory into /tmp/files.
+# -----------------------------------------------------------------------------
+FUSEA2PI_SRC="/tmp/files/apple2pi/fusea2pi.c"
+MAKEFILE_SRC="/tmp/files/apple2pi/Makefile"
+
+if [ ! -f "$FUSEA2PI_SRC" ]; then
+    echo "ERROR: Ported fusea2pi.c not found at $FUSEA2PI_SRC" >&2
+    exit 1
+fi
+if [ ! -f "$MAKEFILE_SRC" ]; then
+    echo "ERROR: Ported Makefile not found at $MAKEFILE_SRC" >&2
+    exit 1
 fi
 
-if [ "$FUSE2_OK" = true ]; then
-    echo "  FUSE 2 headers found; building all targets."
-else
-    echo "  FUSE 2 headers not found; skipping optional 'fusea2pi' target."
-    echo "  Headers checked: /usr/include/fuse.h, /usr/include/fuse/fuse.h"
-    # Remove fusea2pi from the Makefile's ALL variable and from any
-    # dependency lists, so 'make' and 'make install' do not attempt it.
-    # We edit a copy and only replace whole-word occurrences.
-    sed -i 's/\bfusea2pi\b//g' Makefile
+cp "$FUSEA2PI_SRC" /tmp/apple2pi/src/fusea2pi.c
+cp "$MAKEFILE_SRC" /tmp/apple2pi/src/Makefile
+echo "  Replaced src/fusea2pi.c and src/Makefile with FUSE 3 versions"
+
+# -----------------------------------------------------------------------------
+# Build. The Makefile builds all targets, including fusea2pi.
+# -----------------------------------------------------------------------------
+echo "  Building..."
+make -C src
+
+# -----------------------------------------------------------------------------
+# Verify that fusea2pi was actually produced and links against FUSE 3.
+# -----------------------------------------------------------------------------
+if [ ! -x /tmp/apple2pi/src/fusea2pi ]; then
+    echo "ERROR: fusea2pi was not produced by the build." >&2
+    ls -la /tmp/apple2pi/src/ >&2
+    exit 1
 fi
 
-make
-make install
+echo "  fusea2pi built successfully."
+echo "  Linked libraries:"
+ldd /tmp/apple2pi/src/fusea2pi | grep -E 'fuse|pthread' || true
 
-echo "--- Apple II Pi built ---"
+# -----------------------------------------------------------------------------
+# Install.
+# -----------------------------------------------------------------------------
+echo "  Installing..."
+make -C src install
+
+echo "--- Apple II Pi built and installed (fusea2pi included) ---"
