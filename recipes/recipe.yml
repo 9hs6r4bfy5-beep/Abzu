@@ -5,7 +5,10 @@ base-image: ghcr.io/ublue-os/bluefin
 image-version: stable
 
 modules:
-  # Enable RPM Fusion BEFORE the dnf module runs.
+  # Enable RPM Fusion BEFORE the dnf module runs. This script installs the
+  # free, nonfree, and tainted release packages, then refreshes repository
+  # metadata so that the tainted repository's packages (notably
+  # b43-firmware) are resolvable by the dnf module below.
   - type: script
     scripts:
       - enable-rpmfusion.sh
@@ -19,12 +22,142 @@ modules:
           chroot: fedora-44-x86_64
     install:
       packages:
-        # ... (all your packages remain unchanged) ...
+        # Base build tools and dependencies
+        - git
+        - wget
+        - gcc
+        - gcc-c++
+        - make
+        - mactel-boot
+        - rEFInd
+        - podman
+        - podman-compose
+        - distrobox
+        - cmake
+        - ninja-build
+        - pkgconf-pkg-config
+        - wayland-devel
+        - avahi-devel
+        - glib2-devel
+        - gtk3-devel
+        - gtk-layer-shell-devel
+        - libnotify-devel
+        - npm
+        - zip
+        - fuse
+        - fuse-libs
+        - fuse-devel
+        - R
+        - python3-devel
+        - python3-pip
+        - libxml2-devel
+        - libcurl-devel
+        - libpng-devel
+        - freetype-devel
+        - harfbuzz-devel
+        - fribidi-devel
+        - libtiff-devel
+        - libffi-devel
+        - libjpeg-turbo-devel
+        - openssl-devel
+        - perl-FindBin
+        - perl-IPC-Cmd
+        - perl-Time-Piece
+        - ffmpeg-free
+        - libdiscid
+        - libchromaprint
+        - redhat-rpm-config
+        - curl
+        - wine
+        - winetricks
+        - p7zip
+        - unzip
+        - desktop-file-utils
+        - gnutls
+        - gnutls.i686
+        - xz
+        - dconf-editor
+        - gnome-tweaks
+        - gnome-extensions-app
+        - gnome-shell-extension-appindicator
+        - scx-scheds
+        - scx-tools
+        - jq
+        - policycoreutils-python-utils
+        - gdisk
+        - dosfstools
+        - ntfs-3g
+        - exfatprogs
+        # Gaming
+        - gamemode
+        - mangohud
+        # Homelab / workstation
+        - cockpit
+        - cockpit-podman
+        # Security tools (low-friction additions)
+        - usbguard
+        - usbguard-notifier
+        # Fonts and utilities
+        - gdouros-akkadian-fonts
+        - sassc
+        - gtk2-engines
+        - gtk-murrine-engine
+        # GNOME Online Accounts and Evolution for CalDAV/CardDAV
+        - gnome-online-accounts
+        - evolution
+        - evolution-data-server
+        # Sumerian / Cuneiform tools
+        - yagf
+        # ibus dependencies for cuneiform input method
+        - ibus
+        - ibus-table
+        # Build tools for Tauri
+        - nodejs
+        - cargo
+        - rust
+        - webkit2gtk4.1-devel
+        - libappindicator-gtk3-devel
+        - librsvg2-devel
+        - libxdo-devel
+        - file
+        # Build dependencies for Snow
+        - alsa-lib-devel
+        # Shell and editor tools
+        - micro
+        - starship
+        # Wi-Fi firmware for Broadcom BCM4321/BCM4322 chips in older
+        # Intel Macs. Lives in RPM Fusion's tainted sub-repository,
+        # which is enabled by enable-rpmfusion.sh above.
         - b43-firmware
 
   - type: kargs
     kargs:
-      # ... (all your kernel arguments remain unchanged) ...
+      - preempt=full
+      - mitigations=auto
+      - threadirqs
+      - init_on_alloc=1
+      - init_on_free=1
+      - hash_pointers=always
+      - page_alloc.shuffle=1
+      - randomize_kstack_offset=on
+      - iommu=force
+      - intel_iommu=on
+      - iommu.passthrough=0
+      - iommu.strict=1
+      - lockdown=confidentiality
+      - module.sig_enforce=1
+      - l1d_flush=on
+      - l1tf=full,force
+      - spec_store_bypass_disable=on
+      - spectre_v2=on
+      - ssbd=force-on
+      - slab_debug=FZ
+      - slab_nomerge
+      - random.trust_bootloader=off
+      - random.trust_cpu=off
+      - rd.shell=0
+      - rd.emergency=halt
+      - nomodeset
 
   - type: files
     files:
@@ -65,7 +198,8 @@ modules:
       - install-zaparoo.sh
       - configure-stellarium.sh
       - install-sumer-r-package.sh
-      - cuneiform-toggle.sh   # <-- CORRECTED: was 'compile-cuneiform-ibus.sh'
+      - compile-cuneiform-ibus.sh
+      - compile-gsettings.sh
       - enable-vaapi.sh
       - install-daggerfall-unity.sh
       - install-soh.sh
@@ -77,4 +211,63 @@ modules:
       - notify: true
         scope: system
         install:
-          # ... (all your flatpaks remain unchanged) ...
+          # Browsers
+          - net.waterfox.waterfox
+          - org.torproject.torbrowser-launcher
+          - com.visualstudio.code
+          # Communication
+          - com.discordapp.Discord
+          # Media
+          - org.strawberrymusicplayer.strawberry
+          - org.audacityteam.Audacity
+          - dk.gqrx.gqrx
+          - org.lyx.LyX
+          # Creativity and science
+          - org.kde.krita
+          - org.kde.haruna
+          - org.stellarium.Stellarium
+          - org.gnome.Loupe
+          # Productivity
+          - io.github.diegopvlk.Dosage
+          - org.gnuhealth.mygnuhealth
+          - org.gnome.clocks
+          - org.gnome.Weather
+          - app.gmtp.gMTP
+          - as.may.moat
+          - io.github.heidefinnischen.cuneo
+          # Utilities
+          - io.github.kolunmi.Bazaar
+          - io.github.jeffshee.Hidamari
+          - app.twintaillauncher.ttl
+          - org.freedownloadmanager.Manager
+          - ai.lmstudio.lm-studio
+          - com.github.tchx84.Flatseal
+          - com.github.Syncthing.Syncthing
+          # Gaming
+          - com.valvesoftware.Steam
+          - com.valvesoftware.Steam.CompatibilityTool.Proton
+          - com.valvesoftware.Steam.Utility.steamtinkerlaunch
+          - com.steamgriddb.SGDBoop
+          - com.vysp3r.ProtonPlus
+          - com.github.Matoking.protontricks
+          - io.github.sharkwouter.Minigalaxy
+          - org.openmw.OpenMW
+          - com.infochunk.OpenMadoola
+          - io.jor.nanosaur
+          - io.jor.nanosaur2
+          - io.github.hedge_dev.hedgemodmanager
+          - com.epicgames.ut99
+          - com.epicgames.ut2004
+          - com.heroicgameslauncher.hgl
+          - net.lutris.Lutris
+          # Streaming
+          - com.obsproject.Studio
+          # Vulkan layers for gaming
+          - org.freedesktop.Platform.VulkanLayer.MangoHud
+          - org.freedesktop.Platform.VulkanLayer.gamescope
+          # Runtime layers
+          - org.freedesktop.Platform
+      - scope: user
+
+  - type: initramfs
+  - type: signing
