@@ -82,12 +82,22 @@ modules:
         - gnome-shell-extension-appindicator
         - scx-scheds
         - scx-tools
-        - jq
         - policycoreutils-python-utils
         - gdisk
         - dosfstools
         - ntfs-3g
         - exfatprogs
+        - sassc
+        - glib2-devel
+        - libxml2-utils
+        - inkscape
+        - optipng
+        - git
+        - wget
+        - unzip
+        - jq
+        - sudo          # needed if any installer calls sudo
+        - b43-firmware
         # Gaming
         - gamemode
         - mangohud
@@ -198,8 +208,7 @@ modules:
       - install-zaparoo.sh
       - configure-stellarium.sh
       - install-sumer-r-package.sh
-      - compile-cuneiform-ibus.sh
-      - compile-gsettings.sh
+      - cuneiform-toggle.sh
       - enable-vaapi.sh
       - install-daggerfall-unity.sh
       - install-soh.sh
