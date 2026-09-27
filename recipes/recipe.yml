@@ -1,14 +1,14 @@
 # yaml-language-server: $schema=https://schema.blue-build.org/recipe-v1.json
 name: abzu
 description: An elegant, powerful operating system for desktops, workstations and homelabs that honours and preserves the ancient traditions.
-base-image: ghcr.io/secureblue/silverblue-main-hardened
-image-version: 44
+base-image: ghcr.io/ublue-os/bluefin
+image-version: stable
 
 modules:
-  # Enable RPM Fusion BEFORE the dnf module runs. This script installs the
-  # free, nonfree, and tainted release packages, then refreshes repository
-  # metadata so that the tainted repository's packages (notably
-  # b43-firmware) are resolvable by the dnf module below.
+  # Enable RPM Fusion BEFORE the dnf module runs. This script installs
+  # the free, nonfree, and tainted release packages, then refreshes
+  # repository metadata so that the tainted repository's packages
+  # (notably b43-firmware) are resolvable by the dnf module below.
   - type: script
     scripts:
       - enable-rpmfusion.sh
@@ -32,6 +32,7 @@ modules:
         - rEFInd
         - podman
         - podman-compose
+        - distrobox
         - cmake
         - ninja-build
         - pkgconf-pkg-config
@@ -61,7 +62,7 @@ modules:
         - openssl-devel
         - perl-FindBin
         - perl-IPC-Cmd
-        - perl-Time-Piece          # Required for OpenSSL build (Tauri/Hotline)
+        - perl-Time-Piece
         - ffmpeg-free
         - libdiscid
         - libchromaprint
@@ -77,6 +78,8 @@ modules:
         - xz
         - dconf-editor
         - gnome-tweaks
+        - gnome-extensions-app
+        - gnome-shell-extension-appindicator
         - scx-scheds
         - scx-tools
         - jq
@@ -85,6 +88,17 @@ modules:
         - dosfstools
         - ntfs-3g
         - exfatprogs
+        # Gaming
+        - gamemode
+        - mangohud
+        # Homelab / workstation
+        - cockpit
+        - cockpit-podman
+        - syncthing
+        # Security tools (low-friction additions)
+        - usbguard
+        - usbguard-notifier
+        - bubblejail
         # Fonts and utilities
         - gdouros-akkadian-fonts
         - sassc
@@ -114,11 +128,8 @@ modules:
         - micro
         - starship
         # Wi-Fi firmware for Broadcom BCM4321/BCM4322 chips in older
-        # Intel Macs (2008 MacBook Pro, 2011 Mac Pro). This package
-        # lives in RPM Fusion's "tainted" sub-repository, which is
-        # enabled by enable-rpmfusion.sh above. Newer Macs (2019 Mac
-        # Pro, upgraded 2011 Mac Pro) use brcmfmac and ath10k, whose
-        # firmware ships with linux-firmware from the base image.
+        # Intel Macs. Lives in RPM Fusion's tainted sub-repository,
+        # which is enabled by enable-rpmfusion.sh above.
         - b43-firmware
 
   - type: kargs
@@ -167,6 +178,10 @@ modules:
     system:
       enabled:
         - scx_loader.service
+        - usbguard.service
+        - usbguard-dbus.service
+        - cockpit.socket
+        - syncthing.service
 
   - type: justfiles
     validate: false
@@ -188,42 +203,57 @@ modules:
       - configure-stellarium.sh
       - install-sumer-r-package.sh
       - compile-cuneiform-ibus.sh
+      - enable-vaapi.sh
       - install-daggerfall-unity.sh
       - install-soh.sh
       - install-2s2h.sh
       - install-samodmanager.sh
-      # build-wl-kmod.sh removed: the proprietary Broadcom wl driver
-      # does not compile against modern kernels, including secureblue's.
-      # Wi-Fi on all supported Macs is handled by the open-source b43,
-      # brcmfmac, and ath10k drivers.
 
   - type: default-flatpaks
     configurations:
       - notify: true
         scope: system
         install:
-          - app.twintaillauncher.ttl
-          - io.github.jeffshee.Hidamari
+          # Browsers
           - net.waterfox.waterfox
           - org.torproject.torbrowser-launcher
-          - org.freedesktop.Platform
-          - org.freedownloadmanager.Manager
+          - com.visualstudio.code
+          # Communication
+          - com.discordapp.Discord
+          # Media
+          - org.strawberrymusicplayer.strawberry
+          - org.audacityteam.Audacity
+          - dk.gqrx.gqrx
+          - org.lyx.LyX
+          # Creativity and science
+          - org.kde.krita
+          - org.kde.haruna
+          - org.stellarium.Stellarium
+          - org.gnome.Loupe
+          # Productivity
           - io.github.diegopvlk.Dosage
           - org.gnuhealth.mygnuhealth
           - org.gnome.clocks
           - org.gnome.Weather
-          - io.github.heidefinnischen.cuneo
           - app.gmtp.gMTP
-          - org.strawberrymusicplayer.strawberry
           - as.may.moat
+          - io.github.heidefinnischen.cuneo
+          # Utilities
           - io.github.kolunmi.Bazaar
-          - org.gnome.Loupe
-          - com.visualstudio.code
+          - io.github.jeffshee.Hidamari
+          - app.twintaillauncher.ttl
+          - org.freedownloadmanager.Manager
           - ai.lmstudio.lm-studio
+          - com.github.tchx84.Flatseal
+          - com.github.Syncthing.Syncthing
+          # Gaming
           - com.valvesoftware.Steam
           - com.valvesoftware.Steam.CompatibilityTool.Proton
           - com.valvesoftware.Steam.Utility.steamtinkerlaunch
           - com.steamgriddb.SGDBoop
+          - com.vysp3r.ProtonPlus
+          - com.github.Matoking.protontricks
+          - io.github.sharkwouter.Minigalaxy
           - org.openmw.OpenMW
           - com.infochunk.OpenMadoola
           - io.jor.nanosaur
@@ -231,16 +261,15 @@ modules:
           - io.github.hedge_dev.hedgemodmanager
           - com.epicgames.ut99
           - com.epicgames.ut2004
-          - com.vysp3r.ProtonPlus
-          - com.github.Matoking.protontricks
-          - io.github.sharkwouter.Minigalaxy
-          - com.discordapp.Discord
-          - org.lyx.LyX
-          - dk.gqrx.gqrx
-          - org.audacityteam.Audacity
-          - org.kde.krita
-          - org.kde.haruna
-          - org.stellarium.Stellarium
+          - com.heroicgameslauncher.hgl
+          - net.lutris.Lutris
+          # Streaming
+          - com.obsproject.Studio
+          # Vulkan layers for gaming
+          - org.freedesktop.Platform.VulkanLayer.MangoHud
+          - org.freedesktop.Platform.VulkanLayer.gamescope
+          # Runtime layers (usually auto-installed, listed for completeness)
+          - org.freedesktop.Platform
       - scope: user
 
   - type: initramfs
