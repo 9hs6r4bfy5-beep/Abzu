@@ -178,7 +178,6 @@ modules:
       enabled:
         - scx_loader.service
         - usbguard.service
-        - usbguard-dbus.service
         - cockpit.socket
         - syncthing.service
 
