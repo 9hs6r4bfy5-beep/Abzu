@@ -3,6 +3,7 @@
 # Covers Cheetah, Mavericks, Leopard, WhiteSur, and the Liquid Glass GNOME Shell extension.
 
 set -euo pipefail
+trap 'echo "theming.sh failed at line $LINENO (exit $?)" >&2' ERR
 
 # Define target directories
 THEME_DIR="/usr/share/themes"
@@ -45,36 +46,56 @@ rm -rf /tmp/leopard.zip /tmp/OS-X-Leopard-master
 
 # -----------------------------------------------------------------------------
 # 4. WhiteSur GTK, icon, and cursor themes (system-wide)
-#    Uses the upstream install.sh scripts. Build dependencies (sassc,
-#    glib2-devel, libxml2-utils, etc.) must already be present in the image.
+#    Uses the upstream install.sh scripts. Output is NOT silenced so that
+#    any failure is visible in the build log.
 # -----------------------------------------------------------------------------
 echo "Installing WhiteSur theme suite (system-wide)..."
 
 # --- WhiteSur GTK Theme ---
 echo "  -> WhiteSur GTK theme"
-git clone --depth 1 https://github.com/vinceliuice/WhiteSur-gtk-theme.git /tmp/whitesur-gtk
+rm -rf /tmp/whitesur-gtk
+if ! git clone --depth 1 https://github.com/vinceliuice/WhiteSur-gtk-theme.git /tmp/whitesur-gtk; then
+    echo "ERROR: Failed to clone WhiteSur-gtk-theme" >&2
+    exit 1
+fi
+if [ ! -f /tmp/whitesur-gtk/install.sh ]; then
+    echo "ERROR: install.sh not found in WhiteSur-gtk-theme. Contents:" >&2
+    ls -la /tmp/whitesur-gtk >&2
+    exit 1
+fi
 (
-  cd /tmp/whitesur-gtk
-  ./install.sh -d "${THEME_DIR}" -n WhiteSur -c dark -c light -t default --silent-mode
-)
+    cd /tmp/whitesur-gtk
+    echo "    Running: bash install.sh -d ${THEME_DIR} -c dark"
+    bash install.sh -d "${THEME_DIR}" -c dark
+) || { echo "ERROR: WhiteSur GTK installer failed" >&2; exit 1; }
 rm -rf /tmp/whitesur-gtk
 
 # --- WhiteSur Icon Theme ---
 echo "  -> WhiteSur icon theme"
-git clone --depth 1 https://github.com/vinceliuice/WhiteSur-icon-theme.git /tmp/whitesur-icons
+rm -rf /tmp/whitesur-icons
+if ! git clone --depth 1 https://github.com/vinceliuice/WhiteSur-icon-theme.git /tmp/whitesur-icons; then
+    echo "ERROR: Failed to clone WhiteSur-icon-theme" >&2
+    exit 1
+fi
 (
-  cd /tmp/whitesur-icons
-  ./install.sh -d "${ICON_DIR}"
-)
+    cd /tmp/whitesur-icons
+    echo "    Running: bash install.sh -d ${ICON_DIR}"
+    bash install.sh -d "${ICON_DIR}"
+) || { echo "ERROR: WhiteSur icon installer failed" >&2; exit 1; }
 rm -rf /tmp/whitesur-icons
 
 # --- WhiteSur Cursors ---
 echo "  -> WhiteSur cursors"
-git clone --depth 1 https://github.com/vinceliuice/WhiteSur-cursors.git /tmp/whitesur-cursors
+rm -rf /tmp/whitesur-cursors
+if ! git clone --depth 1 https://github.com/vinceliuice/WhiteSur-cursors.git /tmp/whitesur-cursors; then
+    echo "ERROR: Failed to clone WhiteSur-cursors" >&2
+    exit 1
+fi
 (
-  cd /tmp/whitesur-cursors
-  ./install.sh -d "${ICON_DIR}"
-)
+    cd /tmp/whitesur-cursors
+    echo "    Running: bash install.sh -d ${ICON_DIR}"
+    bash install.sh -d "${ICON_DIR}"
+) || { echo "ERROR: WhiteSur cursor installer failed" >&2; exit 1; }
 rm -rf /tmp/whitesur-cursors
 
 echo "WhiteSur theme suite installed."
@@ -84,6 +105,7 @@ echo "WhiteSur theme suite installed."
 # -----------------------------------------------------------------------------
 echo "Installing Liquid Glass GNOME Shell Extension..."
 EXT_UUID="liquid-glass@thinkingcoding1231.gmail.com"
+rm -rf /tmp/liquid-glass
 git clone --depth 1 https://github.com/ryohsuke1231/liquid-glass.git /tmp/liquid-glass
 mkdir -p "${GNOME_EXT_DIR}/${EXT_UUID}"
 cp -r /tmp/liquid-glass/liquid-glass@thinkingcoding1231.gmail.com/* "${GNOME_EXT_DIR}/${EXT_UUID}/"
