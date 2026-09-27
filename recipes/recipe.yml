@@ -107,6 +107,7 @@ modules:
         - dosfstools
         - ntfs-3g
         - exfatprogs
+        - fuse3-devel
 
         # Desktop / GNOME utilities
         - desktop-file-utils
