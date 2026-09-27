@@ -208,6 +208,7 @@ modules:
         - scx_loader.service
         - usbguard.service
         - cockpit.socket
+        - a2pi.service
 
   - type: justfiles
     validate: false
