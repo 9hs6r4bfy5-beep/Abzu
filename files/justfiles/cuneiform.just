@@ -1,3 +1,22 @@
+# Toggle cuneiform input method on/off
+[group('Cuneiform')]
+cuneiform-toggle:
+    #!/usr/bin/bash
+    set -euo pipefail
+    # Ensure ibus-daemon is running
+    if ! pgrep -x ibus-daemon >/dev/null 2>&1; then
+        ibus-daemon -drx
+        sleep 1
+    fi
+    CURRENT=$(ibus engine 2>/dev/null || echo "none")
+    if [ "$CURRENT" = "cuneiform" ]; then
+        ibus engine xkb:us::eng
+        echo "Switched to US English keyboard."
+    else
+        ibus engine cuneiform
+        echo "Switched to Cuneiform input."
+    fi
+
 # Compile the cuneiform IBus table database
 [group('Cuneiform')]
 cuneiform-compile:
