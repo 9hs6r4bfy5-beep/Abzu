@@ -47,23 +47,30 @@ cp -r /tmp/OS-X-Leopard-master "${THEME_DIR}/OS-X-Leopard"
 rm -rf /tmp/leopard.zip /tmp/OS-X-Leopard-master
 
 # -----------------------------------------------------------------------------
-# 4. Install the Gnomintosh Theme Suite
+# 4. Install WhiteSur GTK, icon, and cursor themes (system-wide)
 # -----------------------------------------------------------------------------
-echo "Installing Gnomintosh theme suite..."
-git clone --depth 1 https://github.com/jothi-prasath/gnomintosh.git /tmp/gnomintosh
-if [ -d "/tmp/gnomintosh/themes" ]; then
-  cp -r /tmp/gnomintosh/themes/* "${THEME_DIR}/"
-fi
-if [ -d "/tmp/gnomintosh/icons" ]; then
-  cp -r /tmp/gnomintosh/icons/* "${ICON_DIR}/"
-fi
-if [ -d "/tmp/gnomintosh/cursors" ]; then
-  cp -r /tmp/gnomintosh/cursors/* "${ICON_DIR}/"
-fi
-if [ -d "/tmp/gnomintosh/fonts" ]; then
-  cp -r /tmp/gnomintosh/fonts/* "${FONT_DIR}/"
-fi
-rm -rf /tmp/gnomintosh
+
+echo "Installing WhiteSur theme suite (system-wide)..."
+
+# GTK theme. -d installs to /usr/share/themes, -l builds the light variant,
+# and -c Dark keeps the dark window controls. Run without -l for the dark
+# default.
+git clone --depth 1 https://github.com/vinceliuice/WhiteSur-gtk-theme.git /tmp/whitesur-gtk
+/tmp/whitesur-gtk/install.sh -d /usr/share/themes -l -c Light -N glassy
+rm -rf /tmp/whitesur-gtk
+
+# Icons
+git clone --depth 1 https://github.com/vinceliuice/WhiteSur-icon-theme.git /tmp/whitesur-icons
+/tmp/whitesur-icons/install.sh -d /usr/share/icons
+rm -rf /tmp/whitesur-icons
+
+# Cursors
+git clone --depth 1 https://github.com/vinceliuice/WhiteSur-cursors.git /tmp/whitesur-cursors
+mkdir -p /usr/share/icons/WhiteSur-cursors
+cp -r /tmp/whitesur-cursors/dist/* /usr/share/icons/WhiteSur-cursors/
+rm -rf /tmp/whitesur-cursors
+
+echo "WhiteSur theme suite installed."
 
 # -----------------------------------------------------------------------------
 # 5. Install "Liquid Glass" GNOME Shell Extension
