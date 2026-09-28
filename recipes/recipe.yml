@@ -275,7 +275,7 @@ modules:
           - org.freedownloadmanager.Manager
           - ai.lmstudio.lm-studio
           - com.github.tchx84.Flatseal
-          - com.github.Syncthing.Syncthing
+          - com.github.zocker_160.SyncThingy
           # Gaming
           - com.valvesoftware.Steam
           - com.valvesoftware.Steam.CompatibilityTool.Proton
