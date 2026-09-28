@@ -3,14 +3,19 @@ set -euo pipefail
 
 echo "--- Installing Quiver Launcher (AppImage) ---"
 
-# Quiver Launcher is a single launcher that replaces the four standalone
+# Quiver Launcher is a single launcher that replaces the five standalone
 # installs this image used to ship:
-#   * Daggerfall Unity      -> Interkarma/daggerfall-unity        (community catalog)
-#   * Ship of Harkinian     -> HarbourMasters/Shipwright          (community catalog)
-#   * 2 Ship 2 Harkinian    -> HarbourMasters/2ship2harkinian     (community catalog)
-#   * SA Mod Manager        -> not covered; use Flatpak Hedge Mod Manager
+#   * Daggerfall Unity             -> Interkarma/daggerfall-unity            (community catalog)
+#   * Ship of Harkinian            -> HarbourMasters/Shipwright              (community catalog)
+#   * 2 Ship 2 Harkinian           -> HarbourMasters/2ship2harkinian         (community catalog)
+#   * Super Mario Bros. Remastered -> JHDev2006/Super-Mario-Bros.-Remastered-Public (community catalog)
+#   * SA Mod Manager               -> not covered; use Flatpak Hedge Mod Manager
 # The games themselves are NOT baked into the image any more -- Quiver
 # downloads and updates them per user, so the image stays slim.
+#
+# Deferred (Windows/macOS-only releases, no Linux build yet -- revisit when
+# upstream ships one): elliotttate/DKC1Recomp, DKC2Recomp, DKC3Recomp,
+# elliotttate/wave-race-64-recomp, DomazinUS/RaceWave46.
 
 REPO="tgeorgiadis/quiver-launcher"
 ARCH="$(uname -m)"
@@ -94,6 +99,14 @@ cat > /etc/skel/.local/share/quiver/apps.json << 'EOF'
       "folderName": "2Ship2Harkinian",
       "tags": ["decomp", "n64", "harbour masters", "zelda"],
       "appIconUrl": null
+    },
+    {
+      "name": "Super Mario Bros. [Remastered]",
+      "project": "Super Mario Bros. Remastered",
+      "repository": "JHDev2006/Super-Mario-Bros.-Remastered-Public",
+      "folderName": "SuperMarioBrosRemastered-SuperMarioBrosRemastered",
+      "tags": ["recreation", "nes", "mario", "nintendo", "nintendo entertainment system"],
+      "appIconUrl": "https://raw.githubusercontent.com/JHDev2006/Super-Mario-Bros.-Remastered-Public/main/icon.png"
     }
   ]
 }
@@ -115,7 +128,7 @@ Exec=/opt/quiver/quiver.AppImage
 Icon=applications-games
 Terminal=false
 Categories=Game;Utility;
-Keywords=launcher;mods;github;gitlab;soh;2s2h;daggerfall;
+Keywords=launcher;mods;github;gitlab;soh;2s2h;daggerfall;mario;
 StartupNotify=true
 EOF
 

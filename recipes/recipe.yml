@@ -226,7 +226,9 @@ modules:
       - install-fono.sh
       - install-icloud-linux.sh
       - install-cunai.sh
-      - install-smb-remastered.sh
+      # Super Mario Bros. Remastered is no longer installed standalone; it is
+      # seeded into Quiver's starter library (install-quiver.sh). The former
+      # install-smb-remastered.sh script has been removed from files/scripts/.
       - install-beets.sh
       - install-zaparoo.sh
       - configure-stellarium.sh
