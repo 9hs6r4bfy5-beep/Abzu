@@ -62,3 +62,32 @@ gmtp-sync:
     echo "Ensure your Walkman is connected and unlocked, then launching gMTP..."
     # Launch gmtp (RPM version)
     flatpak run app.gmtp.gMTP &
+
+# Seed Quiver Launcher's library with the entries that used to be installed
+# standalone (Daggerfall Unity, Ship of Harkinian, 2 Ship 2 Harkinian).
+# Quiver stores apps.json beside its AppImage, which is read-only on Abzu,
+# so it falls back to ~/.local/share/QuiverLauncher/. This recipe copies the
+# seeded file there; it never overwrites an existing library. Run once, before
+# the first launch of Quiver.
+quiver-setup:
+    #!/usr/bin/bash
+    set -euo pipefail
+    DEST="${XDG_DATA_HOME:-$HOME/.local/share}/QuiverLauncher"
+    SEED="$HOME/.local/share/quiver/apps.json"
+    if [ ! -f "${SEED}" ]; then
+        echo "Seed file ${SEED} not found. Nothing to do."
+        exit 0
+    fi
+    mkdir -p "${DEST}"
+    if [ -f "${DEST}/apps.json" ]; then
+        echo "A library already exists at ${DEST}/apps.json -- leaving it untouched."
+        echo "To merge the seeded entries by hand, compare with: ${SEED}"
+    else
+        cp "${SEED}" "${DEST}/apps.json"
+        echo "Seeded Quiver library at ${DEST}/apps.json"
+    fi
+    echo ""
+    echo "Launch Quiver Launcher from the applications grid, or run:"
+    echo "  /opt/quiver/quiver.AppImage"
+    echo "Tip: subscribe to the built-in community catalog in App Catalog for"
+    echo "many more ports (it also lists SoH, 2SoH and Daggerfall Unity)."
