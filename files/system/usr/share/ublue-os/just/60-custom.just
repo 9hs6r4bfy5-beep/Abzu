@@ -92,3 +92,6 @@ quiver-setup:
     echo "  /opt/quiver/quiver.AppImage"
     echo "Tip: subscribe to the built-in community catalog in App Catalog for"
     echo "many more ports (it also lists SoH, 2SoH and Daggerfall Unity)."
+    echo "Note: the seeded Wave Race 64 entry (DomazinUS/RaceWave46, ray-traced"
+    echo "water) ships Windows-only builds so far -- enable its Wine/Proton"
+    echo "wrapper in Quiver until upstream adds a Linux release."

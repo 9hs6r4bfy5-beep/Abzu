@@ -239,7 +239,9 @@ modules:
       # Unity (install-daggerfall-unity.sh), Ship of Harkinian (install-soh.sh),
       # 2Ship2Harkinian (install-2s2h.sh) and the SA Mod Manager installer
       # (install-samodmanager.sh). Those four scripts have been removed from
-      # files/scripts/.
+      # files/scripts/. It also seeds Wave Race 64 via DomazinUS/RaceWave46 --
+      # the WR64 recomp with ray-traced water (DXR/RT64); Windows-only builds
+      # so far, run through Quiver's Wine/Proton wrapper.
       - install-quiver.sh
 
   - type: default-flatpaks

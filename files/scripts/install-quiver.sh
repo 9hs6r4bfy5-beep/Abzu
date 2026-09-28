@@ -15,7 +15,9 @@ echo "--- Installing Quiver Launcher (AppImage) ---"
 #
 # Deferred (Windows/macOS-only releases, no Linux build yet -- revisit when
 # upstream ships one): elliotttate/DKC1Recomp, DKC2Recomp, DKC3Recomp,
-# elliotttate/wave-race-64-recomp, DomazinUS/RaceWave46.
+# elliotttate/wave-race-64-recomp.
+# NOTE: Wave Race 64 IS seeded below -- the user picked DomazinUS/RaceWave46
+# because it is the only WR64 recomp with ray-traced water (DXR via RT64).
 
 REPO="tgeorgiadis/quiver-launcher"
 ARCH="$(uname -m)"
@@ -107,10 +109,23 @@ cat > /etc/skel/.local/share/quiver/apps.json << 'EOF'
       "folderName": "SuperMarioBrosRemastered-SuperMarioBrosRemastered",
       "tags": ["recreation", "nes", "mario", "nintendo", "nintendo entertainment system"],
       "appIconUrl": "https://raw.githubusercontent.com/JHDev2006/Super-Mario-Bros.-Remastered-Public/main/icon.png"
+    },
+    {
+      "name": "Wave Race 64 [Decompiled]",
+      "project": "Wave Race 64",
+      "repository": "DomazinUS/RaceWave46",
+      "folderName": "RaceWave46-RaceWave46",
+      "tags": ["decomp", "n64", "wave race", "nintendo"],
+      "appIconUrl": null
     }
   ]
 }
 EOF
+# Heads-up on the Wave Race 64 seed: RaceWave46 is the WR64 static recomp with
+# ray-traced water (DXR via RT64), which is why it was chosen over
+# elliotttate/wave-race-64-recomp. Its releases are currently Windows-only and
+# the game is BYO-ROM, so run it through Quiver's Wine/Proton wrapper until
+# upstream ships a Linux host (see notes on N64ModernRuntime task_win32.cpp).
 
 # Desktop entry.
 # NOTE ON SELF-UPDATE: Quiver ships an in-app updater that rewrites the binary
@@ -128,7 +143,7 @@ Exec=/opt/quiver/quiver.AppImage
 Icon=applications-games
 Terminal=false
 Categories=Game;Utility;
-Keywords=launcher;mods;github;gitlab;soh;2s2h;daggerfall;mario;
+Keywords=launcher;mods;github;gitlab;soh;2s2h;daggerfall;mario;wave race;
 StartupNotify=true
 EOF
 
