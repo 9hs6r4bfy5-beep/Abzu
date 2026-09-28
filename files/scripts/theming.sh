@@ -96,7 +96,7 @@ INSTALL_LOG=/tmp/whitesur-gtk-install.log
 set +e
 (
     cd /tmp/whitesur-gtk
-    bash install.sh -d "${THEME_DIR}" -c dark
+    bash install.sh -d "${THEME_DIR}" -c all
 ) >"$INSTALL_LOG" 2>&1
 INSTALL_EXIT=$?
 set -e
@@ -217,6 +217,8 @@ rm -rf \
     /tmp/leopard.zip /tmp/OS-X-Leopard-master \
     /tmp/liquid-glass \
     2>/dev/null || true
+
+dconf update
 
 echo "--- Theming Installation Complete ---"
 exit 0
