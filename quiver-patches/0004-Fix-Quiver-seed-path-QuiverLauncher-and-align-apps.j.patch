@@ -1,0 +1,144 @@
+From 24573f3c31ab5c2a7011032e36be932bad8d9e2d Mon Sep 17 00:00:00 2001
+From: "qwen.ai[bot]" <qwenlm-intl@service.alibaba.com>
+Date: Tue, 29 Sep 2026 18:20:21 +0000
+Subject: [PATCH 4/4] Fix Quiver seed path (QuiverLauncher) and align apps.json
+ entries with community catalog schema
+
+---
+ files/scripts/install-quiver.sh               | 74 +++++++++++--------
+ .../usr/share/ublue-os/just/60-custom.just    |  2 +-
+ 2 files changed, 46 insertions(+), 30 deletions(-)
+
+diff --git a/files/scripts/install-quiver.sh b/files/scripts/install-quiver.sh
+index dc22046..641a21f 100755
+--- a/files/scripts/install-quiver.sh
++++ b/files/scripts/install-quiver.sh
+@@ -14,10 +14,11 @@ echo "--- Installing Quiver Launcher (AppImage) ---"
+ # downloads and updates them per user, so the image stays slim.
+ #
+ # Deferred (Windows/macOS-only releases, no Linux build yet -- revisit when
+-# upstream ships one): elliotttate/DKC1Recomp, DKC2Recomp, DKC3Recomp,
+-# elliotttate/wave-race-64-recomp.
++# upstream ships one): elliotttate/DKC1Recomp, DKC2Recomp, DKC3Recomp.
+ # NOTE: Wave Race 64 IS seeded below -- the user picked DomazinUS/RaceWave46
+ # because it is the only WR64 recomp with ray-traced water (DXR via RT64).
++# Its catalog entry (and elliotttate/wave-race-64-recomp's) are recorded in
++# the community catalog should you want to subscribe instead.
+ 
+ REPO="tgeorgiadis/quiver-launcher"
+ ARCH="$(uname -m)"
+@@ -72,51 +73,66 @@ fi
+ # Seed the library with the entries that used to be installed standalone.
+ # Quiver keeps apps.json beside the AppImage, which is read-only on an
+ # immutable image, so it falls back to $XDG_DATA_HOME/QuiverLauncher (i.e.
+-# ~/.local/share/QuiverLauncher). Drop a starter file there via /etc/skel;
+-# the quiver-setup justfile recipe copies it in place if the user wants it.
+-mkdir -p /etc/skel/.local/share/quiver
+-cat > /etc/skel/.local/share/quiver/apps.json << 'EOF'
++# ~/.local/share/QuiverLauncher -- note the capitalisation: Services/
++# QuiverLauncherPaths.cs uses AppName = "QuiverLauncher"). Drop a starter
++# file there via /etc/skel; the quiver-setup justfile recipe copies it in
++# place if the user wants it.
++#
++# Every entry below is copied VERBATIM from the live community catalog
++# (tgeorgiadis/quiver-community-app-catalog, community-app-catalog/*.json).
++# That matters for two reasons:
++#   1. Quiver identifies library tiles by InstanceKey =
++#      "{source}:{repository}:{folderName}" (Services/RepositorySourceHelper.cs)
++#      and dedupes local apps against subscribed catalogs on that key
++#      (AppCatalogService.DedupeByRepository). Any deviation in folderName
++#      creates a duplicate tile instead of merging with the catalog row.
++#   2. The parser reads exactly these camelCase fields: name, project,
++#      repository, folderName, tags, appIconUrl (GetIconUrl also accepts
++#      gameIconUrl/customDefaultIconUrl as legacy aliases). Unknown or
++#      mis-cased keys are silently dropped, so hand-rolled schemas break.
++mkdir -p /etc/skel/.local/share/QuiverLauncher
++cat > /etc/skel/.local/share/QuiverLauncher/apps.json << 'EOF'
+ {
+   "apps": [
+     {
+-      "name": "Daggerfall Unity",
+-      "project": "The Elder Scrolls II: Daggerfall",
++      "name": "The Elder Scrolls II: Daggerfall",
++      "project": "Daggerfall Unity",
+       "repository": "Interkarma/daggerfall-unity",
+-      "folderName": "DaggerfallUnity",
+-      "tags": ["recreation", "pc", "elder scrolls"],
+-      "appIconUrl": null
++      "folderName": "TheElderScrollsIIDaggerfall-DaggerfallUnity",
++      "appIconUrl": "https://cdn2.steamgriddb.com/icon/f834b70560c3ca992ff72b5983170816/32/256x256.png",
++      "tags": ["recreation", "pc", "elder scrolls"]
+     },
+     {
+-      "name": "Ship of Harkinian",
+-      "project": "The Legend of Zelda: Ocarina of Time",
++      "name": "The Legend of Zelda: Ocarina of Time",
++      "project": "Ship of Harkinian",
+       "repository": "HarbourMasters/Shipwright",
+-      "folderName": "ShipOfHarkinian",
+-      "tags": ["decomp", "n64", "harbour masters", "zelda"],
+-      "appIconUrl": null
++      "folderName": "TheLegendOfZeldaOcarinaOfTime-ShipOfHarkinian",
++      "appIconUrl": "https://raw.githubusercontent.com/HarbourMasters/Shipwright/refs/heads/develop/soh/SHIPOFHARKINIAN.ico",
++      "tags": ["decomp", "n64", "harbour masters", "zelda"]
+     },
+     {
+-      "name": "2 Ship 2 Harkinian",
+-      "project": "The Legend of Zelda: Majora's Mask",
++      "name": "The Legend of Zelda: Majora's Mask",
++      "project": "2 Ship 2 Harkinian",
+       "repository": "HarbourMasters/2ship2harkinian",
+-      "folderName": "2Ship2Harkinian",
+-      "tags": ["decomp", "n64", "harbour masters", "zelda"],
+-      "appIconUrl": null
++      "folderName": "TheLegendOfZeldaMajorasMask-2Ship2Harkinian",
++      "appIconUrl": "https://raw.githubusercontent.com/HarbourMasters/2ship2harkinian/refs/heads/develop/mm/windows/2SHIP2HARKINIAN.ico",
++      "tags": ["decomp", "n64", "harbour masters", "zelda"]
+     },
+     {
+       "name": "Super Mario Bros. [Remastered]",
+       "project": "Super Mario Bros. Remastered",
+       "repository": "JHDev2006/Super-Mario-Bros.-Remastered-Public",
+       "folderName": "SuperMarioBrosRemastered-SuperMarioBrosRemastered",
+-      "tags": ["recreation", "nes", "mario", "nintendo", "nintendo entertainment system"],
+-      "appIconUrl": "https://raw.githubusercontent.com/JHDev2006/Super-Mario-Bros.-Remastered-Public/main/icon.png"
++      "appIconUrl": "https://raw.githubusercontent.com/JHDev2006/Super-Mario-Bros.-Remastered-Public/main/icon.png",
++      "tags": ["recreation", "nes", "mario", "nintendo", "nintendo entertainment system"]
+     },
+     {
+-      "name": "Wave Race 64 [Decompiled]",
+-      "project": "Wave Race 64",
++      "name": "Wave Race 64",
++      "project": "RaceWave46",
+       "repository": "DomazinUS/RaceWave46",
+-      "folderName": "RaceWave46-RaceWave46",
+-      "tags": ["decomp", "n64", "wave race", "nintendo"],
+-      "appIconUrl": null
++      "folderName": "WaveRace64-RaceWave46",
++      "appIconUrl": "https://raw.githubusercontent.com/DomazinUS/RaceWave46/refs/heads/main/assets/manual/RaceWave46_logo_noBackground.png",
++      "tags": ["recomp", "n64", "wave race", "nintendo", "nintendo 64", "recompilation"]
+     }
+   ]
+ }
+@@ -148,4 +164,4 @@ StartupNotify=true
+ EOF
+ 
+ echo "--- Quiver Launcher installed to /opt/quiver/quiver.AppImage ---"
+-echo "--- Starter library seeded at /etc/skel/.local/share/quiver/apps.json ---"
++echo "--- Starter library seeded at /etc/skel/.local/share/QuiverLauncher/apps.json ---"
+diff --git a/files/system/usr/share/ublue-os/just/60-custom.just b/files/system/usr/share/ublue-os/just/60-custom.just
+index db0b9e6..f9f6c3b 100644
+--- a/files/system/usr/share/ublue-os/just/60-custom.just
++++ b/files/system/usr/share/ublue-os/just/60-custom.just
+@@ -74,7 +74,7 @@ quiver-setup:
+     #!/usr/bin/bash
+     set -euo pipefail
+     DEST="${XDG_DATA_HOME:-$HOME/.local/share}/QuiverLauncher"
+-    SEED="$HOME/.local/share/quiver/apps.json"
++    SEED="$HOME/.local/share/QuiverLauncher/apps.json"
+     if [ ! -f "${SEED}" ]; then
+         echo "Seed file ${SEED} not found. Nothing to do."
+         exit 0
+-- 
+2.39.5
+

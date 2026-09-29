@@ -1,0 +1,558 @@
+From 613a7014be907fbd23d15ff7e60fc251062b2e54 Mon Sep 17 00:00:00 2001
+From: "qwen.ai[bot]" <qwenlm-intl@service.alibaba.com>
+Date: Mon, 28 Sep 2026 20:12:57 +0000
+Subject: [PATCH 1/4] Replace standalone game installs with Quiver Launcher
+
+Remove the four per-game build scripts (Daggerfall Unity, Ship of
+Harkinian, 2Ship2Harkinian, SA Mod Manager installer) and install a
+single Quiver Launcher AppImage instead. Quiver manages those repos
+per-user via its community catalog, so the games no longer need to be
+baked into the image.
+
+Keep the Flathub packages for Nanosaur/Nanosaur 2/OpenMW/Hedge Mod
+Manager/UT99/UT2004: they are sandboxed and Quiver is not a security
+equivalent (no OpenMW/jorio/UT entries exist in its catalog, and UT has
+no native Linux build). Add a quiver-setup justfile recipe that seeds
+the user library from /etc/skel.
+---
+ files/scripts/install-2s2h.sh                 |  92 -------------
+ files/scripts/install-daggerfall-unity.sh     |  46 -------
+ files/scripts/install-quiver.sh               | 123 ++++++++++++++++++
+ files/scripts/install-samodmanager.sh         |  57 --------
+ files/scripts/install-soh.sh                  |  83 ------------
+ .../usr/share/ublue-os/just/60-custom.just    |  29 +++++
+ recipes/recipe.yml                            |  33 ++++-
+ 7 files changed, 181 insertions(+), 282 deletions(-)
+ delete mode 100644 files/scripts/install-2s2h.sh
+ delete mode 100644 files/scripts/install-daggerfall-unity.sh
+ create mode 100755 files/scripts/install-quiver.sh
+ delete mode 100644 files/scripts/install-samodmanager.sh
+ delete mode 100644 files/scripts/install-soh.sh
+
+diff --git a/files/scripts/install-2s2h.sh b/files/scripts/install-2s2h.sh
+deleted file mode 100644
+index 28cb3d3..0000000
+--- a/files/scripts/install-2s2h.sh
++++ /dev/null
+@@ -1,92 +0,0 @@
+-#!/usr/bin/env bash
+-set -euo pipefail
+-
+-echo "--- Installing 2Ship2Harkinian ---"
+-
+-REPO="2ship2harkinian/2ship2harkinian"
+-API_URL="https://api.github.com/repos/${REPO}/releases/latest"
+-
+-echo "Querying latest release from ${REPO}..."
+-RELEASE_JSON=$(curl -fsSL "${API_URL}")
+-
+-TAG=$(echo "${RELEASE_JSON}" | jq -r '.tag_name')
+-echo "Latest release: ${TAG}"
+-
+-ASSET_URL=$(echo "${RELEASE_JSON}" \
+-    | jq -r '.assets[] | select(.name | endswith("-Linux.zip")) | .browser_download_url')
+-
+-if [ -z "${ASSET_URL}" ] || [ "${ASSET_URL}" = "null" ]; then
+-    echo "Error: no Linux asset found in release ${TAG}."
+-    echo "Assets available:"
+-    echo "${RELEASE_JSON}" | jq -r '.assets[].name'
+-    exit 1
+-fi
+-
+-echo "Downloading ${ASSET_URL}..."
+-mkdir -p /opt/2s2h
+-cd /opt/2s2h
+-curl -fL -o 2s2h.zip "${ASSET_URL}"
+-
+-# Check the ZIP magic bytes directly. The 'file' utility in this
+-# container misidentifies some valid archives as 'data', so we look at
+-# the raw first four bytes instead: a ZIP starts with 'PK\x03\x04'.
+-echo "Downloaded $(stat -c %s 2s2h.zip) bytes"
+-FIRST_BYTES=$(od -A n -t x1 -N 4 2s2h.zip | tr -d ' \n')
+-echo "First 4 bytes: ${FIRST_BYTES}"
+-
+-if [ "${FIRST_BYTES}" != "504b0304" ]; then
+-    echo "Error: file does not begin with ZIP magic bytes (got ${FIRST_BYTES})."
+-    echo "The download may have failed or returned an HTML page."
+-    exit 1
+-fi
+-
+-# Extract. Prefer unzip, fall back to 7z (some archives have extra
+-# headers that unzip rejects but 7z handles).
+-EXTRACTED=0
+-if unzip -o 2s2h.zip >/dev/null 2>&1; then
+-    EXTRACTED=1
+-    echo "Extracted with unzip."
+-elif 7z x -y 2s2h.zip >/dev/null 2>&1; then
+-    EXTRACTED=1
+-    echo "Extracted with 7z."
+-fi
+-
+-if [ "$EXTRACTED" -ne 1 ]; then
+-    echo "Could not extract the archive with unzip or 7z."
+-    echo "Listing of /opt/2s2h:"
+-    ls -la
+-    exit 1
+-fi
+-
+-rm -f 2s2h.zip
+-
+-# Locate the AppImage. Use -print -quit so find stops at the first
+-# match without piping into head (avoids SIGPIPE under pipefail).
+-APPIMAGE=$(find . -maxdepth 3 -type f \
+-    \( -name '*.appimage' -o -name '*.AppImage' \) \
+-    -print -quit)
+-
+-if [ -z "${APPIMAGE}" ]; then
+-    echo "Error: no AppImage found in the extracted archive."
+-    echo "Contents of /opt/2s2h:"
+-    ls -la
+-    exit 1
+-fi
+-
+-chmod +x "${APPIMAGE}"
+-APPIMAGE_ABS="/opt/2s2h/${APPIMAGE#./}"
+-echo "Found AppImage: ${APPIMAGE_ABS}"
+-
+-mkdir -p /usr/share/applications
+-cat > /usr/share/applications/2ship2harkinian.desktop << EOF
+-[Desktop Entry]
+-Type=Application
+-Name=2 Ship 2 Harkinian
+-Comment=PC port of The Legend of Zelda: Majora's Mask
+-Exec=${APPIMAGE_ABS}
+-Icon=2ship2harkinian
+-Terminal=false
+-Categories=Game;ActionGame;
+-EOF
+-
+-echo "--- 2Ship2Harkinian installed ---"
+diff --git a/files/scripts/install-daggerfall-unity.sh b/files/scripts/install-daggerfall-unity.sh
+deleted file mode 100644
+index e1b639b..0000000
+--- a/files/scripts/install-daggerfall-unity.sh
++++ /dev/null
+@@ -1,46 +0,0 @@
+-#!/usr/bin/env bash
+-set -euo pipefail
+-
+-echo "--- Installing Daggerfall Unity (AppImage) ---"
+-
+-REPO="pkgforge-dev/Daggerfall-Unity-AppImage"
+-
+-echo "  Querying latest release of ${REPO}..."
+-RELEASE_JSON=$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest") || {
+-    echo "ERROR: Could not query releases for ${REPO}." >&2
+-    exit 1
+-}
+-
+-# Select the first .AppImage asset. The API returns the exact asset name,
+-# so no filename guessing is required.
+-ASSET_URL=$(echo "$RELEASE_JSON" \
+-    | jq -r '.assets[] | select(.name | test("\\.AppImage$"; "i")) | .browser_download_url' \
+-    | head -n 1)
+-
+-if [ -z "$ASSET_URL" ] || [ "$ASSET_URL" = "null" ]; then
+-    echo "ERROR: No .AppImage asset found in the latest release of ${REPO}." >&2
+-    echo "       Available assets:" >&2
+-    echo "$RELEASE_JSON" | jq -r '.assets[].name' >&2 || true
+-    exit 1
+-fi
+-
+-echo "  Downloading: ${ASSET_URL}"
+-mkdir -p /opt/daggerfall-unity
+-cd /opt/daggerfall-unity
+-curl -fL -o daggerfall-unity.AppImage "${ASSET_URL}"
+-chmod +x daggerfall-unity.AppImage
+-
+-# Create desktop entry.
+-mkdir -p /usr/share/applications
+-cat > /usr/share/applications/daggerfall-unity.desktop << 'EOF'
+-[Desktop Entry]
+-Type=Application
+-Name=Daggerfall Unity
+-Comment=Open source recreation of Daggerfall in the Unity engine
+-Exec=/opt/daggerfall-unity/daggerfall-unity.AppImage
+-Icon=daggerfall-unity
+-Terminal=false
+-Categories=Game;Roleplaying;
+-EOF
+-
+-echo "--- Daggerfall Unity installed ---"
+diff --git a/files/scripts/install-quiver.sh b/files/scripts/install-quiver.sh
+new file mode 100755
+index 0000000..5481f9e
+--- /dev/null
++++ b/files/scripts/install-quiver.sh
+@@ -0,0 +1,123 @@
++#!/usr/bin/env bash
++set -euo pipefail
++
++echo "--- Installing Quiver Launcher (AppImage) ---"
++
++# Quiver Launcher is a single launcher that replaces the four standalone
++# installs this image used to ship:
++#   * Daggerfall Unity      -> Interkarma/daggerfall-unity        (community catalog)
++#   * Ship of Harkinian     -> HarbourMasters/Shipwright          (community catalog)
++#   * 2 Ship 2 Harkinian    -> HarbourMasters/2ship2harkinian     (community catalog)
++#   * SA Mod Manager        -> not covered; use Flatpak Hedge Mod Manager
++# The games themselves are NOT baked into the image any more -- Quiver
++# downloads and updates them per user, so the image stays slim.
++
++REPO="tgeorgiadis/quiver-launcher"
++ARCH="$(uname -m)"
++
++case "${ARCH}" in
++    x86_64)  ASSET_PATTERN="linux-x64.AppImage" ;;
++    aarch64) ASSET_PATTERN="linux-arm64.AppImage" ;;
++    *)
++        echo "ERROR: Unsupported architecture for Quiver Launcher: ${ARCH}" >&2
++        exit 1
++        ;;
++esac
++
++echo "  Querying latest release of ${REPO} (${ASSET_PATTERN})..."
++RELEASE_JSON=$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest") || {
++    echo "ERROR: Could not query releases for ${REPO}." >&2
++    exit 1
++}
++
++# Match the AppImage asset for this architecture only. Release filenames are
++# stable ("QuiverLauncher-linux-x64.AppImage"), but match on the suffix so an
++# upstream version stamp in the name would not break us.
++ASSET_URL=$(echo "${RELEASE_JSON}" \
++    | jq -r --arg pat "${ASSET_PATTERN}" \
++        '.assets[] | select(.name | endswith($pat)) | .browser_download_url' \
++    | head -n 1)
++
++if [ -z "${ASSET_URL}" ] || [ "${ASSET_URL}" = "null" ]; then
++    echo "ERROR: No '${ASSET_PATTERN}' asset found in the latest release of ${REPO}." >&2
++    echo "       Available assets:" >&2
++    echo "${RELEASE_JSON}" | jq -r '.assets[].name' >&2 || true
++    exit 1
++fi
++
++TAG=$(echo "${RELEASE_JSON}" | jq -r '.tag_name')
++echo "  Latest release: ${TAG}"
++echo "  Downloading: ${ASSET_URL}"
++
++mkdir -p /opt/quiver
++cd /opt/quiver
++curl -fL -o quiver.AppImage "${ASSET_URL}"
++chmod +x quiver.AppImage
++
++# Sanity check: the download must be an ELF binary, not an HTML error page.
++FIRST_BYTES=$(od -A n -t x1 -N 4 quiver.AppImage | tr -d ' \n')
++if [ "${FIRST_BYTES}" != "7f454c46" ]; then
++    echo "ERROR: quiver.AppImage does not start with the ELF magic bytes (got ${FIRST_BYTES})." >&2
++    echo "       Downloaded $(stat -c %s quiver.AppImage) bytes; the download probably failed." >&2
++    exit 1
++fi
++
++# Seed the library with the entries that used to be installed standalone.
++# Quiver keeps apps.json beside the AppImage, which is read-only on an
++# immutable image, so it falls back to $XDG_DATA_HOME/QuiverLauncher (i.e.
++# ~/.local/share/QuiverLauncher). Drop a starter file there via /etc/skel;
++# the quiver-setup justfile recipe copies it in place if the user wants it.
++mkdir -p /etc/skel/.local/share/quiver
++cat > /etc/skel/.local/share/quiver/apps.json << 'EOF'
++{
++  "apps": [
++    {
++      "name": "Daggerfall Unity",
++      "project": "The Elder Scrolls II: Daggerfall",
++      "repository": "Interkarma/daggerfall-unity",
++      "folderName": "DaggerfallUnity",
++      "tags": ["recreation", "pc", "elder scrolls"],
++      "appIconUrl": null
++    },
++    {
++      "name": "Ship of Harkinian",
++      "project": "The Legend of Zelda: Ocarina of Time",
++      "repository": "HarbourMasters/Shipwright",
++      "folderName": "ShipOfHarkinian",
++      "tags": ["decomp", "n64", "harbour masters", "zelda"],
++      "appIconUrl": null
++    },
++    {
++      "name": "2 Ship 2 Harkinian",
++      "project": "The Legend of Zelda: Majora's Mask",
++      "repository": "HarbourMasters/2ship2harkinian",
++      "folderName": "2Ship2Harkinian",
++      "tags": ["decomp", "n64", "harbour masters", "zelda"],
++      "appIconUrl": null
++    }
++  ]
++}
++EOF
++
++# Desktop entry.
++# NOTE ON SELF-UPDATE: Quiver ships an in-app updater that rewrites the binary
++# next to itself. On an immutable image /opt/quiver is not writable, so the
++# updater will fail -- updates arrive by rebuilding this image instead. If you
++# would rather have per-user self-updates, drop the AppImage into /etc/skel
++# (~/.local/share/QuiverLauncher) and point Exec at that path.
++mkdir -p /usr/share/applications
++cat > /usr/share/applications/quiver.desktop << 'EOF'
++[Desktop Entry]
++Type=Application
++Name=Quiver Launcher
++Comment=Download, install and update GitHub/GitLab game ports, mods and tools
++Exec=/opt/quiver/quiver.AppImage
++Icon=applications-games
++Terminal=false
++Categories=Game;Utility;
++Keywords=launcher;mods;github;gitlab;soh;2s2h;daggerfall;
++StartupNotify=true
++EOF
++
++echo "--- Quiver Launcher installed to /opt/quiver/quiver.AppImage ---"
++echo "--- Starter library seeded at /etc/skel/.local/share/quiver/apps.json ---"
+diff --git a/files/scripts/install-samodmanager.sh b/files/scripts/install-samodmanager.sh
+deleted file mode 100644
+index e984ba6..0000000
+--- a/files/scripts/install-samodmanager.sh
++++ /dev/null
+@@ -1,57 +0,0 @@
+-#!/usr/bin/env bash
+-set -euo pipefail
+-
+-echo "--- Installing Sonic Adventure Mod Manager ---"
+-
+-# The installer is designed to run as a regular user, in a graphical
+-# session. On an Atomic/immutable system we cannot run it at build time,
+-# so we clone the installer repo into a system location and drop a
+-# desktop launcher into /etc/skel/Desktop. The user runs the launcher
+-# once after first login.
+-
+-INSTALLER_DIR="/usr/local/share/sa-modmanager-installer"
+-REPO_URL="https://github.com/alexankitty/sa-modmanager-installer-linux.git"
+-
+-# Clone the installer repository.
+-rm -rf "${INSTALLER_DIR}"
+-mkdir -p "$(dirname "${INSTALLER_DIR}")"
+-if ! git clone --depth 1 "${REPO_URL}" "${INSTALLER_DIR}"; then
+-    echo "ERROR: Failed to clone ${REPO_URL}" >&2
+-    exit 1
+-fi
+-
+-# Verify the expected scripts are present before chmod'ing them, so a
+-# future rename in the upstream repo produces a clear error rather than
+-# an obscure "No such file" from chmod.
+-for script in SAModManagerSetupImmutable.sh SADXConvertImmutable.sh; do
+-    if [ ! -f "${INSTALLER_DIR}/${script}" ]; then
+-        echo "ERROR: Expected script not found: ${INSTALLER_DIR}/${script}" >&2
+-        echo "Contents of ${INSTALLER_DIR}:" >&2
+-        ls -la "${INSTALLER_DIR}" >&2 || true
+-        exit 1
+-    fi
+-done
+-
+-chmod +x "${INSTALLER_DIR}/SAModManagerSetupImmutable.sh"
+-chmod +x "${INSTALLER_DIR}/SADXConvertImmutable.sh"
+-
+-# Create a desktop launcher that runs the installer in the user's session.
+-# OnlyShowIn=GNOME; restricts the launcher to GNOME, matching the desktop
+-# environment that Abzu ships.
+-mkdir -p /etc/skel/Desktop
+-cat > /etc/skel/Desktop/Install-SA-Mod-Manager.desktop << 'EOF'
+-[Desktop Entry]
+-Type=Application
+-Name=Install Sonic Adventure Mod Manager
+-Comment=Set up SA Mod Manager on this system
+-Exec=bash -c 'cd /usr/local/share/sa-modmanager-installer && ./SAModManagerSetupImmutable.sh && notify-send "SA Mod Manager installation complete"'
+-Icon=applications-games
+-Terminal=true
+-Categories=Game;
+-OnlyShowIn=GNOME;
+-EOF
+-
+-chmod +x /etc/skel/Desktop/Install-SA-Mod-Manager.desktop
+-
+-echo "--- SA Mod Manager installer staged ---"
+-echo "Run the 'Install Sonic Adventure Mod Manager' desktop launcher after first login."
+diff --git a/files/scripts/install-soh.sh b/files/scripts/install-soh.sh
+deleted file mode 100644
+index 1792113..0000000
+--- a/files/scripts/install-soh.sh
++++ /dev/null
+@@ -1,83 +0,0 @@
+-#!/usr/bin/env bash
+-set -euo pipefail
+-
+-echo "--- Installing Ship of Harkinian ---"
+-
+-REPO="HarbourMasters/Shipwright"
+-API_URL="https://api.github.com/repos/${REPO}/releases/latest"
+-
+-echo "Querying latest release from ${REPO}..."
+-RELEASE_JSON=$(curl -fsSL "${API_URL}")
+-
+-TAG=$(echo "${RELEASE_JSON}" | jq -r '.tag_name')
+-echo "Latest release: ${TAG}"
+-
+-# The release asset is a .zip archive named like 'SoH-Ackbar-Delta-Linux.zip'.
+-# Select the first asset ending in '-Linux.zip' (case-insensitive).
+-ASSET_URL=$(echo "${RELEASE_JSON}" \
+-    | jq -r '.assets[] | select(.name | test("-Linux\\.zip$"; "i")) | .browser_download_url' \
+-    | head -n 1)
+-
+-if [ -z "${ASSET_URL}" ] || [ "${ASSET_URL}" = "null" ]; then
+-    echo "Error: no Linux .zip asset found in release ${TAG}." >&2
+-    echo "Assets available:" >&2
+-    echo "${RELEASE_JSON}" | jq -r '.assets[].name' >&2
+-    exit 1
+-fi
+-
+-echo "Downloading ${ASSET_URL}..."
+-mkdir -p /opt/soh
+-cd /opt/soh
+-curl -fL -o soh.zip "${ASSET_URL}"
+-
+-echo "Downloaded $(stat -c %s soh.zip) bytes"
+-
+-# Extract. Prefer unzip, fall back to 7z.
+-EXTRACTED=0
+-if unzip -o soh.zip >/dev/null 2>&1; then
+-    EXTRACTED=1
+-    echo "Extracted with unzip."
+-elif 7z x -y soh.zip >/dev/null 2>&1; then
+-    EXTRACTED=1
+-    echo "Extracted with 7z."
+-fi
+-
+-if [ "$EXTRACTED" -ne 1 ]; then
+-    echo "Could not extract the archive with unzip or 7z." >&2
+-    echo "Listing of /opt/soh:" >&2
+-    ls -la >&2
+-    exit 1
+-fi
+-
+-rm -f soh.zip
+-
+-# Locate the AppImage. Use -print -quit so find stops at the first match.
+-APPIMAGE=$(find . -maxdepth 3 -type f \
+-    \( -name '*.appimage' -o -name '*.AppImage' \) \
+-    -print -quit)
+-
+-if [ -z "${APPIMAGE}" ]; then
+-    echo "Error: no AppImage found in the extracted archive." >&2
+-    echo "Contents of /opt/soh:" >&2
+-    ls -la >&2
+-    exit 1
+-fi
+-
+-chmod +x "${APPIMAGE}"
+-APPIMAGE_ABS="/opt/soh/${APPIMAGE#./}"
+-echo "Found AppImage: ${APPIMAGE_ABS}"
+-
+-# Create desktop entry.
+-mkdir -p /usr/share/applications
+-cat > /usr/share/applications/ship-of-harkinian.desktop << EOF
+-[Desktop Entry]
+-Type=Application
+-Name=Ship of Harkinian
+-Comment=PC port of The Legend of Zelda: Ocarina of Time
+-Exec=${APPIMAGE_ABS}
+-Icon=ship-of-harkinian
+-Terminal=false
+-Categories=Game;ActionGame;
+-EOF
+-
+-echo "--- Ship of Harkinian installed ---"
+diff --git a/files/system/usr/share/ublue-os/just/60-custom.just b/files/system/usr/share/ublue-os/just/60-custom.just
+index f1e113e..7b77e25 100644
+--- a/files/system/usr/share/ublue-os/just/60-custom.just
++++ b/files/system/usr/share/ublue-os/just/60-custom.just
+@@ -62,3 +62,32 @@ gmtp-sync:
+     echo "Ensure your Walkman is connected and unlocked, then launching gMTP..."
+     # Launch gmtp (RPM version)
+     flatpak run app.gmtp.gMTP &
++
++# Seed Quiver Launcher's library with the entries that used to be installed
++# standalone (Daggerfall Unity, Ship of Harkinian, 2 Ship 2 Harkinian).
++# Quiver stores apps.json beside its AppImage, which is read-only on Abzu,
++# so it falls back to ~/.local/share/QuiverLauncher/. This recipe copies the
++# seeded file there; it never overwrites an existing library. Run once, before
++# the first launch of Quiver.
++quiver-setup:
++    #!/usr/bin/bash
++    set -euo pipefail
++    DEST="${XDG_DATA_HOME:-$HOME/.local/share}/QuiverLauncher"
++    SEED="$HOME/.local/share/quiver/apps.json"
++    if [ ! -f "${SEED}" ]; then
++        echo "Seed file ${SEED} not found. Nothing to do."
++        exit 0
++    fi
++    mkdir -p "${DEST}"
++    if [ -f "${DEST}/apps.json" ]; then
++        echo "A library already exists at ${DEST}/apps.json -- leaving it untouched."
++        echo "To merge the seeded entries by hand, compare with: ${SEED}"
++    else
++        cp "${SEED}" "${DEST}/apps.json"
++        echo "Seeded Quiver library at ${DEST}/apps.json"
++    fi
++    echo ""
++    echo "Launch Quiver Launcher from the applications grid, or run:"
++    echo "  /opt/quiver/quiver.AppImage"
++    echo "Tip: subscribe to the built-in community catalog in App Catalog for"
++    echo "many more ports (it also lists SoH, 2SoH and Daggerfall Unity)."
+diff --git a/recipes/recipe.yml b/recipes/recipe.yml
+index 0c10b5b..80aebf9 100644
+--- a/recipes/recipe.yml
++++ b/recipes/recipe.yml
+@@ -233,10 +233,12 @@ modules:
+       - install-sumer-r-package.sh
+       - cuneiform-toggle.sh
+       - enable-vaapi.sh
+-      - install-daggerfall-unity.sh
+-      - install-soh.sh
+-      - install-2s2h.sh
+-      - install-samodmanager.sh
++      # Quiver Launcher replaces the former standalone installs of Daggerfall
++      # Unity (install-daggerfall-unity.sh), Ship of Harkinian (install-soh.sh),
++      # 2Ship2Harkinian (install-2s2h.sh) and the SA Mod Manager installer
++      # (install-samodmanager.sh). Those four scripts have been removed from
++      # files/scripts/.
++      - install-quiver.sh
+ 
+   - type: default-flatpaks
+     configurations:
+@@ -283,11 +285,34 @@ modules:
+           - com.vysp3r.ProtonPlus
+           - com.github.Matoking.protontricks
+           - io.github.sharkwouter.Minigalaxy
++          # --- Flatpak releases kept on purpose -------------------------------
++          # These are Flathub (sandboxed, maintained) builds. Quiver Launcher
++          # is an AppImage that downloads arbitrary GitHub release assets and
++          # self-updates outside any sandbox, so it is NOT a security-equivalent
++          # replacement for the entries below. Keep them; see README notes in
++          # the commit that introduced Quiver.
++          #
++          # OpenMW: open-source Morrowind engine. Quiver has no catalog entry
++          # for it, and its data files come from GoG/Steam anyway (covered by
++          # Minigalaxy / Heroic / Steam).
+           - org.openmw.OpenMW
++          # jorio bundle: free, open-source engine + official game data,
++          # shipped as verified Flathub packages with no equivalent upstream
++          # Linux installer that Quiver could manage.
+           - com.infochunk.OpenMadoola
+           - io.jor.nanosaur
+           - io.jor.nanosaur2
++          # Hedge Mod Manager: the maintained successor to SA Mod Manager
++          # (the standalone SAModManager installer script was removed in
++          # favour of Quiver; HMM itself is not distributed as a GitHub
++          # release asset that Quiver can install/update, so keep the flatpak).
+           - io.github.hedge_dev.hedgemodmanager
++          # Unreal Tournament / UT2004: Epic-published, proprietary wrappers
++          # around the Windows binaries run through Wine. There is NO native
++          # Linux build and therefore nothing for Quiver (which installs
++          # GitHub/GitLab release assets) to manage. The only non-flatpak
++          # alternatives are Lutris or Heroic scripts using the same Windows
++          # binaries -- strictly less safe than these Flathub packages.
+           - com.epicgames.ut99
+           - com.epicgames.ut2004
+           - com.heroicgameslauncher.hgl
+-- 
+2.39.5
+

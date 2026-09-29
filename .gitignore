@@ -1,7 +1,2 @@
-cosign.key
-cosign.private
-/Containerfile
-*.iso
-*.iso-CHECKSUM
-.DS_Store
-**/.DS_Store
+# Compressed files
+*.tar.gz

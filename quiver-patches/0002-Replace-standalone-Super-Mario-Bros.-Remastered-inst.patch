@@ -1,0 +1,179 @@
+From 176263697226a33f477019d142d6d45b98980ce5 Mon Sep 17 00:00:00 2001
+From: "qwen.ai[bot]" <qwenlm-intl@service.alibaba.com>
+Date: Mon, 28 Sep 2026 20:38:19 +0000
+Subject: [PATCH 2/4] Replace standalone Super Mario Bros. Remastered install
+ with Quiver seed
+
+---
+ files/scripts/install-quiver.sh               | 25 +++++--
+ files/scripts/install-smb-remastered.sh       | 74 -------------------
+ .../usr/share/ublue-os/just/60-custom.just    |  3 +-
+ recipes/recipe.yml                            |  4 +-
+ 4 files changed, 24 insertions(+), 82 deletions(-)
+ delete mode 100644 files/scripts/install-smb-remastered.sh
+
+diff --git a/files/scripts/install-quiver.sh b/files/scripts/install-quiver.sh
+index 5481f9e..f3c3866 100755
+--- a/files/scripts/install-quiver.sh
++++ b/files/scripts/install-quiver.sh
+@@ -3,14 +3,19 @@ set -euo pipefail
+ 
+ echo "--- Installing Quiver Launcher (AppImage) ---"
+ 
+-# Quiver Launcher is a single launcher that replaces the four standalone
++# Quiver Launcher is a single launcher that replaces the five standalone
+ # installs this image used to ship:
+-#   * Daggerfall Unity      -> Interkarma/daggerfall-unity        (community catalog)
+-#   * Ship of Harkinian     -> HarbourMasters/Shipwright          (community catalog)
+-#   * 2 Ship 2 Harkinian    -> HarbourMasters/2ship2harkinian     (community catalog)
+-#   * SA Mod Manager        -> not covered; use Flatpak Hedge Mod Manager
++#   * Daggerfall Unity             -> Interkarma/daggerfall-unity            (community catalog)
++#   * Ship of Harkinian            -> HarbourMasters/Shipwright              (community catalog)
++#   * 2 Ship 2 Harkinian           -> HarbourMasters/2ship2harkinian         (community catalog)
++#   * Super Mario Bros. Remastered -> JHDev2006/Super-Mario-Bros.-Remastered-Public (community catalog)
++#   * SA Mod Manager               -> not covered; use Flatpak Hedge Mod Manager
+ # The games themselves are NOT baked into the image any more -- Quiver
+ # downloads and updates them per user, so the image stays slim.
++#
++# Deferred (Windows/macOS-only releases, no Linux build yet -- revisit when
++# upstream ships one): elliotttate/DKC1Recomp, DKC2Recomp, DKC3Recomp,
++# elliotttate/wave-race-64-recomp, DomazinUS/RaceWave46.
+ 
+ REPO="tgeorgiadis/quiver-launcher"
+ ARCH="$(uname -m)"
+@@ -94,6 +99,14 @@ cat > /etc/skel/.local/share/quiver/apps.json << 'EOF'
+       "folderName": "2Ship2Harkinian",
+       "tags": ["decomp", "n64", "harbour masters", "zelda"],
+       "appIconUrl": null
++    },
++    {
++      "name": "Super Mario Bros. [Remastered]",
++      "project": "Super Mario Bros. Remastered",
++      "repository": "JHDev2006/Super-Mario-Bros.-Remastered-Public",
++      "folderName": "SuperMarioBrosRemastered-SuperMarioBrosRemastered",
++      "tags": ["recreation", "nes", "mario", "nintendo", "nintendo entertainment system"],
++      "appIconUrl": "https://raw.githubusercontent.com/JHDev2006/Super-Mario-Bros.-Remastered-Public/main/icon.png"
+     }
+   ]
+ }
+@@ -115,7 +128,7 @@ Exec=/opt/quiver/quiver.AppImage
+ Icon=applications-games
+ Terminal=false
+ Categories=Game;Utility;
+-Keywords=launcher;mods;github;gitlab;soh;2s2h;daggerfall;
++Keywords=launcher;mods;github;gitlab;soh;2s2h;daggerfall;mario;
+ StartupNotify=true
+ EOF
+ 
+diff --git a/files/scripts/install-smb-remastered.sh b/files/scripts/install-smb-remastered.sh
+deleted file mode 100644
+index 3669e9c..0000000
+--- a/files/scripts/install-smb-remastered.sh
++++ /dev/null
+@@ -1,74 +0,0 @@
+-#!/usr/bin/env bash
+-set -euo pipefail
+-
+-echo "--- Installing Super Mario Bros. Remastered ---"
+-
+-SMB_TAG="1.1-stable"
+-SMB_ASSET="Linux.zip"
+-DOWNLOAD_URL="https://github.com/JHDev2006/Super-Mario-Bros.-Remastered-Public/releases/download/${SMB_TAG}/${SMB_ASSET}"
+-
+-mkdir -p /opt/smb-remastered
+-cd /opt/smb-remastered
+-
+-echo "Downloading ${SMB_ASSET} from release ${SMB_TAG}..."
+-curl -fL -o smb-remastered.bin "${DOWNLOAD_URL}"
+-
+-# Diagnostics. Use -N 16 so od reads exactly 16 bytes and exits on its
+-# own; a pipe into `head` would cause SIGPIPE and, under `set -o
+-# pipefail`, abort the script before extraction runs.
+-echo "Downloaded $(stat -c %s smb-remastered.bin) bytes"
+-echo "First 16 bytes:"
+-od -A x -t x1z -N 16 smb-remastered.bin
+-
+-# Extract. The archive is a standard ZIP (magic bytes PK\x03\x04), so
+-# unzip is the natural choice, with 7z as a fallback in case the format
+-# ever changes.
+-EXTRACTED=0
+-if command -v unzip >/dev/null 2>&1 && unzip -o smb-remastered.bin >/dev/null 2>&1; then
+-    EXTRACTED=1
+-    echo "Extracted with unzip."
+-elif command -v 7z >/dev/null 2>&1 && 7z x -y smb-remastered.bin >/dev/null 2>&1; then
+-    EXTRACTED=1
+-    echo "Extracted with 7z."
+-fi
+-
+-if [ "$EXTRACTED" -ne 1 ]; then
+-    echo "Could not extract the downloaded archive."
+-    echo "Contents of /opt/smb-remastered:"
+-    ls -la
+-    exit 1
+-fi
+-
+-rm -f smb-remastered.bin
+-
+-# Locate the executable. Use -print -quit to stop at the first match,
+-# avoiding the head/SIGPIPE problem that bit us in the diagnostics above.
+-EXEC_PATH=$(find . -maxdepth 3 -type f \
+-    \( -name "SuperMarioRemastered*" -o -name "SMB1R*" -o -name "*.x86_64" \) \
+-    -print -quit)
+-
+-if [ -z "$EXEC_PATH" ]; then
+-    echo "Could not locate the game executable after extraction."
+-    echo "Contents of /opt/smb-remastered:"
+-    find . -maxdepth 3 -type f
+-    exit 1
+-fi
+-
+-chmod +x "$EXEC_PATH"
+-EXEC_ABS="/opt/smb-remastered/${EXEC_PATH#./}"
+-echo "Found executable: $EXEC_ABS"
+-
+-# Create desktop entry.
+-mkdir -p /usr/share/applications
+-cat > /usr/share/applications/smb-remastered.desktop << EOF
+-[Desktop Entry]
+-Type=Application
+-Name=Super Mario Bros. Remastered
+-Comment=A Remake / Celebration of the original Super Mario Bros. games
+-Exec=$EXEC_ABS
+-Icon=smb-remastered
+-Terminal=false
+-Categories=Game;ActionGame;PlatformGame;
+-EOF
+-
+-echo "--- Super Mario Bros. Remastered installed ---"
+diff --git a/files/system/usr/share/ublue-os/just/60-custom.just b/files/system/usr/share/ublue-os/just/60-custom.just
+index 7b77e25..983df07 100644
+--- a/files/system/usr/share/ublue-os/just/60-custom.just
++++ b/files/system/usr/share/ublue-os/just/60-custom.just
+@@ -64,7 +64,8 @@ gmtp-sync:
+     flatpak run app.gmtp.gMTP &
+ 
+ # Seed Quiver Launcher's library with the entries that used to be installed
+-# standalone (Daggerfall Unity, Ship of Harkinian, 2 Ship 2 Harkinian).
++# standalone (Daggerfall Unity, Ship of Harkinian, 2 Ship 2 Harkinian and
++# Super Mario Bros. Remastered).
+ # Quiver stores apps.json beside its AppImage, which is read-only on Abzu,
+ # so it falls back to ~/.local/share/QuiverLauncher/. This recipe copies the
+ # seeded file there; it never overwrites an existing library. Run once, before
+diff --git a/recipes/recipe.yml b/recipes/recipe.yml
+index 80aebf9..751a9ff 100644
+--- a/recipes/recipe.yml
++++ b/recipes/recipe.yml
+@@ -226,7 +226,9 @@ modules:
+       - install-fono.sh
+       - install-icloud-linux.sh
+       - install-cunai.sh
+-      - install-smb-remastered.sh
++      # Super Mario Bros. Remastered is no longer installed standalone; it is
++      # seeded into Quiver's starter library (install-quiver.sh). The former
++      # install-smb-remastered.sh script has been removed from files/scripts/.
+       - install-beets.sh
+       - install-zaparoo.sh
+       - configure-stellarium.sh
+-- 
+2.39.5
+

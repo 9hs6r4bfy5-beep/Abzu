@@ -1,0 +1,89 @@
+From 348ff520a15f48a059cfe6a41a5131c197711b0d Mon Sep 17 00:00:00 2001
+From: "qwen.ai[bot]" <qwenlm-intl@service.alibaba.com>
+Date: Mon, 28 Sep 2026 20:51:17 +0000
+Subject: [PATCH 3/4] Seed Wave Race 64 (DomazinUS/RaceWave46) into Quiver
+ starter library
+
+---
+ files/scripts/install-quiver.sh               | 19 +++++++++++++++++--
+ .../usr/share/ublue-os/just/60-custom.just    |  3 +++
+ recipes/recipe.yml                            |  4 +++-
+ 3 files changed, 23 insertions(+), 3 deletions(-)
+
+diff --git a/files/scripts/install-quiver.sh b/files/scripts/install-quiver.sh
+index f3c3866..dc22046 100755
+--- a/files/scripts/install-quiver.sh
++++ b/files/scripts/install-quiver.sh
+@@ -15,7 +15,9 @@ echo "--- Installing Quiver Launcher (AppImage) ---"
+ #
+ # Deferred (Windows/macOS-only releases, no Linux build yet -- revisit when
+ # upstream ships one): elliotttate/DKC1Recomp, DKC2Recomp, DKC3Recomp,
+-# elliotttate/wave-race-64-recomp, DomazinUS/RaceWave46.
++# elliotttate/wave-race-64-recomp.
++# NOTE: Wave Race 64 IS seeded below -- the user picked DomazinUS/RaceWave46
++# because it is the only WR64 recomp with ray-traced water (DXR via RT64).
+ 
+ REPO="tgeorgiadis/quiver-launcher"
+ ARCH="$(uname -m)"
+@@ -107,10 +109,23 @@ cat > /etc/skel/.local/share/quiver/apps.json << 'EOF'
+       "folderName": "SuperMarioBrosRemastered-SuperMarioBrosRemastered",
+       "tags": ["recreation", "nes", "mario", "nintendo", "nintendo entertainment system"],
+       "appIconUrl": "https://raw.githubusercontent.com/JHDev2006/Super-Mario-Bros.-Remastered-Public/main/icon.png"
++    },
++    {
++      "name": "Wave Race 64 [Decompiled]",
++      "project": "Wave Race 64",
++      "repository": "DomazinUS/RaceWave46",
++      "folderName": "RaceWave46-RaceWave46",
++      "tags": ["decomp", "n64", "wave race", "nintendo"],
++      "appIconUrl": null
+     }
+   ]
+ }
+ EOF
++# Heads-up on the Wave Race 64 seed: RaceWave46 is the WR64 static recomp with
++# ray-traced water (DXR via RT64), which is why it was chosen over
++# elliotttate/wave-race-64-recomp. Its releases are currently Windows-only and
++# the game is BYO-ROM, so run it through Quiver's Wine/Proton wrapper until
++# upstream ships a Linux host (see notes on N64ModernRuntime task_win32.cpp).
+ 
+ # Desktop entry.
+ # NOTE ON SELF-UPDATE: Quiver ships an in-app updater that rewrites the binary
+@@ -128,7 +143,7 @@ Exec=/opt/quiver/quiver.AppImage
+ Icon=applications-games
+ Terminal=false
+ Categories=Game;Utility;
+-Keywords=launcher;mods;github;gitlab;soh;2s2h;daggerfall;mario;
++Keywords=launcher;mods;github;gitlab;soh;2s2h;daggerfall;mario;wave race;
+ StartupNotify=true
+ EOF
+ 
+diff --git a/files/system/usr/share/ublue-os/just/60-custom.just b/files/system/usr/share/ublue-os/just/60-custom.just
+index 983df07..db0b9e6 100644
+--- a/files/system/usr/share/ublue-os/just/60-custom.just
++++ b/files/system/usr/share/ublue-os/just/60-custom.just
+@@ -92,3 +92,6 @@ quiver-setup:
+     echo "  /opt/quiver/quiver.AppImage"
+     echo "Tip: subscribe to the built-in community catalog in App Catalog for"
+     echo "many more ports (it also lists SoH, 2SoH and Daggerfall Unity)."
++    echo "Note: the seeded Wave Race 64 entry (DomazinUS/RaceWave46, ray-traced"
++    echo "water) ships Windows-only builds so far -- enable its Wine/Proton"
++    echo "wrapper in Quiver until upstream adds a Linux release."
+diff --git a/recipes/recipe.yml b/recipes/recipe.yml
+index 751a9ff..796a259 100644
+--- a/recipes/recipe.yml
++++ b/recipes/recipe.yml
+@@ -239,7 +239,9 @@ modules:
+       # Unity (install-daggerfall-unity.sh), Ship of Harkinian (install-soh.sh),
+       # 2Ship2Harkinian (install-2s2h.sh) and the SA Mod Manager installer
+       # (install-samodmanager.sh). Those four scripts have been removed from
+-      # files/scripts/.
++      # files/scripts/. It also seeds Wave Race 64 via DomazinUS/RaceWave46 --
++      # the WR64 recomp with ray-traced water (DXR/RT64); Windows-only builds
++      # so far, run through Quiver's Wine/Proton wrapper.
+       - install-quiver.sh
+ 
+   - type: default-flatpaks
+-- 
+2.39.5
+
