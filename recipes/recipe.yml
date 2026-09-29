@@ -211,7 +211,6 @@ modules:
         - scx_loader.service
         - usbguard.service
         - cockpit.socket
-
   - type: justfiles
     validate: false
 
@@ -226,17 +225,23 @@ modules:
       - install-fono.sh
       - install-icloud-linux.sh
       - install-cunai.sh
-      - install-smb-remastered.sh
+      # Super Mario Bros. Remastered is no longer installed standalone; it is
+      # seeded into Quiver's starter library (install-quiver.sh). The former
+      # install-smb-remastered.sh script has been removed from files/scripts/.
       - install-beets.sh
       - install-zaparoo.sh
       - configure-stellarium.sh
       - install-sumer-r-package.sh
       - cuneiform-toggle.sh
       - enable-vaapi.sh
-      - install-daggerfall-unity.sh
-      - install-soh.sh
-      - install-2s2h.sh
-      - install-samodmanager.sh
+      # Quiver Launcher replaces the former standalone installs of Daggerfall
+      # Unity (install-daggerfall-unity.sh), Ship of Harkinian (install-soh.sh),
+      # 2Ship2Harkinian (install-2s2h.sh) and the SA Mod Manager installer
+      # (install-samodmanager.sh). Those four scripts have been removed from
+      # files/scripts/. It also seeds Wave Race 64 via DomazinUS/RaceWave46 --
+      # the WR64 recomp with ray-traced water (DXR/RT64); Windows-only builds
+      # so far, run through Quiver's Wine/Proton wrapper.
+      - install-quiver.sh
 
   - type: default-flatpaks
     configurations:
@@ -283,11 +288,34 @@ modules:
           - com.vysp3r.ProtonPlus
           - com.github.Matoking.protontricks
           - io.github.sharkwouter.Minigalaxy
+          # --- Flatpak releases kept on purpose -------------------------------
+          # These are Flathub (sandboxed, maintained) builds. Quiver Launcher
+          # is an AppImage that downloads arbitrary GitHub release assets and
+          # self-updates outside any sandbox, so it is NOT a security-equivalent
+          # replacement for the entries below. Keep them; see README notes in
+          # the commit that introduced Quiver.
+          #
+          # OpenMW: open-source Morrowind engine. Quiver has no catalog entry
+          # for it, and its data files come from GoG/Steam anyway (covered by
+          # Minigalaxy / Heroic / Steam).
           - org.openmw.OpenMW
+          # jorio bundle: free, open-source engine + official game data,
+          # shipped as verified Flathub packages with no equivalent upstream
+          # Linux installer that Quiver could manage.
           - com.infochunk.OpenMadoola
           - io.jor.nanosaur
           - io.jor.nanosaur2
+          # Hedge Mod Manager: the maintained successor to SA Mod Manager
+          # (the standalone SAModManager installer script was removed in
+          # favour of Quiver; HMM itself is not distributed as a GitHub
+          # release asset that Quiver can install/update, so keep the flatpak).
           - io.github.hedge_dev.hedgemodmanager
+          # Unreal Tournament / UT2004: Epic-published, proprietary wrappers
+          # around the Windows binaries run through Wine. There is NO native
+          # Linux build and therefore nothing for Quiver (which installs
+          # GitHub/GitLab release assets) to manage. The only non-flatpak
+          # alternatives are Lutris or Heroic scripts using the same Windows
+          # binaries -- strictly less safe than these Flathub packages.
           - com.epicgames.ut99
           - com.epicgames.ut2004
           - com.heroicgameslauncher.hgl
