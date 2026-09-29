@@ -74,7 +74,7 @@ quiver-setup:
     #!/usr/bin/bash
     set -euo pipefail
     DEST="${XDG_DATA_HOME:-$HOME/.local/share}/QuiverLauncher"
-    SEED="$HOME/.local/share/quiver/apps.json"
+    SEED="$HOME/.local/share/QuiverLauncher/apps.json"
     if [ ! -f "${SEED}" ]; then
         echo "Seed file ${SEED} not found. Nothing to do."
         exit 0
