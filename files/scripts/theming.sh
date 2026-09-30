@@ -65,14 +65,21 @@ rm -rf /tmp/leopard.zip /tmp/OS-X-Leopard-master
 
 # -----------------------------------------------------------------------------
 # 4. WhiteSur GTK theme
+#
+# Pinned to the upstream release tag 2025-07-24 (the last version whose
+# install.sh CLI we know works in this build environment). Do NOT move this
+# back to refs/heads/master: master has repeatedly changed its argument
+# parsing and dependency checks, which breaks autobuilds without warning.
 # -----------------------------------------------------------------------------
-echo "Installing WhiteSur GTK theme..."
+WHITESUR_GTK_TAG="2025-07-24"
+echo "Installing WhiteSur GTK theme (${WHITESUR_GTK_TAG})..."
 
-WHITESUR_GTK_URL="https://github.com/vinceliuice/WhiteSur-gtk-theme/archive/refs/heads/master.tar.gz"
+WHITESUR_GTK_URL="https://github.com/vinceliuice/WhiteSur-gtk-theme/archive/${WHITESUR_GTK_TAG}.tar.gz"
 rm -rf /tmp/whitesur-gtk /tmp/whitesur-gtk.tar.gz
 
-if ! curl -fsSL -o /tmp/whitesur-gtk.tar.gz "${WHITESUR_GTK_URL}"; then
-    echo "ERROR: Failed to download WhiteSur GTK theme tarball" >&2
+if ! curl -fL --retry 5 --retry-all-errors --retry-delay 3 \
+        -o /tmp/whitesur-gtk.tar.gz "${WHITESUR_GTK_URL}"; then
+    echo "ERROR: Failed to download WhiteSur GTK theme tarball from ${WHITESUR_GTK_URL}" >&2
     exit 1
 fi
 
@@ -122,14 +129,23 @@ echo "WhiteSur GTK theme installed."
 
 # -----------------------------------------------------------------------------
 # 5. WhiteSur icon theme
+#
+# Pinned to upstream release tag 2025-07-29, the last tag that matches the
+# pinned GTK theme generation. The previous URL pointed at
+# .../archive/refs/heads/master.tar.gz, which intermittently returns HTTP 404
+# from codeload.github.com (branch archives are transient and get invalidated
+# whenever master is force-updated / garbage-collected). Tag archives are
+# immutable and permanently served, so this can no longer fail with a 404.
 # -----------------------------------------------------------------------------
 echo "Installing WhiteSur icon theme..."
 
-WHITESUR_ICON_URL="https://github.com/vinceliuice/WhiteSur-icon-theme/archive/refs/heads/master.tar.gz"
+WHITESUR_ICON_TAG="2025-07-29"
+WHITESUR_ICON_URL="https://github.com/vinceliuice/WhiteSur-icon-theme/archive/${WHITESUR_ICON_TAG}.tar.gz"
 rm -rf /tmp/whitesur-icons /tmp/whitesur-icons.tar.gz
 
-if ! curl -fsSL -o /tmp/whitesur-icons.tar.gz "${WHITESUR_ICON_URL}"; then
-    echo "ERROR: Failed to download WhiteSur icon theme" >&2
+if ! curl -fL --retry 5 --retry-all-errors --retry-delay 3 \
+        -o /tmp/whitesur-icons.tar.gz "${WHITESUR_ICON_URL}"; then
+    echo "ERROR: Failed to download WhiteSur icon theme from ${WHITESUR_ICON_URL}" >&2
     exit 1
 fi
 
@@ -159,14 +175,21 @@ echo "WhiteSur icon theme installed."
 
 # -----------------------------------------------------------------------------
 # 6. WhiteSur cursors
+#
+# The cursor repo publishes no release tags, so refs/heads/master is the only
+# archive available. Keep it, but make the download resilient: --retry-all-
+# errors retries transient HTTP 404/5xx responses from codeload (the same
+# class of failure that killed the previous build on the icon theme), and the
+# error message records the URL that failed.
 # -----------------------------------------------------------------------------
 echo "Installing WhiteSur cursors..."
 
 WHITESUR_CURSOR_URL="https://github.com/vinceliuice/WhiteSur-cursors/archive/refs/heads/master.tar.gz"
 rm -rf /tmp/whitesur-cursors /tmp/whitesur-cursors.tar.gz
 
-if ! curl -fsSL -o /tmp/whitesur-cursors.tar.gz "${WHITESUR_CURSOR_URL}"; then
-    echo "ERROR: Failed to download WhiteSur cursors" >&2
+if ! curl -fL --retry 5 --retry-all-errors --retry-delay 3 \
+        -o /tmp/whitesur-cursors.tar.gz "${WHITESUR_CURSOR_URL}"; then
+    echo "ERROR: Failed to download WhiteSur cursors from ${WHITESUR_CURSOR_URL}" >&2
     exit 1
 fi
 
