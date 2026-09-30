@@ -54,21 +54,20 @@ rm -rf /tmp/leopard.zip /tmp/OS-X-Leopard-master
 # -----------------------------------------------------------------------------
 # 4. WhiteSur GTK theme
 #
-# FIX: previously this ran `install.sh -d "$THEME_DIR" -c all`, but `-c`
-# (--color) only accepts the repeatable values `light` and `dark`; `all` is
-# not a recognized variant and upstream's check_param() aborts with
-# "ERROR: Unrecognized '-c' variant: 'all'." (exit 1). Omitting -c installs
-# ALL color variants by default (colors=(Light Dark)), which is what we want.
-# Also pin the archive to a release tag instead of refs/heads/master so
-# upstream argument-parsing changes can't silently break the image build.
+# Pinned to the upstream release tag 2025-07-24 (the last version whose
+# install.sh CLI we know works in this build environment). Do NOT move this
+# back to refs/heads/master: master has repeatedly changed its argument
+# parsing and dependency checks, which breaks autobuilds without warning.
 # -----------------------------------------------------------------------------
+WHITESUR_GTK_TAG="2025-07-24"
 echo "Installing WhiteSur GTK theme (${WHITESUR_GTK_TAG})..."
 
-WHITESUR_GTK_URL="https://github.com/vinceliuice/WhiteSur-gtk-theme/archive/refs/tags/${WHITESUR_GTK_TAG}.tar.gz"
+WHITESUR_GTK_URL="https://github.com/vinceliuice/WhiteSur-gtk-theme/archive/${WHITESUR_GTK_TAG}.tar.gz"
 rm -rf /tmp/whitesur-gtk /tmp/whitesur-gtk.tar.gz
 
-if ! curl -fsSL -o /tmp/whitesur-gtk.tar.gz "${WHITESUR_GTK_URL}"; then
-    echo "ERROR: Failed to download WhiteSur GTK theme tarball" >&2
+if ! curl -fL --retry 5 --retry-all-errors --retry-delay 3 \
+        -o /tmp/whitesur-gtk.tar.gz "${WHITESUR_GTK_URL}"; then
+    echo "ERROR: Failed to download WhiteSur GTK theme tarball from ${WHITESUR_GTK_URL}" >&2
     exit 1
 fi
 
@@ -120,12 +119,27 @@ rm -rf /tmp/whitesur-gtk /tmp/whitesur-gtk-install.log
 echo "WhiteSur GTK theme installed."
 
 # -----------------------------------------------------------------------------
-# 5-6. WhiteSur icons & cursors (pinned tags; unchanged invocation)
+# 5. WhiteSur icon theme
+#
+# Pinned to upstream release tag 2025-07-29, the last tag that matches the
+# pinned GTK theme generation. The previous URL pointed at
+# .../archive/refs/heads/master.tar.gz, which intermittently returns HTTP 404
+# from codeload.github.com (branch archives are transient and get invalidated
+# whenever master is force-updated / garbage-collected). Tag archives are
+# immutable and permanently served, so this can no longer fail with a 404.
 # -----------------------------------------------------------------------------
 echo "Installing WhiteSur icon theme..."
+
+WHITESUR_ICON_TAG="2025-07-29"
+WHITESUR_ICON_URL="https://github.com/vinceliuice/WhiteSur-icon-theme/archive/${WHITESUR_ICON_TAG}.tar.gz"
 rm -rf /tmp/whitesur-icons /tmp/whitesur-icons.tar.gz
-curl -fsSL -o /tmp/whitesur-icons.tar.gz \
-    "https://github.com/vinceliuice/WhiteSur-icon-theme/archive/refs/tags/${WHITESUR_ICON_TAG}.tar.gz"
+
+if ! curl -fL --retry 5 --retry-all-errors --retry-delay 3 \
+        -o /tmp/whitesur-icons.tar.gz "${WHITESUR_ICON_URL}"; then
+    echo "ERROR: Failed to download WhiteSur icon theme from ${WHITESUR_ICON_URL}" >&2
+    exit 1
+fi
+
 mkdir -p /tmp/whitesur-icons
 tar -xzf /tmp/whitesur-icons.tar.gz -C /tmp/whitesur-icons --strip-components=1
 rm -f /tmp/whitesur-icons.tar.gz
@@ -135,10 +149,24 @@ set +e; ( cd /tmp/whitesur-icons && bash install.sh -d "${ICON_DIR}" ) >"$INSTAL
 rm -rf /tmp/whitesur-icons /tmp/whitesur-icons-install.log
 echo "WhiteSur icon theme installed."
 
+# -----------------------------------------------------------------------------
+# 6. WhiteSur cursors
+#
+# The cursor repo publishes no release tags, so refs/heads/master is the only
+# archive available. Keep it, but make the download resilient: --retry-all-
+# errors retries transient HTTP 404/5xx responses from codeload (the same
+# class of failure that killed the previous build on the icon theme), and the
+# error message records the URL that failed.
+# -----------------------------------------------------------------------------
 echo "Installing WhiteSur cursors..."
 rm -rf /tmp/whitesur-cursors /tmp/whitesur-cursors.tar.gz
-curl -fsSL -o /tmp/whitesur-cursors.tar.gz \
-    "https://github.com/vinceliuice/WhiteSur-cursors/archive/refs/tags/${WHITESUR_CURSOR_TAG}.tar.gz"
+
+if ! curl -fL --retry 5 --retry-all-errors --retry-delay 3 \
+        -o /tmp/whitesur-cursors.tar.gz "${WHITESUR_CURSOR_URL}"; then
+    echo "ERROR: Failed to download WhiteSur cursors from ${WHITESUR_CURSOR_URL}" >&2
+    exit 1
+fi
+
 mkdir -p /tmp/whitesur-cursors
 tar -xzf /tmp/whitesur-cursors.tar.gz -C /tmp/whitesur-cursors --strip-components=1
 rm -f /tmp/whitesur-cursors.tar.gz
