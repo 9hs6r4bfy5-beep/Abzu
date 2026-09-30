@@ -7,34 +7,30 @@ THEME_DIR="/usr/share/themes"
 ICON_DIR="/usr/share/icons"
 GNOME_EXT_DIR="/usr/share/gnome-shell/extensions"
 
+# Pinned WhiteSur release tags (reproducible builds; do NOT track master).
+WHITESUR_GTK_TAG="2025-07-24"
+WHITESUR_ICON_TAG="2025-07-24"
+WHITESUR_CURSOR_TAG="2025-07-24"
+
 mkdir -p "${THEME_DIR}" "${ICON_DIR}" "${GNOME_EXT_DIR}"
 
 # -----------------------------------------------------------------------------
-# Provide a sane environment for the WhiteSur installers.
-#
-# In the BlueBuild build container there is no login session, so `logname`
-# returns nothing and $USER / $LOGNAME are unset. WhiteSur's lib-core.sh
-# does:
-#     MY_USERNAME="$(logname 2>/dev/null || echo "${USER}")"
-#     MY_HOME="$(getent passwd "${MY_USERNAME}" | cut -d: -f6)"
-# With empty USER and logname, MY_HOME becomes empty and the installer
-# exits with code 2. Exporting USER and LOGNAME makes the fallback echo
-# "root", so getent resolves /root correctly.
+# Provide a sane environment for the WhiteSur installers (no login session in
+# the build container: logname/$USER/$LOGNAME are empty, which breaks
+# lib-core.sh's MY_HOME resolution).
 # -----------------------------------------------------------------------------
 export HOME="${HOME:-/root}"
 export USER="${USER:-root}"
 export LOGNAME="${LOGNAME:-root}"
 export TERM="${TERM:-xterm-256color}"
 export XDG_DATA_DIRS="${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
-
-# Ensure the fallback paths the installer may write to exist.
 mkdir -p "${HOME}/.config" "${HOME}/.local/share"
 
 echo "--- Starting Theming Installation ---"
 echo "  HOME=$HOME  USER=$USER  LOGNAME=$LOGNAME  TERM=$TERM"
 
 # -----------------------------------------------------------------------------
-# 1. B00merang Mac OS X Cheetah theme
+# 1-3. B00merang themes (unchanged)
 # -----------------------------------------------------------------------------
 echo "Installing B00merang Mac OS X Cheetah theme..."
 # Retry transient GitHub/codeload failures (the same class of HTTP 404/5xx that
@@ -55,24 +51,16 @@ fetch_zip() {
 
 fetch_zip https://github.com/B00merang-Project/Mac-OS-X-Cheetah/archive/master.zip /tmp/cheetah.zip
 unzip -q /tmp/cheetah.zip -d /tmp/
-if [ -d "/tmp/Mac-OS-X-Cheetah-master" ]; then
-    mv /tmp/Mac-OS-X-Cheetah-master /tmp/Mac-OS-X-Cheetah
-fi
+[ -d "/tmp/Mac-OS-X-Cheetah-master" ] && mv /tmp/Mac-OS-X-Cheetah-master /tmp/Mac-OS-X-Cheetah
 cp -r /tmp/Mac-OS-X-Cheetah "${THEME_DIR}/Mac-OS-X-Cheetah"
 rm -rf /tmp/cheetah.zip /tmp/Mac-OS-X-Cheetah
 
-# -----------------------------------------------------------------------------
-# 2. B00merang Mavericks theme
-# -----------------------------------------------------------------------------
 echo "Installing B00merang Mavericks theme..."
 fetch_zip https://github.com/B00merang-Project/OS-X-Mavericks/archive/refs/heads/master.zip /tmp/mavericks.zip
 unzip -q /tmp/mavericks.zip -d /tmp/
 cp -r /tmp/OS-X-Mavericks-master "${THEME_DIR}/OS-X-Mavericks"
 rm -rf /tmp/mavericks.zip /tmp/OS-X-Mavericks-master
 
-# -----------------------------------------------------------------------------
-# 3. B00merang Leopard theme
-# -----------------------------------------------------------------------------
 echo "Installing B00merang Leopard theme..."
 fetch_zip https://github.com/B00merang-Project/OS-X-Leopard/archive/refs/heads/master.zip /tmp/leopard.zip
 unzip -q /tmp/leopard.zip -d /tmp/
@@ -281,8 +269,6 @@ echo "WhiteSur icon theme installed."
 # error message records the URL that failed.
 # -----------------------------------------------------------------------------
 echo "Installing WhiteSur cursors..."
-
-WHITESUR_CURSOR_URL="https://github.com/vinceliuice/WhiteSur-cursors/archive/refs/heads/master.tar.gz"
 rm -rf /tmp/whitesur-cursors /tmp/whitesur-cursors.tar.gz
 
 if ! curl -fL --retry 5 --retry-all-errors --retry-delay 3 \
@@ -327,15 +313,12 @@ rm -rf /tmp/whitesur-cursors /tmp/whitesur-cursors-install.log
 echo "WhiteSur cursors installed."
 
 # -----------------------------------------------------------------------------
-# 7. Liquid Glass GNOME Shell Extension
+# 7. Liquid Glass GNOME Shell Extension (unchanged)
 # -----------------------------------------------------------------------------
 echo "Installing Liquid Glass GNOME Shell Extension..."
 EXT_UUID="liquid-glass@thinkingcoding1231.gmail.com"
 rm -rf /tmp/liquid-glass
-if ! git clone --depth 1 https://github.com/ryohsuke1231/liquid-glass.git /tmp/liquid-glass; then
-    echo "ERROR: Failed to clone liquid-glass" >&2
-    exit 1
-fi
+git clone --depth 1 https://github.com/ryohsuke1231/liquid-glass.git /tmp/liquid-glass
 mkdir -p "${GNOME_EXT_DIR}/${EXT_UUID}"
 cp -r /tmp/liquid-glass/liquid-glass@thinkingcoding1231.gmail.com/* "${GNOME_EXT_DIR}/${EXT_UUID}/"
 rm -rf /tmp/liquid-glass
