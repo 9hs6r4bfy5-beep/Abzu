@@ -271,6 +271,13 @@ echo "WhiteSur icon theme installed."
 echo "Installing WhiteSur cursors..."
 rm -rf /tmp/whitesur-cursors /tmp/whitesur-cursors.tar.gz
 
+# Define the URL that was referenced but never set, which aborted the build
+# with "WHITESUR_CURSOR_URL: unbound variable" under `set -u`. The cursor repo
+# publishes no release tags (e.g. ${WHITESUR_CURSOR_TAG} archives 404), so the
+# refs/heads/master archive is the only available source; the retry flags below
+# guard against transient codeload failures.
+WHITESUR_CURSOR_URL="https://github.com/vinceliuice/WhiteSur-cursors/archive/refs/heads/master.tar.gz"
+
 if ! curl -fL --retry 5 --retry-all-errors --retry-delay 3 \
         -o /tmp/whitesur-cursors.tar.gz "${WHITESUR_CURSOR_URL}"; then
     echo "ERROR: Failed to download WhiteSur cursors from ${WHITESUR_CURSOR_URL}" >&2
