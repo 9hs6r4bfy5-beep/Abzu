@@ -8,9 +8,13 @@ ICON_DIR="/usr/share/icons"
 GNOME_EXT_DIR="/usr/share/gnome-shell/extensions"
 
 # Pinned WhiteSur release tags (reproducible builds; do NOT track master).
-WHITESUR_GTK_TAG="2025-07-24"
-WHITESUR_ICON_TAG="2025-07-24"
-WHITESUR_CURSOR_TAG="2025-07-24"
+# NOTE: the GTK/icon sections below re-set their own tag vars; keep these in
+# sync. WHITESUR_CURSOR_URL must always be defined here because the cursor
+# repo publishes no tags and a missing variable used to abort step 6 with
+# "WHITESUR_CURSOR_URL: unbound variable" under `set -u`.
+WHITESUR_GTK_TAG="2026-09-10"
+WHITESUR_ICON_TAG="2025-07-29"
+WHITESUR_CURSOR_URL="https://github.com/vinceliuice/WhiteSur-cursors/archive/refs/heads/master.tar.gz"
 
 mkdir -p "${THEME_DIR}" "${ICON_DIR}" "${GNOME_EXT_DIR}"
 
