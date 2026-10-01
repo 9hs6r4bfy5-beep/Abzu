@@ -346,5 +346,22 @@ rm -rf \
 
 dconf update
 
+# Compile the GSettings schema overrides (99-abzu-gnome.gschema.override ships
+# in files/system/usr/share/glib-2.0/schemas/ via the `files` module). Without
+# this step gschemas.compiled is never regenerated at build time, so every
+# override silently has NO effect: new users get default GNOME instead of
+# WhiteSur/Cheetah, the Liquid Glass + user-theme extensions stay disabled,
+# and cuneiform-toggle.desktop never appears in favorites. glib-compile-schemas
+# also runs opportunistically at package-manager transactions, which masked
+# this bug on some builds but not others -- compile explicitly so it is
+# deterministic.
+if [ -f /usr/share/glib-2.0/schemas/99-abzu-gnome.gschema.override ]; then
+    glib-compile-schemas /usr/share/glib-2.0/schemas
+    echo "GSettings schema overrides compiled."
+else
+    echo "ERROR: 99-abzu-gnome.gschema.override not found; theming defaults will not apply." >&2
+    exit 1
+fi
+
 echo "--- Theming Installation Complete ---"
 exit 0
