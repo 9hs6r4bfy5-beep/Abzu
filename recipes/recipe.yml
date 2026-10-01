@@ -185,8 +185,12 @@ modules:
       - slab_nomerge
       - random.trust_bootloader=off
       - random.trust_cpu=off
-      - rd.shell=0
-      - rd.emergency=halt
+      # NOTE: rd.shell=0 and rd.emergency=halt are intentionally NOT set.
+      # They make any dracut/boot transaction failure silently reboot the
+      # machine instead of dropping to an emergency shell, which turns a
+      # recoverable situation into a data-loss risk on machines that cannot
+      # easily attach a debug console (older Intel Macs). If you want them
+      # for a hardened fleet image, add them back deliberately per-machine.
 
   - type: files
     files:
