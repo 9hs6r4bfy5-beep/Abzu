@@ -9,6 +9,14 @@ After setup, it is recommended you update this README to describe your custom im
 > [!WARNING]  
 > [This is an experimental feature](https://www.fedoraproject.org/wiki/Changes/OstreeNativeContainerStable), try at your own discretion.
 
+> **Intel Mac owners (MacBook Pro 4,1 and other 2006–2012 models):** if the
+> Fedora installer fails at "Starting deployment" with *"An unknown error
+> has occurred"*, that's a known 32-bit-EFI Anaconda bug — nothing is lost.
+> Follow [`docs/MAC-INSTALL.md`](docs/MAC-INSTALL.md): install base
+> Silverblue with a manually created 512 MiB FAT32 `/boot/efi` partition,
+> run `fix-mac-efi.sh` once from the live USB, then rebase here as usual.
+> The image ships rEFInd + mactel-boot and auto-detects ia32 vs x64 EFI.
+
 To rebase an existing atomic Fedora installation to the latest build:
 
 - First rebase to the unsigned image, to get the proper signing keys and policies installed:

@@ -4,6 +4,15 @@ install-refind:
     set -euo pipefail
     sudo /usr/local/share/abzu/install-refind.sh
 
+# Repair the EFI System Partition / boot chain on Intel Macs (32-bit and
+# 64-bit EFI models such as the MacBook Pro 4,1). Run after an installer
+# that failed at "Starting deployment", or any time the machine boots to
+# a question-mark folder. Requires sudo. See docs/MAC-INSTALL.md.
+fix-mac-efi:
+    #!/usr/bin/bash
+    set -euo pipefail
+    sudo /usr/local/share/abzu/fix-mac-efi.sh
+
 # Install PC Cartridge System components (requires sudo)
 install-cartridge:
     #!/usr/bin/bash
