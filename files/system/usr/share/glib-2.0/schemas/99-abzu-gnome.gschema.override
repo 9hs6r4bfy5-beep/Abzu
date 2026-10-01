@@ -29,6 +29,14 @@ enabled-extensions=['user-theme@gnome-shell-extensions.gcampax.github.com', 'das
 # then augment.
 name='WhiteSur-Light'
 
+# --- GNOME Console (kgx): Homebrew color scheme as the default terminal theme ---
+# org.gnome.Console ships its palette under this schema; setting the enum to
+# 'homebrew' makes every new user's terminal open with the Homebrew (red-on-
+# black) scheme out of the box, no profile import needed.
+[org.gnome.Console]
+color-palette-type='homebrew'
+use-theme-colors=false
+
 # --- Dash to Dock: macOS-style layout and behavior ---
 [org.gnome.shell.extensions.dash-to-dock]
 dock-position='BOTTOM'
