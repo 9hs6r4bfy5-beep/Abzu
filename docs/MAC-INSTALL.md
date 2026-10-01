@@ -188,7 +188,7 @@ just install-refind
 | Option-picker shows nothing after USB insert | Hub / flaky stick controller | Direct port; try another stick; burn a DVD. |
 | Boots to blinking folder icon ❓ | No usable NVRAM boot entry (normal on these Macs) | Always boot via Option → EFI Boot; rEFInd handles the rest. To make it permanent from macOS: `sudo bless --folder /Volumes/<ESP>/EFI/refind --setBoot`. |
 | rEFInd appears but no Fedora entry | Kernel/initramfs on a filesystem rEFInd can't read | Ensure `/boot` is ext4; the script installs `drivers_x86` (ext2/ext4/btrfs/f2fs/HFS+) for ia32 firmware. |
-| Rebase downloads take a long time | Bluefin stable tag is large | Normal; ~15–25 min on 100 Mbps. |
+| Rebase downloads take a long time | The upstream uBlue stable base tag is large | Normal; ~15–25 min on 100 Mbps. |
 | `just install-refind` says "Could not mount ESP" | ESP missing from fstab | Re-run `fix-mac-efi.sh` from the live USB. |
 
 ## Known hardware caveats for the MBP 4,1 (and siblings)
