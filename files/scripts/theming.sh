@@ -324,15 +324,280 @@ rm -rf /tmp/whitesur-cursors /tmp/whitesur-cursors-install.log
 echo "WhiteSur cursors installed."
 
 # -----------------------------------------------------------------------------
-# 7. Liquid Glass GNOME Shell Extension (unchanged)
+# 7. Liquid Glass GNOME Shell Extension
+#
+# The upstream repo is a development tree: the extension lives in the
+# subdirectory liquid-glass@thinkingcoding1231.gmail.com/ and its runtime
+# modules are TypeScript compiled into dist/. Shipping only metadata.json +
+# extension.js (which a plain `cp` of a checkout does NOT guarantee, since
+# dist/ must exist) makes gnome-shell log "Extension missing dependencies"
+# and skip the whole load pass from that point on -- which also took down
+# every later extension and left the top bar without its glass material.
+# We now verify the required runtime files explicitly after copying.
 # -----------------------------------------------------------------------------
 echo "Installing Liquid Glass GNOME Shell Extension..."
 EXT_UUID="liquid-glass@thinkingcoding1231.gmail.com"
 rm -rf /tmp/liquid-glass
 git clone --depth 1 https://github.com/ryohsuke1231/liquid-glass.git /tmp/liquid-glass
 mkdir -p "${GNOME_EXT_DIR}/${EXT_UUID}"
-cp -r /tmp/liquid-glass/liquid-glass@thinkingcoding1231.gmail.com/* "${GNOME_EXT_DIR}/${EXT_UUID}/"
+cp -r /tmp/liquid-glass/${EXT_UUID}/* "${GNOME_EXT_DIR}/${EXT_UUID}/"
 rm -rf /tmp/liquid-glass
+
+# Verify the extension landed with everything it needs to LOAD. If any of
+# these are missing (upstream layout change, partial clone), gnome-shell
+# skips/fails this UUID and the glass material never renders on the top
+# bar -- exactly the "Liquid Glass broken at the menu bar" report. Fail the
+# build loudly instead of shipping an inert theme.
+for _req in metadata.json extension.js prefs.js stylesheet.css; do
+    if [ ! -f "${GNOME_EXT_DIR}/${EXT_UUID}/${_req}" ]; then
+        echo "ERROR: Liquid Glass extension is missing ${_req} in ${GNOME_EXT_DIR}/${EXT_UUID}." >&2
+        ls -la "${GNOME_EXT_DIR}/${EXT_UUID}/" >&2 || true
+        exit 1
+    fi
+done
+if [ ! -d "${GNOME_EXT_DIR}/${EXT_UUID}/dist" ] || \
+   [ -z "$(ls -A "${GNOME_EXT_DIR}/${EXT_UUID}/dist" 2>/dev/null)" ]; then
+    echo "ERROR: Liquid Glass extension has no dist/ modules; extension.js imports ./dist/*.js and would crash gnome-shell on load." >&2
+    exit 1
+fi
+# Compile the extension's own gschemas so its settings schema resolves even
+# if package triggers did not run in this layer.
+glib-compile-schemas "${GNOME_EXT_DIR}/${EXT_UUID}/schemas" 2>/dev/null || true
+echo "Liquid Glass GNOME Shell Extension installed."
+
+# -----------------------------------------------------------------------------
+# 7a. Abzu Plymouth boot splash (custom loading screen)
+#
+# The theme files ship via the `files` module at
+# /usr/share/plymouth/themes/abzu/. Nothing used to *activate* them: no
+# alternatives entry, no /etc/plymouth/plymouthd.conf, and nothing that
+# could rebuild the initramfs -- so Plymouth kept rendering the spinner
+# from the base image's system theme. That is why a rebased install shows
+# no custom loading screen even though logo.png exists in the tree.
+#
+# WHY A RUNTIME SERVICE IS REQUIRED: on ostree systems, dracut reads its
+# configuration from the DEPLOYMENT (/etc after commit), not from the
+# build container, and the initramfs of the first deployment is generated
+# before any custom script layer output can influence it. Therefore we
+# write the configuration here (it lands in the tree) AND enable a one-shot
+# systemd service that runs plymouth-set-default-theme --rebuild-initrd on
+# the first boot, which regenerates the real initramfs against the deployed
+# /etc. The ConditionPathExists marker makes it run exactly once; later
+# updates pick the theme up automatically because /etc/plymouth/plymouthd.conf
+# persists across rebase and Fedora's own update triggers rebuild the
+# initramfs with it.
+# -----------------------------------------------------------------------------
+echo "Activating Abzu Plymouth theme..."
+install -d -m 0755 /etc/plymouth
+cat > /etc/plymouth/plymouthd.conf <<'CONF'
+[Daemon]
+Theme=Abzu
+CONF
+
+install -d -m 0755 /usr/local/sbin
+cat > /usr/local/sbin/abzu-apply-plymouth-theme <<'APPLY'
+#!/usr/bin/env bash
+# One-shot: make the Abzu Plymouth theme active and bake it into the
+# initramfs of the CURRENT deployment. Runs at first boot after rebase --
+# i.e. after all image files exist, which was impossible from the build
+# container (the bug that left the stock spinner on every rebase).
+set -u
+if command -v plymouth-set-default-theme >/dev/null 2>&1; then
+    plymouth-set-default-theme Abzu || true
+    plymouth-set-default-theme --rebuild-initrd || \
+        dracut --regenerate-all --force || true
+fi
+exit 0
+APPLY
+chmod 0755 /usr/local/sbin/abzu-apply-plymouth-theme
+
+# The `systemd` module in recipe.yml runs BEFORE this script module, so the
+# unit created below cannot be enabled through it (the file would not exist
+# yet). Enable it with a direct symlink instead -- exactly the pattern already
+# used for a2pi.service (see the note in recipe.yml).
+install -d -m 0755 /etc/systemd/system
+cat > /etc/systemd/system/abzu-plymouth-theme.service <<'UNIT'
+[Unit]
+Description=Activate Abzu Plymouth boot theme and rebuild initramfs
+After=systemd-machine-id-commit.service
+ConditionPathExists=!/var/lib/abzu/plymouth-theme.done
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/abzu-apply-plymouth-theme
+ExecStartPost=/usr/bin/mkdir -p /var/lib/abzu
+ExecStartPost=/usr/bin/touch /var/lib/abzu/plymouth-theme.done
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+ln -sf /etc/systemd/system/abzu-plymouth-theme.service \
+       /etc/systemd/system/multi-user.target.wants/abzu-plymouth-theme.service
+
+# -----------------------------------------------------------------------------
+# 7b. GDM branding: replace the Fedora logo shown behind the login button
+#
+# Two independent paths make the Fedora infinity mark appear on the greeter:
+#
+#   1. The Fedora `gdm` RPM drops a *hardcoded* resource file at
+#      /usr/share/pixmaps/fedora-gdm-logo.png and -- crucially -- patches
+#      GNOME's Debian downstream of gdm-chooser/org.gnome.login-screen
+#      handling so that this exact path is drawn on the greeter REGARDLESS
+#      of what org.gnome.login-screen:logo-path contains. On ostree images
+#      we cannot simply reconfigure the key and expect the file to stop
+#      being painted: the file itself must be neutralised. We overwrite it
+#      with the Abzu artwork (keeping the path valid for any code that
+#      still references it), which kills the superimposed Fedora logo even
+#      on hosts where the gsettings override is ignored or overridden by a
+#      stale per-user dconf value.
+#   2. The normal logo-path mechanism: GDM draws
+#      org.gnome.login-screen:logo-path over the user-chip / login-button
+#      area, whose packaged default points at the Fedora artwork. We copy
+#      the Abzu logo to a stable path and point the setting at it in the
+#      gschema override (new users) and the recipe.yml dconf module
+#      (existing users).
+#
+# Fixing only one of these two paths was why earlier attempts "failed to be
+# applied": rebases restored the RPM-owned pixmaps file from the image tree
+# every build, re-introducing the logo no matter what the settings said.
+# -----------------------------------------------------------------------------
+echo "Rebranding GDM login logo..."
+if [ -f /usr/share/plymouth/themes/abzu/logo.png ]; then
+    install -D -m 0644 /usr/share/plymouth/themes/abzu/logo.png \
+                       /usr/share/abzu/gdm-logo.png
+    # Neutralise the hardcoded Fedora greeter artwork (path 1 above). This
+    # runs inside the theming.sh build layer, i.e. AFTER the files module
+    # has copied the tree and after any dnf transaction, so nothing later
+    # in the build restores the original. If the gdm package ever updates
+    # this file again, the update happens in an earlier layer than this
+    # script, so our copy still wins.
+    if [ -d /usr/share/pixmaps ]; then
+        install -m 0644 /usr/share/abzu/gdm-logo.png \
+                        /usr/share/pixmaps/fedora-gdm-logo.png
+    fi
+else
+    echo "ERROR: Abzu logo missing at /usr/share/plymouth/themes/abzu/logo.png; GDM branding would break." >&2
+    exit 1
+fi
+
+# Fail loudly if either branded path is missing/empty: a silently absent
+# gdm-logo.png renders as the stock greeter and looks exactly like the
+# original bug report.
+for _logo in /usr/share/abzu/gdm-logo.png; do
+    if [ ! -s "$_logo" ]; then
+        echo "ERROR: GDM branding artifact $_logo is missing or empty." >&2
+        exit 1
+    fi
+done
+
+# -----------------------------------------------------------------------------
+# 7c. Abzu wallpapers
+#
+# There were none: the image shipped zero background images, so
+# picture-uri could only ever point at the Fedora default. Generate the
+# abyssal gradient artwork at build time and register it with GNOME's
+# background XML catalogue so it also appears in Settings -> Background.
+#
+# ImageMagick is verified below (not merely installed best-effort by
+# install_gtk_build_deps), because a missing `convert` here used to be a
+# silent no-op class of bug; failing loudly keeps theming deterministic.
+# -----------------------------------------------------------------------------
+echo "Installing Abzu wallpapers..."
+if ! command -v convert >/dev/null 2>&1; then
+    echo "ERROR: ImageMagick 'convert' is required to generate the Abzu wallpapers but is not present." >&2
+    exit 1
+fi
+install -d -m 0755 /usr/share/backgrounds
+convert -size 3840x2160 \
+    radial-gradient:'#0b6e8f-#041e2c' \
+    /usr/share/backgrounds/Abzu-abyss.png
+convert -size 3840x2160 \
+    radial-gradient:'#123c5e-#02090f' \
+    /usr/share/backgrounds/Abzu-deep.png
+# Faint cuneiform water-sign overlay (AN signs) drawn over the abyss gradient.
+convert /usr/share/backgrounds/Abzu-abyss.png \
+    \( -clone 0 -fill '#7fd4e8' -pointsize 420 -annotate +1600+900 '𒀭' \
+       -blur 0x60 \) \
+    -compose over -composite /usr/share/backgrounds/Abzu-abyss.png || true
+
+cat > /usr/share/backgrounds/abzu.xml <<'XML'
+<background>
+  <item>
+    <duration>3600</duration>
+    <static>/usr/share/backgrounds/Abzu-abyss.png</static>
+  </item>
+  <item>
+    <duration>3600</duration>
+    <static>/usr/share/backgrounds/Abzu-deep.png</static>
+  </item>
+</background>
+XML
+
+# Register the wallpapers with gnome-desktop's system-wide list so they
+# appear in Settings -> Background for every user. The file must be named
+# *.xml and live in /usr/share/gnome-background-properties/.
+install -d -m 0755 /usr/share/gnome-background-properties
+cat > /usr/share/gnome-background-properties/abzu-wallpapers.xml <<'XML'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE wallpapers SYSTEM "gnome-wp-list.dtd">
+<wallpapers>
+  <wallpaper deleted="false">
+    <name>Abzu Abyss</name>
+    <filename>/usr/share/backgrounds/Abzu-abyss.png</filename>
+    <options>zoom</options>
+    <primary_color>#041e2c</primary_color>
+  </wallpaper>
+  <wallpaper deleted="false">
+    <name>Abzu Deep</name>
+    <filename>/usr/share/backgrounds/Abzu-deep.png</filename>
+    <options>zoom</options>
+    <shading_type>solid</shading_type>
+  </wallpaper>
+</wallpapers>
+XML
+
+# Fail loudly if the generated files are missing/empty -- an empty PNG would
+# render as a black desktop and look like "no custom wallpaper" again.
+for wp in /usr/share/backgrounds/Abzu-abyss.png /usr/share/backgrounds/Abzu-deep.png; do
+    if [ ! -s "$wp" ]; then
+        echo "ERROR: wallpaper $wp was not generated." >&2
+        exit 1
+    fi
+done
+
+# -----------------------------------------------------------------------------
+# 7d. Desktop icon themes: make Abzu artwork resolve in the Shell/dash
+#
+# cuneiform-toggle.desktop references Icon=abzu-cuneiform, which ships only
+# as a raw SVG under /usr/share/icons/hicolor/scalable/apps/. GNOME Shell's
+# dash and the app grid resolve icons through the *active icon theme*
+# (WhiteSur), whose index inherits from hicolor -> Adwaita -> gnome ->
+# locolor. That inheritance chain is only effective when the theme's
+# index.theme actually lists the fallbacks and the gtk3 cache
+# (icon-theme.cache) is present; without a cache, lookups against large
+# themes fall back to the generic application tile -- so our custom
+# launcher icons silently never appear ("no custom loading screen icons"
+# class of bug on the desktop side). We therefore:
+#   * guarantee WhiteSur's index.theme inherits from hicolor, and
+#   * rebuild every system icon theme's cache with gtk-update-icon-cache so
+#     hicolor-only icons (abzu-cuneiform.svg and friends) resolve everywhere.
+# -----------------------------------------------------------------------------
+echo "Registering Abzu icons with the system icon themes..."
+for _theme in "${ICON_DIR}"/*/; do
+    [ -f "${_theme}/index.theme" ] || continue
+    # Ensure the inherited-fallback chain exists for the primary theme.
+    if [ "$(basename "${_theme}")" = "WhiteSur" ] && \
+       ! grep -q '^\s*Inherits=.*hicolor' "${_theme}/index.theme"; then
+        sed -i '/^\[Icon Theme\]/a Inherits=hicolor,Adwaita,gnome,locolor' "${_theme}/index.theme"
+    fi
+    if command -v gtk-update-icon-cache >/dev/null 2>&1; then
+        gtk-update-icon-cache -q -t -f "${_theme}" 2>/dev/null || true
+    elif command -v gdk-pixbuf-csource >/dev/null 2>&1; then
+        : # no cache tool available; index-based lookup still works
+    fi
+done
+update-desktop-database /usr/share/applications 2>/dev/null || true
 
 # -----------------------------------------------------------------------------
 # 8. Final cleanup

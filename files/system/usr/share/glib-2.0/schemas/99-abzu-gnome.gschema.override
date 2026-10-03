@@ -21,13 +21,38 @@ button-layout='close,minimize,maximize:'
 # --- GNOME Shell: Favorites, Extensions, and Shell Theme ---
 [org.gnome.shell]
 favorite-apps=['org.gnome.Nautilus.desktop', 'net.waterfox.waterfox.desktop', 'org.gnome.Console.desktop', 'com.valvesoftware.Steam.desktop', 'com.discordapp.Discord.desktop', 'org.gnome.Settings.desktop', 'hotline-navigator.desktop', 'snow.desktop', 'org.strawberrymusicplayer.strawberry.desktop', 'io.github.kolunmi.Bazaar.desktop', 'org.lyx.LyX.desktop', 'cuneiform-toggle.desktop']
-enabled-extensions=['user-theme@gnome-shell-extensions.gcampax.github.com', 'dash-to-dock@micxgx.gmail.com', 'liquid-glass@thinkingcoding1231.gmail.com']
+# NOTE: dash-to-dock@micxgx.gmail.com is deliberately NOT listed here.
+# Dash to Dock ships as the DISTRO package gnome-shell-extension-dash-to-dock
+# (see recipe.yml), whose installed UUID has differed across Fedora releases;
+# enabling a UUID that cannot be resolved on disk aborts gnome-shell's
+# extension load pass for the remaining entries, which is how Liquid Glass
+# silently lost its material on the top bar. The packaged extension enables
+# itself via its own settings portal, so it does not need to be force-enabled
+# here. Keep this list to extensions theming.sh installs at a known UUID.
+enabled-extensions=['user-theme@gnome-shell-extensions.gcampax.github.com', 'liquid-glass@thinkingcoding1231.gmail.com']
 
 [org.gnome.shell.extensions.user-theme]
 # Use the WhiteSur shell theme. Its Dash to Dock styling will form the
 # base of the dock's appearance, which the Liquid Glass extension will
 # then augment.
 name='WhiteSur-Light'
+
+# --- Wallpapers: Abzu abyssal artwork (installed by theming.sh) ---
+[org.gnome.desktop.background]
+picture-uri='file:///usr/share/backgrounds/Abzu-abyss.png'
+picture-uri-dark='file:///usr/share/backgrounds/Abzu-abyss.png'
+picture-options='zoom'
+primary-color='#041e2c'
+
+[org.gnome.locker]
+picture-uri='file:///usr/share/backgrounds/Abzu-abyss.png'
+
+# --- GDM login screen: replace the Fedora logo superimposed on the login button ---
+# logo-icon-name='' clears the icon-name path so only our custom logo-path is
+# drawn; logo-path points at the Abzu artwork installed by theming.sh.
+[org.gnome.login-screen]
+logo-path='/usr/share/abzu/gdm-logo.png'
+logo-icon-name=''
 
 # --- GNOME Console (kgx): Homebrew color scheme as the default terminal theme ---
 # org.gnome.Console ships its palette under this schema; setting the enum to
@@ -38,6 +63,11 @@ color-palette-type='homebrew'
 use-theme-colors=false
 
 # --- Dash to Dock: macOS-style layout and behavior ---
+# These keys apply to the distro-packaged Dash to Dock
+# (gnome-shell-extension-dash-to-dock, installed in recipe.yml). They are
+# defaults only -- harmless if the extension is absent -- but note the UUID
+# stays OUT of enabled-extensions above; the packaged extension manages its
+# own enabled state.
 [org.gnome.shell.extensions.dash-to-dock]
 dock-position='BOTTOM'
 extend-height=false

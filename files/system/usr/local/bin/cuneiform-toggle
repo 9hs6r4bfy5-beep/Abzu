@@ -1,11 +1,50 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Ensure IBus daemon is running
-if ! pgrep -x ibus-daemon >/dev/null 2>&1; then
-    ibus-daemon -drx
-    sleep 1
+# Toggle helper for the Cuneiform IBus engine. Runs inside the USER session
+# (launched from the dash/app grid via cuneiform-toggle.desktop, or from
+# `ujust cuneiform-toggle`). The previous version unconditionally forced the
+# cuneiform engine on every click and crashed with "ibus: command not found"
+# on images where ibus was absent -- so the favorite looked dead. It now:
+#   1. waits briefly for ibus-daemon (GNOME autostarts it lazily),
+#   2. toggles between cuneiform and the default US keyboard,
+#   3. reports what happened through a desktop notification.
+
+NOTIFY() {
+    command -v notify-send >/dev/null 2>&1 && \
+        notify-send -t 3000 "Cuneiform Input" "$1" || true
+}
+
+if ! command -v ibus >/dev/null 2>&1; then
+    NOTIFY "IBus is not installed; cannot switch input method."
+    exit 0
 fi
 
-# Switch to cuneiform engine
-ibus engine cuneiform
+# Wait up to ~5 seconds for the IBus daemon to come up.
+for _ in $(seq 1 10); do
+    pgrep -x ibus-daemon >/dev/null 2>&1 && break
+    sleep 0.5
+done
+
+if ! pgrep -x ibus-daemon >/dev/null 2>&1; then
+    # Best effort: try to start it in this session.
+    ibus-daemon -drx || true
+    sleep 1
+    if ! pgrep -x ibus-daemon >/dev/null 2>&1; then
+        NOTIFY "IBus daemon is not running in this session."
+        exit 0
+    fi
+fi
+
+CURRENT=$(ibus engine 2>/dev/null || echo "none")
+if [ "$CURRENT" = "cuneiform" ]; then
+    ibus engine xkb:us::eng 2>/dev/null || true
+    NOTIFY "Switched to US English keyboard."
+else
+    if ! ibus list-engine 2>/dev/null | grep -q 'cuneiform'; then
+        NOTIFY "Cuneiform engine not registered (run: ujust cuneiform-compile)."
+        exit 0
+    fi
+    ibus engine cuneiform 2>/dev/null || true
+    NOTIFY "Switched to Cuneiform input."
+fi
