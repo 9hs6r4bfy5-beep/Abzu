@@ -301,9 +301,14 @@ modules:
           - cuneiform-toggle.desktop
       org.gnome.shell.extensions.user-theme:
         name: 'WhiteSur-Light'
-      org.gnome.Console:
-        color-palette-type: 'homebrew'
-        use-theme-colors: false
+      # NOTE: the org.gnome.Console Homebrew palette settings (color-palette-type
+      # and use-theme-colors) are intentionally NOT forced through this dconf
+      # module. BlueBuild's published dconf schema only accepts string/number/
+      # array values here; the boolean `use-theme-colors: false` fails recipe
+      # validation with "value is not valid under any of the schemas listed in
+      # the 'anyOf' keyword". Both defaults are already shipped in
+      # files/system/usr/share/glib-2.0/schemas/99-abzu-gnome.gschema.override,
+      # which theming.sh compiles with glib-compile-schemas at build time.
 
   # Note: a2pi.service is intentionally NOT listed here. The systemd module
   # runs before the script module, so at this point /usr/share/a2pi/a2pi.service
