@@ -96,6 +96,20 @@ modules:
         - sassc
         - inkscape
         - optipng
+        # ImageMagick provides `convert`, which theming.sh requires to render
+        # the Abzu wallpapers and GDM artwork at build time. It used to be
+        # installed only best-effort inside the script layer (apt/dnf branch
+        # with `|| true`), so on runners where that path failed the whole
+        # wallpaper step silently no-op'd -- "no custom wallpapers" after a
+        # rebase despite theming.sh exiting 0. Ship it deterministically.
+        - ImageMagick
+        # gtk-update-icon-cache (gtk3-tools) and update-desktop-database
+        # (desktop-file-utils, below) are hard requirements of theming.sh's
+        # icon-registration step; without them the Abzu hicolor icons never
+        # land in the theme caches and custom app icons disappear from the
+        # dash/app grid.
+        - gtk3
+        - gtk-update-icon-cache
 
         # Multimedia and audio
         - ffmpeg-free
@@ -115,6 +129,12 @@ modules:
         - gnome-tweaks
         - gnome-extensions-app
         - gnome-shell-extension-appindicator
+        # Dash to Dock: the macOS-style bottom dock referenced by the
+        # gschema/dconf settings. It must be SHIPPED, not just enabled in
+        # gsettings -- an enabled-but-missing extension UUID aborts
+        # gnome-shell's extension load pass, which also silently disabled
+        # Liquid Glass on the top bar (the "broken menu bar glass" report).
+        - gnome-shell-extension-dash-to-dock
         - gnome-online-accounts
         - evolution
         - evolution-data-server
@@ -200,10 +220,90 @@ modules:
         destination: /var
       - source: system/usr/share
         destination: /usr/share
+      # CRITICAL: /usr/local is NOT under /usr/share. The packaged
+      # cuneiform-toggle launcher (/usr/local/bin/cuneiform-toggle) and the
+      # usrlocal scripts lived in this tree but were never copied into the
+      # image, because no mapping covered system/usr/local. Result: the
+      # desktop file + favorites entry existed, but Exec pointed at a
+      # non-existent binary -- the "no desktop cuneiform toggle app" report
+      # that survived every previous fix attempt (theming.sh regenerates the
+      # binary at build time, but each BlueBuild script runs in its own
+      # container layer, so files written by one script module are gone by
+      # the time the image commits; only the `files` module persists).
+      - source: system/usr/local/bin
+        destination: /usr/local/bin
       - source: etc/skel
         destination: /etc/skel
       - source: etc/flatpak/overrides/ai.lmstudio.lm-studio
         destination: /etc/flatpak/overrides/ai.lmstudio.lm-studio
+
+  # Apply the Abzu GSettings defaults (themes, extensions, wallpapers,
+  # favorite apps) to the image's *existing* user accounts as well.
+  # The 99-abzu-gnome.gschema.override file only changes DEFAULTS, and dconf
+  # defaults are ignored for any key a user has already written to their
+  # local config (the Fedora Atomic first-boot wizard writes many keys on
+  # account creation). Without this module, rebased installs keep showing
+  # stock GNOME for everybody except brand-new users -- exactly the
+  # "rebased but still standard GNOME" symptom. BlueBuild's dconf module
+  # runs `dconf update` plus `dconf-cli dump`/`update` per user at build
+  # time, which forces the values into every existing user's dconf db.
+  - type: dconf
+    settings:
+      org.gnome.desktop.interface:
+        gtk-theme: 'Mac-OS-X-Cheetah'
+        icon-theme: 'WhiteSur'
+        cursor-theme: 'WhiteSur-cursors'
+        clock-format: '12h'
+        color-scheme: 'prefer-light'
+      org.gnome.desktop.wm.preferences:
+        theme: 'Mac-OS-X-Cheetah'
+        button-layout: 'close,minimize,maximize:'
+      org.gnome.desktop.background:
+        picture-uri: "file:///usr/share/backgrounds/Abzu-abyss.png"
+        picture-uri-dark: "file:///usr/share/backgrounds/Abzu-abyss.png"
+        picture-options: 'zoom'
+        primary-color: '#041e2c'
+      org.gnome.locker:
+        picture-uri: "file:///usr/share/backgrounds/Abzu-abyss.png"
+      org.gnome.login-screen:
+        # Remove the Fedora infinity logo that GDM superimposes over the
+        # login button and draw the Abzu artwork instead. Defaults-only
+        # (gschema override) is not enough here because GDM greeter reads
+        # the per-user db for this key on some GNOME versions; forcing it
+        # via the dconf module covers both new and existing users.
+        logo-path: "/usr/share/abzu/gdm-logo.png"
+        logo-icon-name: ''
+      org.gnome.shell:
+        enabled-extensions:
+          # NOTE: dash-to-dock@micxgx.gmail.com is deliberately NOT listed.
+          # The distro package gnome-shell-extension-dash-to-dock (installed
+          # in the dnf module above) registers itself automatically via its
+          # own settings portal, and hard-enabling its UUID from an override
+          # has historically mismatched the packaged UUID on some Fedora
+          # releases -- an enabled-but-unresolvable UUID aborts gnome-shell's
+          # extension load pass, which silently killed Liquid Glass on the
+          # top bar. Keep this list to extensions theming.sh installs at a
+          # known UUID under /usr/share/gnome-shell/extensions.
+          - user-theme@gnome-shell-extensions.gcampax.github.com
+          - liquid-glass@thinkingcoding1231.gmail.com
+        favorite-apps:
+          - org.gnome.Nautilus.desktop
+          - net.waterfox.waterfox.desktop
+          - org.gnome.Console.desktop
+          - com.valvesoftware.Steam.desktop
+          - com.discordapp.Discord.desktop
+          - org.gnome.Settings.desktop
+          - hotline-navigator.desktop
+          - snow.desktop
+          - org.strawberrymusicplayer.strawberry.desktop
+          - io.github.kolunmi.Bazaar.desktop
+          - org.lyx.LyX.desktop
+          - cuneiform-toggle.desktop
+      org.gnome.shell.extensions.user-theme:
+        name: 'WhiteSur-Light'
+      org.gnome.Console:
+        color-palette-type: 'homebrew'
+        use-theme-colors: false
 
   # Note: a2pi.service is intentionally NOT listed here. The systemd module
   # runs before the script module, so at this point /usr/share/a2pi/a2pi.service
