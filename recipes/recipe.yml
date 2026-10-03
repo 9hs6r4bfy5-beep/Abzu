@@ -237,78 +237,24 @@ modules:
       - source: etc/flatpak/overrides/ai.lmstudio.lm-studio
         destination: /etc/flatpak/overrides/ai.lmstudio.lm-studio
 
-  # Apply the Abzu GSettings defaults (themes, extensions, wallpapers,
-  # favorite apps) to the image's *existing* user accounts as well.
-  # The 99-abzu-gnome.gschema.override file only changes DEFAULTS, and dconf
-  # defaults are ignored for any key a user has already written to their
-  # local config (the Fedora Atomic first-boot wizard writes many keys on
-  # account creation). Without this module, rebased installs keep showing
-  # stock GNOME for everybody except brand-new users -- exactly the
-  # "rebased but still standard GNOME" symptom. BlueBuild's dconf module
-  # runs `dconf update` plus `dconf-cli dump`/`update` per user at build
-  # time, which forces the values into every existing user's dconf db.
-  - type: dconf
-    settings:
-      org.gnome.desktop.interface:
-        gtk-theme: 'Mac-OS-X-Cheetah'
-        icon-theme: 'WhiteSur'
-        cursor-theme: 'WhiteSur-cursors'
-        clock-format: '12h'
-        color-scheme: 'prefer-light'
-      org.gnome.desktop.wm.preferences:
-        theme: 'Mac-OS-X-Cheetah'
-        button-layout: 'close,minimize,maximize:'
-      org.gnome.desktop.background:
-        picture-uri: "file:///usr/share/backgrounds/Abzu-abyss.png"
-        picture-uri-dark: "file:///usr/share/backgrounds/Abzu-abyss.png"
-        picture-options: 'zoom'
-        primary-color: '#041e2c'
-      org.gnome.locker:
-        picture-uri: "file:///usr/share/backgrounds/Abzu-abyss.png"
-      org.gnome.login-screen:
-        # Remove the Fedora infinity logo that GDM superimposes over the
-        # login button and draw the Abzu artwork instead. Defaults-only
-        # (gschema override) is not enough here because GDM greeter reads
-        # the per-user db for this key on some GNOME versions; forcing it
-        # via the dconf module covers both new and existing users.
-        logo-path: "/usr/share/abzu/gdm-logo.png"
-        logo-icon-name: ''
-      org.gnome.shell:
-        enabled-extensions:
-          # NOTE: dash-to-dock@micxgx.gmail.com is deliberately NOT listed.
-          # The distro package gnome-shell-extension-dash-to-dock (installed
-          # in the dnf module above) registers itself automatically via its
-          # own settings portal, and hard-enabling its UUID from an override
-          # has historically mismatched the packaged UUID on some Fedora
-          # releases -- an enabled-but-unresolvable UUID aborts gnome-shell's
-          # extension load pass, which silently killed Liquid Glass on the
-          # top bar. Keep this list to extensions theming.sh installs at a
-          # known UUID under /usr/share/gnome-shell/extensions.
-          - user-theme@gnome-shell-extensions.gcampax.github.com
-          - liquid-glass@thinkingcoding1231.gmail.com
-        favorite-apps:
-          - org.gnome.Nautilus.desktop
-          - net.waterfox.waterfox.desktop
-          - org.gnome.Console.desktop
-          - com.valvesoftware.Steam.desktop
-          - com.discordapp.Discord.desktop
-          - org.gnome.Settings.desktop
-          - hotline-navigator.desktop
-          - snow.desktop
-          - org.strawberrymusicplayer.strawberry.desktop
-          - io.github.kolunmi.Bazaar.desktop
-          - org.lyx.LyX.desktop
-          - cuneiform-toggle.desktop
-      org.gnome.shell.extensions.user-theme:
-        name: 'WhiteSur-Light'
-      # NOTE: the org.gnome.Console Homebrew palette settings (color-palette-type
-      # and use-theme-colors) are intentionally NOT forced through this dconf
-      # module. BlueBuild's published dconf schema only accepts string/number/
-      # array values here; the boolean `use-theme-colors: false` fails recipe
-      # validation with "value is not valid under any of the schemas listed in
-      # the 'anyOf' keyword". Both defaults are already shipped in
-      # files/system/usr/share/glib-2.0/schemas/99-abzu-gnome.gschema.override,
-      # which theming.sh compiles with glib-compile-schemas at build time.
+  # The Abzu GSettings defaults (themes, extensions, wallpapers, favorite
+  # apps, Console palette) ship as system-wide defaults in
+  # files/system/usr/share/glib-2.0/schemas/99-abzu-gnome.gschema.override,
+  # compiled by theming.sh at build time.
+  #
+  # A `- type: dconf` module used to force those same values into every
+  # existing user's dconf db at build time. It has been removed because
+  # BlueBuild's dconf module schema validator rejects several perfectly
+  # valid setting values (booleans such as `use-theme-colors: false`, and
+  # uri-typed string keys such as `picture-uri` fail the module's
+  # value-schema `anyOf` check), which aborts recipe validation and breaks
+  # the CI build. The published schema endpoint
+  # (https://schema.blue-build.org/modules/dconf-latest.json) currently
+  # serves HTML instead of JSON, so the CLI falls back to an internal
+  # schema whose value constraints do not match what the runtime module
+  # actually accepts. Until upstream validation is fixed, do not re-add
+  # dconf entries for these keys; put defaults in the gschema override
+  # file instead.
 
   # Note: a2pi.service is intentionally NOT listed here. The systemd module
   # runs before the script module, so at this point /usr/share/a2pi/a2pi.service
