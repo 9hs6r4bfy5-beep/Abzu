@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- AbzuAqua.theme — GNUstep theme bundle metadata (Water & Light) -->
+<plist version="1.0">
+<dict>
+    <key>Name</key>              <string>AbzuAqua</string>
+    <key>Description</key>       <string>Aqua reimagined as the primordial deep: translucent meniscus widgets, animated caustics, pearl-light highlights.</string>
+    <key>Version</key>           <string>0.1.0</string>
+    <key>Creator</key>           <string>Abzu Project</string>
+    <key>Domain</key>            <string>Global</string>
+    <key>Colors</key>
+    <dict>
+        <!-- Water half: abyssal gradient -->
+        <key>WindowBackgroundColor</key>          <string>#041E42</string>
+        <key>AlternateWindowBackgroundColor</key>  <string>#073B66</string>
+        <key>ControlBackgroundColor</key>          <string>#0B6BA4</string>
+        <key>HighlightColor</key>                  <string>#7FD8FF</string>
+        <key>SelectionHighlightColor</key>         <string>#3FA9F5</string>
+        <!-- Light half: pearl + Euphrates gold -->
+        <key>TextColor</key>                       <string>#F4FBFF</string>
+        <key>DisabledTextColor</key>               <string>#6C8AA3</string>
+        <key>AccentColor</key>                     <string>#D9A441</string>
+        <key>FrameBorderColor</key>                <string>#9CCFE8</string>
+    </dict>
+    <key>Widgets</key>
+    <dict>
+        <key>Button</key>      <string>assets/button-puddle.tiff</string>
+        <key>BevelButton</key> <string>assets/button-abzu.tiff</string>
+        <key>Slider</key>      <string>assets/slider-reed.tiff</string>
+        <key>ProgressBar</key> <string>assets/progress-tide.tiff</string>
+        <key>ScrollLock</key>  <string>assets/scroll-clay.tiff</string>
+    </dict>
+    <key>Caustics</key>
+    <dict>
+        <key>Enabled</key>     <true/>
+        <key>Frames</key>      <array>
+            <string>caustics/frame000.tiff</string>
+            <string>caustics/frame001.tiff</string>
+            <string>caustics/frame002.tiff</string>
+            <string>caustics/frame003.tiff</string>
+        </array>
+        <key>FPS</key>         <integer>12</integer>
+        <key>Opacity</key>     <real>0.18</real>
+        <key>BlendMode</key>   <string>overlay-lighten</string>
+    </dict>
+    <key>MENISCUS</key>
+    <dict>
+        <key>TopEdgeSpecular</key> <true/>
+        <key>CornerRadius</key>     <real>6.0</real>
+        <key>GlassIOR</key>         <real>1.333</real> <!-- water -->
+    </dict>
+    <key>Sounds</key>
+    <dict>
+        <key>Bell</key>      <string>assets/sounds/tidal-bell.aiff</string>
+        <key>Launch</key>    <string>assets/sounds/abzu-rising.aiff</string>
+        <key>Alert</key>     <string>assets/sounds/enki-storm.aiff</string>
+        <key>TrashEmpty</key><string>assets/sounds/silt-settle.aiff</string>
+    </dict>
+</dict>
+</plist>

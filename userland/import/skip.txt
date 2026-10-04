@@ -1,0 +1,14 @@
+# Tools NOT ported to Darwin — hard coupling to OpenBSD kernel interfaces.
+# One tool per line. build-openbsd-tools.sh skips these and the ISO pulls
+# Darwin-native equivalents instead (see right-hand notes in comments).
+pfctl          # needs pf(4) ioctl ABI  → substitute: natd/altq via XNU netinfo + abzu-firewall (packages/homelab)
+bioctl         # bio(4) raid frames     → substitute: AppleRAID diskutil
+slog           # slog(4) ring buffer    → substitute: os_log / asl
+ddb            # kernel debugger cli    → substitute: XNU DTrace/lldb
+ifconfig       # AF_LINK ioctls differ  → substitute: Darwin ifconfig (network_cmds release)
+route          # routing socket flags   → substitute: Darwin route
+sysctl.conf    # rc(8) integration      → substitute: launchd plist in etc/launchd.abzu
+login          # ypskey/kbind semantics → substitute: Darwin login + doas policy
+wsconsctl      # wsdisplay              → substitute: IOKit console (AppleVBios/efifb kext)
+pkg_add        # OpenBSD wsyncd/db      → substitute: abzu-pkg (Nix-backed, build/)
+unwind         # unbound fork w/ kernel hook → substitute: unbound upstream directly

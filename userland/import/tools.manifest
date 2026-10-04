@@ -1,0 +1,20 @@
+# Abzu userland import manifest — OpenBSD tools to rebuild as Mach-O on Darwin
+# format: <tool>  <layer>  <notes>
+# Layer: bin | usr.bin | sbin | usr.sbin | lib
+
+ksh        usr.bin   default /bin/sh symlink target (mirrors Fedora-Abzu parity)
+ls         bin       coreutils gap: OpenBSD ls/ftw semantics
+cp mv rm     bin     BSD install-semantics tools used by stage scripts
+doas       usr.bin   REPLACES sudo project-wide (security pillar)
+ssh scp sftp sshd  usr.bin usr.sbin  OpenSSH portable already exists on Darwin; we take -current
+nc         usr.bin   netcat for homelab scripting
+ntp ntpd   usr.sbin  prefer over Apple's legacy clock daemons
+relayd     usr.sbin  homelab LB/reverse-proxy (needs pf shim → see skip.txt, staged behind tun/tap alt)
+httpd      usr.sbin  minimal web server for local docs/archives
+tmux       usr.bin   workstation terminal multiplexer
+vi         usr.bin   editor of record
+pkg_add    usr.sbin  NOT ported yet — see skip.txt; replaced by abzu-pkg (build/)
+mandoc     usr.bin   man page renderer (history archives ship mandoc sources)
+sqlite3    usr.bin   archive index backends
+rsync      usr.bin   homelab backups
+unwind     usr.sbin  SKIP kernel-side; userspace resolver kept for reference

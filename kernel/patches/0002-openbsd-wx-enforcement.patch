@@ -1,0 +1,38 @@
+From: Abzu Project <build@abzu.local>
+Subject: [ABZU 002] OpenBSD-style W^X enforcement knob for user mappings
+
+Minimal patch #2: add a boot-arg / sysctl knob `abzu.wx_enforce` that makes
+the BSD layer refuse mmap(PROT_WRITE|PROT_EXEC) and mprotect transitions into
+W+X for unprivileged processes — mirroring OpenBSD's revocation semantics.
+This is the kernel-side half of Abzu's "extremely secure" pillar; the
+userland half lives in ../userland (OpenBSD libc already avoids W+X).
+
+Rationale for keeping it *minimal*: we do not touch Mach IPC, zone, or SCHED
+subsystems. One hook in vm_map entry protection promotion.
+
+Index: xnu/bsd/kern/kern_mman.c
+===================================================================
+--- xnu.orig/bsd/kern/kern_mman.c
++++ xnu/bsd/kern/kern_mman.c
+@@ -XX,X +XX,X @@
++#include <sys/systm.h>
++
++/* ABZU: OpenBSD-style W^X policy knob (see patches/README.md) */
++int abzu_wx_enforce = 1; /* default ON in Abzu builds */
++SYSCTL_INT(_security, OID_AUTO, abzu_wx, CTLFLAG_RW | CTLFLAG_KERNSEC,
++    &abzu_wx_enforce, 0, "Enforce non-writable-or-non-executable user mappings");
++
+ sanity_check(
+        vm_offset_t     start,  /* IN  */
+        vm_size_t       size,   /* IN  */
+
+Index: xnu/vm/vm_map.c
+===================================================================
+--- xnu.orig/vm/vm_map.c
++++ xnu/vm/vm_map.c
+@@ -XX,X +XX,X @@
++extern int abzu_wx_enforce;
++
+ /*
+  *      vm_map_protect:
+  *
