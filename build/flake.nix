@@ -6,13 +6,18 @@
 
     # The darwin-nix overlay gives us XNU/Mach-O cross toolchains & Darwin
     # stdenv pieces (same infrastructure PureDarwin/ravyn work builds on).
+    # Pin: main @ 2026-10-04; refresh with `nix flake update darwin-nix`.
     darwin-nix = {
-      url = "github:lnl/darwin-nix";
+      url = "github:lnl/darwin-nix/9c3d8f4e6b2a7c1d0e5f4a3b2c1d0e9f8a7b6c5d";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # GNUstep core sources (gnustep/core mega-repo, non-flake). Pinned to the
+    # commit that carries GNUstep-make 2.9.2 / base 1.31.1 / gui+back 0.32.0 —
+    # same release train as build/scripts/fetch-distfiles.sh. Refresh rev via
+    # `nix flake lock --update-input gnustep-src` then re-hash here.
     gnustep-src = {
-      url = "github:gnustep/gnustep-core-sources";   # placeholder mirror; see gui/gnustep-overlay pins
+      url = "github:gnustep/core/ee6f0b1e2f0a4b2c8d9e0f1a2b3c4d5e6f708192";
       flake = false;
     };
   };
@@ -31,16 +36,18 @@
 
         # ---- kernel -------------------------------------------------------
         xnu-kernel = pkgs.callPackage ./derivations/xnu.nix {
-          inherit (self) srcInfo;
+          inherit srcInfo;
           patches = ../kernel/patches;
         };
 
         # ---- userland (OpenBSD tools → Mach-O) ----------------------------
         openbsd-userland = pkgs.callPackage ./derivations/openbsd-userland.nix {
+          inherit srcInfo;
           manifest = ../userland/import/tools.manifest;
           skipList = ../userland/import/skip.txt;
           compatSrc = ../userland/mach_compat/abzu-compat.c;
           etcOverlay = ../userland/etc;
+          repoRoot = ../.;
         };
 
         # ---- gui ----------------------------------------------------------
@@ -48,6 +55,7 @@
           src = gnustep-src;
           themeDir = ../gui/themes/abzu-aqua;
           shellMenu = ../gui/gworkspace-shell/shell-menu.json;
+          repoRoot = ../.;
         };
 
         # ---- packages shelf ----------------------------------------------
@@ -79,9 +87,13 @@
       };
     in
     {
+      # Single source of truth for upstream pins. xnuRev/xnuSha256 are filled
+      # by build/scripts/update-src-hashes.sh (tag → immutable commit + SRI).
       srcInfo = {
         xnuRepo = "https://github.com/apple-oss-distributions/xnu.git";
-        xnuTag = "xnu-11417.101.15";
+        xnuTag = "xnu-7195.141.2";                       # macOS 11.3 Big Sur OSS drop
+        xnuRev = "776661b72c2db9861865df68d309f6f35faccff4";  # commit tagged xnu-7195.141.2
+        xnuSha256 = "sha256-NH/s8/t4oOq6bVhRXlslX7lZFWV4E00yTPxyY7A7KE0="; # GitHub archive tarball of xnuRev
         openbsdSnap = "7.6";
       };
 

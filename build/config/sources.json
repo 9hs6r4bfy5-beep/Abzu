@@ -1,0 +1,9 @@
+{
+  "_comment": "APSL companion projects XNU's makefiles expect as siblings of xnu/, pinned to the macOS 11.3 (xnu-7195) release train. Refresh revs+sha256 with build/scripts/update-src-hashes.sh.",
+  "mach":       { "rev": "TBD", "sha256": "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" },
+  "libkern":    { "rev": "TBD", "sha256": "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" },
+  "IOKitUser":  { "rev": "TBD", "sha256": "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" },
+  "security_framework":  { "rev": "TBD", "sha256": "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" },
+  "apple_keystore":      { "rev": "TBD", "sha256": "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" },
+  "bsms":                { "rev": "TBD", "sha256": "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" }
+}
