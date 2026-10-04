@@ -1,0 +1,68 @@
+{
+  "appName": "AbzuShell",
+  "appVersion": "0.1.0",
+  "mainMenu": [
+    {
+      "title": "Abzu",
+      "items": [
+        { "action": "orderFrontAboutPanel:", "label": "About This Abyss" },
+        { "action": "showPreferences:",      "label": "Preferences…", "keyEquivalent": "," },
+        { "action": "lockScreen:",           "label": "Lock Screen", "keyEquivalent": "l", "mask": "commandControl" },
+        { "type": "separator" },
+        { "action": "logout:",               "label": "Log Out…" },
+        { "action": "restartNow:",           "label": "Restart in the Currents…" },
+        { "action": "shutDownAndTurnOffComputer:", "label": "Return to the Deep…" }
+      ]
+    },
+    {
+      "title": "File",
+      "items": [
+        { "action": "newFolderInWorkspace:", "label": "New Folder", "keyEquivalent": "n" },
+        { "action": "showInspector:",        "label": "Get Info",   "keyEquivalent": "i" },
+        { "type": "separator" },
+        { "action": "emptyTrash:",           "label": "Empty Silt Bin…", "keyEquivalent": "E", "mask": "commandshift" }
+      ]
+    },
+    {
+      "title": "Go",
+      "items": [
+        { "path": "/Users/%(user)s",     "label": "Home — Reed House" },
+        { "path": "/Applications",       "label": "Applications — Ziggurat" },
+        { "path": "/usr/local/archives", "label": "History Archives" },
+        { "path": "/Volumes",            "label": "Vessels" }
+      ]
+    },
+    {
+      "title": "Window",
+      "items": [
+        { "action": "arrangeInFront:", "label": "Gather Currents" },
+        { "action": "cycleWindows:",   "label": "Next Wave", "keyEquivalent": "`" }
+      ]
+    }
+  ],
+  "dock": {
+    "position": "bottom",
+    "magnification": true,
+    "minSize": 48,
+    "maxSize": 80,
+    "items": [
+      { "bundle": "GWorkspace",  "label": "Files" },
+      { "bundle": "abzu-terminal", "label": "Terminal (ksh)" },
+      { "bundle": "Archives.app","label": "Archives" },
+      { "bundle": "Homelab.app", "label": "Homelab" },
+      { "type": "separator" },
+      { "mountpoint": "/Volumes", "label": "Vessels" },
+      { "trash": true, "label": "Silt Bin" }
+    ]
+  },
+  "desktop": {
+    "background": "assets/wallpaper-abzu-deep.png",
+    "causticsOverlay": true,
+    "theme": "AbzuAqua"
+  },
+  "security": {
+    "loginRequiresTouchOrPassword": true,
+    "idleLockMinutes": 10,
+    "screenCaptureWarns": true
+  }
+}

@@ -1,0 +1,15 @@
+From: Abzu Project <build@abzu.local>
+Subject: [ABZU 001] Identify Abzu builds in version string
+
+Minimal patch #1 of the Abzu set: stamp the kernel version string so
+userland (and bug reports) can distinguish Abzu builds from stock Darwin.
+Nothing else changes — we deliberately keep the diff surface tiny so
+rebasing onto new apple-oss-distributions tags stays cheap.
+
+Index: xnu/os/version.c
+===================================================================
+--- xnu.orig/os/version.c
++++ xnu/os/version.c
+@@ -XX,X +XX,X @@
+-char   osversion[] = "Darwin Kernel Version " XNU_KERNEL_VERSION ": ";
++char   osversion[] = "Abzu (Darwin Kernel) Version " XNU_KERNEL_VERSION ": ";

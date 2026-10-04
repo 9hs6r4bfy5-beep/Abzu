@@ -1,0 +1,6 @@
+# /etc/master.passwd (skeleton) — populated at first boot by abzu-init
+# Root password is NOT baked into the ISO (security pillar: no default creds).
+# First-boot wizard sets it via doas-enforced prompt; until then root is locked.
+root:*LK*:0:0::/var/root:/bin/ksh
+abzu:*LK*:5000:5000::/Users/abzu:/bin/ksh
+nobody:*:65534:65534::/:/usr/bin/false

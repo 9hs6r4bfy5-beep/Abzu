@@ -1,0 +1,58 @@
+{
+  "shelf": "emulators",
+  "collectionName": "The Chariots of Nammu",
+  "note": "All entries FOSS. No proprietary BIOS or ROM content is vendored; first-run wizard explains lawful acquisition.",
+  "packages": [
+    {
+      "name": "retroarch",
+      "version": "1.19.0",
+      "source": "https://github.com/libretro/RetroArch",
+      "license": "GPL-3.0-or-later",
+      "provenance": "upstream-release",
+      "cores": ["genesis_plus_gx", "snes9x", "mupen64plus_next", "ppsspp", "flycast", "mednafen"],
+      "aquaIntegration": "libretro menu driver 'abzu' themed by AbzuAqua palette"
+    },
+    {
+      "name": "dolphin",
+      "version": "2412",
+      "source": "https://github.com/dolphin-emu/dolphin",
+      "license": "GPL-2.0-or-later",
+      "provenance": "upstream-release",
+      "platforms": ["gamecube", "wii"]
+    },
+    {
+      "name": "swtpc-iip",
+      "version": "7.0.0rc2",
+      "source": "https://www.swtpc.com/mholley/",
+      "license": "custom-permissive",
+      "provenance": "upstream-site",
+      "platforms": ["apple-ii", "mac-plus", "mac-se-classic"],
+      "historyNote": "Emulates the earliest Macintosh era that became Darwin."
+    },
+    {
+      "name": "sheepshaver",
+      "version": "2025.1",
+      "source": "https://github.com/kanjitalk755/macemu",
+      "license": "MIT-various",
+      "provenance": "upstream-git",
+      "platforms": ["macos-7-9"],
+      "historyNote": "68k/PPC Mac OS on Mach-O hosts; ties directly to our OpenDarwin lineage story."
+    },
+    {
+      "name": "openmsx",
+      "version": "19",
+      "source": "https://github.com/openMSX/openMSX",
+      "license": "GPL-3.0-or-later",
+      "provenance": "upstream-release",
+      "platforms": ["msx1", "msx2"]
+    },
+    {
+      "name": "scummvm",
+      "version": "2.8.1",
+      "source": "https://github.com/scummvm/scummvm",
+      "license": "LGPL-3.0-or-later",
+      "provenance": "upstream-release",
+      "platforms": ["lucasarts-adventure", "revival"]
+    }
+  ]
+}

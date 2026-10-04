@@ -1,0 +1,63 @@
+{
+  "shelf": "homelab",
+  "collectionName": "The Shipwreck Yard (Karidi Erish)",
+  "policy": "every daemon ships a generated launchd plist AND a sandbox profile; sudo is absent — services are managed via doas + abzu-ctl",
+  "packages": [
+    {
+      "name": "openssh",
+      "version": "OpenBSD_7_6 portable",
+      "source": "../userland (imported from OpenBSD -current)",
+      "license": "BSD-2-clause",
+      "provenance": "openbsd-current",
+      "role": "sshd hardened: KbdInteractiveAuthentication no, root login via doas only"
+    },
+    {
+      "name": "unbound",
+      "version": "1.21.1",
+      "source": "https://nlnetlabs.nl/projects/unbound/",
+      "license": "BSD-2-clause",
+      "provenance": "upstream-release",
+      "role": "local validating resolver (replaces OpenBSD unwind, see userland/import/skip.txt)"
+    },
+    {
+      "name": "restic",
+      "version": "0.17.3",
+      "source": "https://github.com/restic/restic",
+      "license": "BSD-2-clause",
+      "provenance": "upstream-release",
+      "role": "encrypted dedup backups; abzu-init wires a nightly launchd job"
+    },
+    {
+      "name": "rsync",
+      "version": "OpenBSD_7_6 import",
+      "source": "../userland",
+      "license": "GPL-3.0-or-later",
+      "provenance": "openbsd-current",
+      "role": "LAN sync agent"
+    },
+    {
+      "name": "wireguard-tools",
+      "version": "1.0.20240531",
+      "source": "https://git.zx2c4.com/wireguard-tools/",
+      "license": "GPL-2.0-only",
+      "provenance": "upstream-release",
+      "role": "userspace wg(8); kernel side uses Darwin NE backend (roadmap R-014)"
+    },
+    {
+      "name": "abzu-firewall",
+      "version": "0.1.0",
+      "source": "this repo: packages/homelab/abzu-firewall.sh",
+      "license": "MIT",
+      "provenance": "project-original",
+      "role": "pf.conf-compatible front-end translating to XNU netinfo/Application Firewall rules"
+    },
+    {
+      "name": "gitea",
+      "version": "1.22.3",
+      "source": "https://github.com/go-gitea/gitea",
+      "license": "MIT",
+      "provenance": "upstream-release",
+      "role": "optional self-hosted forge for the homelab persona"
+    }
+  ]
+}
