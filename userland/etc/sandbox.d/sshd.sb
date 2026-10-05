@@ -1,0 +1,37 @@
+/* sshd.sb — OpenSSH daemon on Abzu (Darwin/XNU).
+ * Derived from OpenBSD's pledge set for sshd:
+ *   main:     "stdio rpath wpath cpath inet listen proc exec dns"
+ *   privsep:  "stdio rpath getpw"          (no network, no exec)
+ *   netchild: "stdio inet"                 (no filesystem at all)
+ * Darwin has no per-child promise API yet (kernel patch 0003), so we emulate
+ * the narrowest child by running it under its own label; see rc.d.tsv phase
+ * "network". Paths mirror unveil() calls in upstream sshd.
+ */
+(version 1)
+(allow default)
+(deny file-write*)
+(deny process-exec)
+(deny network*)
+
+(allow file-read*
+    (subpath "/usr/bin") (subpath "/usr/sbin") (subpath "/usr/lib")
+    (subpath "/System/Library/Frameworks")
+    (subpath "/etc/ssh")
+    (literal "/etc/passwd") (literal "/etc/pwd.db") (literal "/etc/group")
+    (literal "/etc/doas.conf")
+    (subpath "/usr/share/terminfo"))
+(allow file-write*
+    (literal "/var/run/sshd.pid")
+    (literal "/var/log/auth.log")
+    (subpath "/var/empty")
+    (regex #"^/private/var/run/sshd:.*"))
+(allow file-ioctl (regex #"^/dev/ttyp[0-9]+$") (literal "/dev/tty"))
+(allow network* (local tcp ":22") (local udp ":68"))
+(allow network-outbound (remote unix))
+(allow process-fork)
+(allow signal (target same-sandbox))
+(allow process-info* (target same-sandbox))
+
+;; never expose the password database or host keys beyond /etc/ssh reads
+(deny file-read* (subpath "/etc/master.passwd"))
+(deny file-read* file-write* (subpath "/var/db/abzu/keys"))

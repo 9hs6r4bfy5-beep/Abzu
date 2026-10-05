@@ -1,6 +1,18 @@
-# /etc/master.passwd (skeleton) — populated at first boot by abzu-init
-# Root password is NOT baked into the ISO (security pillar: no default creds).
-# First-boot wizard sets it via doas-enforced prompt; until then root is locked.
+# $Abzu: etc/master.passwd — skeleton, populated at first boot by abzu-init.
+# Security pillar: no default credentials are ever baked into the ISO.
+#   * root and abzu ship LOCKED ('*LK*'); the first-boot wizard sets a bcrypt
+#     hash ($2b$). Darwin's crypt(3) must be blowfish-capable or verification
+#     silently fails -- see docs/OPENBSD-DIFFS.md section B3.
+#   * abzu-init runs `pwd_mkdb -p /etc/master.passwd` to build pwd.db/spwd.db.
+#   * privdrop users below MUST stay in sync with column 5 of etc/rc.d.tsv;
+#     test-pledge-map.sh checks this cross-reference.
 root:*LK*:0:0::/var/root:/bin/ksh
+daemon:*:1:::/:/usr/bin/false
+operator:*LK*:12:wheel::/:/bin/ksh
 abzu:*LK*:5000:5000::/Users/abzu:/bin/ksh
+_sshd:*:82:82::/_empty:/usr/bin/false
+_ntp:*:83:83::/var/empty:/usr/bin/false
+_unbound:*:84:84::/var/empty:/usr/bin/false
+_www:*:85:85::/var/empty:/usr/bin/false
+_relayd:*:86:86::/var/empty:/usr/bin/false
 nobody:*:65534:65534::/:/usr/bin/false

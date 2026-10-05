@@ -1,0 +1,41 @@
+# OpenBSD pledge(2) promise  ->  Darwin seatbelt (sandbox_init(3)) translation
+#
+# Consumed by:
+#   userland/mach_compat/abzu-compat.c       runtime translation (ABZU_PLEDGE=...)
+#   userland/etc/sandbox.d/gen-profiles.sh   build-time profile generation
+#   userland/security/test-pledge-map.sh     CI coverage gate
+#
+# Columns (TAB separated):
+#   1 promise    the pledge keyword as it appears in tool sources
+#   2 support    full | partial | unsupported
+#   3 seatbelt   rule fragment spliced into the generated profile
+#                (%TOOL%, %WRITE%, %UNVEIL% are expanded per tool)
+#   4 notes      why a downgrade is acceptable / what to watch for
+#
+# "partial" means the seatbelt rule is broader or narrower than the kernel check
+# pledge() performs. abzu-compat.c logs any partial/unsupported promise and fails
+# closed unless ABZU_PLEDGE=off -- see docs/OPENBSD-DIFFS.md section B1.
+promise	support	seatbelt	notes
+stdio	full	(allow file-write* (literal "/dev/tty") (literal "/dev/null") (regex #"^/dev/fd/[0-9]+$"))	tty ioctl spelling differs; validated against Darwin getty
+rpath	full	(allow file-read*)	plain read-path promise, exact match
+wpath	full	(allow file-write* (subpath "%WRITE%"))	needs a per-tool writable root; default /var/tmp/%TOOL%
+tmppath	full	(allow file-write* (subpath "/tmp") (subpath "/private/tmp"))	Darwin /tmp symlinks to /private/tmp - both required
+path	full	(allow file-read* file-write* (subpath "%UNVEIL%"))	concrete paths normally come from unveil()
+exec	full	(allow process-exec) (allow file-map-executable (subpath "/usr/lib") (subpath "/System/Library/Frameworks"))	Mach-O needs explicit executable-page mapping
+fork	full	(allow process-fork)	directly expressible
+execfork	partial	(allow process-fork process-exec)	no execve-without-fork distinction on Mach-O
+inet	full	(allow network-outbound) (allow network-inbound)	legacy seatbelt form; bind ports narrowed per tool
+send	unsupported	-	BSD send/recv signal promotion has no seatbelt analogue; log + fail
+mcast	unsupported	-	multicast needs the NetworkExtension backend (roadmap R-014)
+pfsock	unsupported	-	/dev/pf does not exist on XNU; patch the caller out (see import/skip.txt)
+dns	partial	(allow network-outbound (remote udp/ip:53) (remote tcp/ip:53))	resolver-only narrowing, not general network
+getpw	partial	(allow file-read* (subpath "/etc"))	OpenDirectory lookups touch more than master.passwd
+route	partial	(allow network-control)	routing socket flags differ; prefer Darwin route(8)
+proc	partial	(allow process-info*) (allow signal)	signal plus proc_info family
+ps	partial	(allow process-info*)	ps(1)-style introspection only
+audio	partial	(allow device-audio*)	IOKit audio client access
+tty	full	(allow file-ioctl (literal "/dev/tty"))	pair with stdio; ioctl whitelist is per-literal on Darwin
+udev	partial	(allow iokit-open (iokit-user-client-class "IOUserUSBHostDeviceUserClient"))	device enumeration differs from ugen(4)
+ioctl	partial	(allow file-ioctl (regex #"^/dev/.*"))	too broad for shipping; list literals per tool instead
+fattr	partial	(allow file-write-setattr (subpath "%WRITE%"))	xattr/flags semantics differ on HFS+/APFS
+wrefull	partial	(allow file-write* (subpath "%WRITE%"))	O_CREAT-denial heuristic cannot be expressed; documented downgrade

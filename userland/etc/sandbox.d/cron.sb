@@ -1,0 +1,11 @@
+/* cron.sb — OpenBSD cron. pledge("stdio rpath wpath cpath proc exec getpw"). */
+(version 1)
+(allow default)
+(deny network*)
+(deny file-write*)
+(allow file-read* (subpath "/etc/crontab") (subpath "/var/cron")
+                  (subpath "/usr/bin") (subpath "/usr/sbin") (subpath "/etc"))
+(allow file-write* (subpath "/var/cron/tabs") (literal "/var/log/cron"))
+(allow process-fork process-exec)
+(allow signal (target same-sandbox))
+(deny file-read* (subpath "/etc/master.passwd"))

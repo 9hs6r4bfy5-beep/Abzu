@@ -1,0 +1,10 @@
+/* syslogd.sb — OpenBSD syslogd. pledge("stdio inet readfd write") plus /dev/console. */
+(version 1)
+(allow default)
+(deny process-exec)
+(deny file-write*)
+(allow file-read* (literal "/etc/syslog.conf") (subpath "/usr/sbin"))
+(allow file-write* (subpath "/var/log") (literal "/dev/console") (literal "/dev/tty"))
+(allow network* (local udp ":514"))
+(allow network-inbound (remote udp/ip:*))
+(deny file-read* (subpath "/etc/master.passwd"))

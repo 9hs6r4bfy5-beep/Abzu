@@ -1,0 +1,39 @@
+# Abzu import portmap - one row per tool, consumed by ../build-openbsd-tools.sh
+# and by build/derivations/openbsd-userland.nix. Replaces tools.manifest (whose
+# multi-word rows were parsed only on field 1; see docs/OPENBSD-DIFFS.md section E).
+#
+# Columns (TAB separated):
+#   1 tool         binary name (single token!)
+#   2 srcdir       path inside usr/src of OpenBSD src.tar.gz ('-' = not in tree)
+#   3 mode         make | config | script
+#                    make   : compile the listed objects directly (no bsd.prog.mk)
+#                    config : autotools ./configure && make
+#                    script : install a shell script verbatim
+#   4 recipe       mode=make -> object list relative to srcdir
+#                  mode=config -> configure invocation
+#                  mode=script -> 'install <file>'
+#   5 libs         extra LIBS/LDFLAGS (may be empty)
+#   6 compat       yes/no - link mach_compat/abzu-compat.o (pledge/unveil/etc.)
+#   7 installdir   staging prefix (/bin /usr/bin /usr/sbin ...)
+#   8 man          manual sections shipped for this tool
+#   9 tier         1 security-critical .. 4 optional shelf (docs/ROADMAP.md)
+#  10 notes        caveats, required follow-up patches, privilege users
+tool	srcdir	mode	recipe	libs	compat	installdir	man	tier	notes
+ksh	usr.bin/ksh	make	sh.c c_test.c misc.c edit.c xstring.c syn.c hist.c str.c table.c path.c fastrfn.c fchdir.c map.c prot/minibuf.c kill.c cread.c exec.c input.c redirect.c sig.c tree.c io.c scan.c here.c var.c arith.c eval.c expr.c string.c spawtn.c noasync.h fd.c func.c lex.c mail.c	-ledit -lcurses	yes	/bin	1 4	2	tier1: /bin/sh target; needs ksh.patch (termios/TIOCGWINSZ)
+ls	bin/ls	make	ls.c print.c	-lutil	yes	/bin	1	2	BSD -F/-S semantics differ from GNU coreutils
+cp	bin/cp	make	cp.c utils.c	-lrpmatch? no		/bin	1	2	preserve-xattr + symlink flags (UF_HIDDEN) handling
+mv	bin/mv	make	mv.c	-lutil		/bin	1	2	cross-device rename fallback
+rm	bin/rm	make	rm.c	-lutil		/bin	1	2	unlinksundown(2) absent on Darwin -> stubbed in patch
+doas	usr.bin/doas	make	doas.c parse.y env.c keystore.c	-lpthread	yes	/usr/bin	1 5	1	tier1 security: PAM compiled out, bcrypt via libcrypt_blowfish
+signify	usr.bin/signify	make	signify.c ed25519.c sha2.c base64.c	-lcrypto? none (vendored ed25519)	yes	/usr/bin	1	1	replaces pkg_add signing; used by verify-packages.sh
+mandoc	usr.bin/mandoc	make	many (see dir)	-lm	yes	/usr/bin	1 3 5 6 7 8	2	pure userland; highest QoL value; also builds mdoc/man/apropos
+man	usr.bin/man	script	install man.sh as /usr/bin/man		yes	/usr/bin	1	2	wrapper driving mandoc(1); MANDB -> /var/db/man
+vi	usr.bin/vi	make	ex/* vi/* cl/* common/* (bsd.prog subdirs)	-ledit -lcurses	yes	/usr/bin	1	2	needs termcap default xterm-256color
+nc	usr.bin/nc	make	nc.c netcat.c buf.c read.c write.c proxy.c telnegot.c telnet.c	-lutil	yes	/usr/bin	1 4	2	no pf(4) transparency; --transproxy patched out
+ssh	usr.bin/ssh	config	./configure --with-privsep-path=/var/empty --sysconfdir=/etc/ssh		yes	/usr/bin	1 5 8	3	portable OpenSSH; darwin sandbox profile sshd.sb already exists upstream
+ntpd	usr.sbin/ntpd	make	ntpd.c constraint.c imsg.c log.c parse.y	 -levent? vendored	yes	/usr/sbin	1 8	3	privdrop user _ntp required in master.passwd skeleton
+httpd	usr.sbin/httpd	make	(full dir)	-lssl -lcrypto	yes	/usr/sbin	1 5 8	3	serves /usr/local/archives; pledge-heavy -> good test case
+unbound	usr.sbin/unbound	config	./configure --with-conf-file=/etc/unbound.conf		no	/usr/sbin	1 5 8	3	upstream unbound replaces unwind (skip.txt); NOT OpenBSD-src
+tmux	usr.bin/tmux	config	./configure		yes	/usr/bin	1	4	autotools-ish; needs event.h from libevent
+rsync	usr.bin/rsync	config	./configure		yes	/usr/bin	1	4	OpenBSD rsync fork; use after for portability
+sqlite3	usr.bin/sqlite3	make	shell.c sqlite3.c	-lm -lpthread	no	/usr/bin	1	4	amalgamation build; archive index backend

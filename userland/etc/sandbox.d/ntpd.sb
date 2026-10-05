@@ -1,0 +1,21 @@
+/* ntpd.sb — OpenBSD ntpd with constraint helpers.
+ * Upstream pledges: parent "stdio rpath wpath cpath inet bind_address pf",
+ *                    child    "stdio route",  constraints "stdio rpath inet dns".
+ * 'pf' cannot be expressed on XNU (no /dev/pf): route/binding changes go through
+ * the Darwin-native path; docs/OPENBSD-DIFFS.md B4 tracks the residual gap.
+ */
+(version 1)
+(allow default)
+(deny file-write*)
+(deny process-exec)
+(deny network*)
+
+(allow file-read* (subpath "/etc/ntp") (literal "/etc/ntp.conf")
+                  (subpath "/usr/sbin") (subpath "/usr/lib"))
+(allow file-write* (literal "/var/db/ntp.drift") (literal "/var/run/ntpd.pid")
+                   (subpath "/var/db/ntp-constraints"))
+(allow network* (local udp ":123") (local udp "*"))
+(allow network-outbound (remote udp/ip:*:123) (remote udp/ip:*:53))
+(allow process-fork)
+(allow signal (target same-sandbox))
+(deny file-read* (subpath "/etc/master.passwd"))

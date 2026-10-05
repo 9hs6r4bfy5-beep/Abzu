@@ -1,0 +1,94 @@
+/* compat-shim.c -- non-Darwin compile + behaviour test for abzu-compat.c.
+ *
+ * The Linux builder in .github/workflows/build.yml cannot produce a Mach-O
+ * image, but it can and must verify that the compatibility layer is valid C and
+ * that pledge()/unveil() fail closed exactly as documented. `make check` runs
+ * this; on a Darwin host run tests/compat-darwin.sh instead, which links against
+ * the real <sandbox.h> and asserts actual confinement.
+ *
+ *   cc -I../include -Wall -Wextra -o compat-shim compat-shim.c && ./compat-shim
+ */
+
+#include <errno.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+static int failures;
+
+static void
+expect(int cond, const char *what)
+{
+	printf("%-58s %s\n", what, cond ? "ok" : "FAIL");
+	if (!cond)
+		failures++;
+}
+
+/* Provide the two symbols abzu-compat.c expects from libSystem when building
+ * against glibc: explicit_bzero(3) (glibc >= 2.25 has it, so only shim when the
+ * feature-test macro says otherwise) and __progname. */
+#ifndef __APPLE__
+#  ifndef HAVE_EXPLICIT_BZERO
+extern void explicit_bzero(void *, size_t);
+#  endif
+#  define __progname program_invocation_short_name
+#endif
+
+#include "../abzu-compat.c"
+
+int
+main(void)
+{
+	int r;
+
+	/* default mode must fail closed on promises we cannot honour */
+	unsetenv("ABZU_PLEDGE");
+	errno = 0;
+	r = pledge("pfsock", NULL);
+	expect(r == -1 && errno == EPERM, "pledge(pfsock) refused in fail mode");
+
+	errno = 0;
+	r = pledge("totally-made-up", NULL);
+	expect(r == -1 && errno == EPERM, "pledge(<unmapped>) refused in fail mode");
+
+	/* warn mode degrades loudly but keeps going */
+	setenv("ABZU_PLEDGE", "warn", 1);
+	errno = 0;
+	r = pledge("pfsock", NULL);
+	expect(r == 0, "pledge(pfsock) allowed (logged) in warn mode");
+
+	/* off mode is an explicit escape hatch, still logged */
+	setenv("ABZU_PLEDGE", "off", 1);
+	errno = 0;
+	r = pledge("stdio rpath", NULL);
+	expect(r == 0, "pledge(off mode) returns success");
+
+	/* unveil() records paths without touching the kernel until commit */
+	unsetenv("ABZU_PLEDGE");
+	expect(unveil("/etc/ntp.conf", "r") == 0, "unveil(path) records grant");
+	expect(unveil("/var/db/ntp.drift", "rw") == 0, "unveil(second path)");
+
+	/* constant-time helpers */
+	expect(timingsafe_bcmp("abc", "abc", 3) == 0, "timingsafe_bcmp equal -> 0");
+	expect(timingsafe_bcmp("abc", "abd", 3) != 0, "timingsafe_bcmp differ -> nonzero");
+	expect(timingsafe_memcmp("abc", "abc", 3) == 0, "timingsafe_memcmp equal -> 0");
+
+	/* recallocarray must preserve data and reject overflow */
+	{
+		char *p = calloc(4, 8);
+
+		memcpy(p, "abcdefgh", 8);
+		p = recallocarray(p, 4, 8, 8);
+		expect(p != NULL && memcmp(p, "abcdefgh", 8) == 0,
+		    "recallocarray preserves contents");
+		free(p);
+		expect(recallocarray(NULL, 0, SIZE_MAX, 2) == NULL,
+		    "recallocarray rejects size overflow");
+	}
+
+	printf("\n%s (%d failure%s)\n", failures ? "FAILED" : "PASSED",
+	    failures, failures == 1 ? "" : "s");
+	return failures ? 1 : 0;
+}

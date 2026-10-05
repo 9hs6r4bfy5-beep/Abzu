@@ -1,0 +1,11 @@
+Welcome to Abzu.
+
+  System   Darwin/XNU kernel + OpenBSD-derived userland
+  Shell    ksh(1) is /bin/sh  (no bash in the base image)
+  Root     locked.  Elevate with  doas -u root <cmd>   (:wheel members only)
+  Services abzu-ctl status            (launchd jobs from /etc/rc.d.tsv)
+  Sandbox  every daemon runs under /etc/sandbox.d/*.sb; pledge() is enforced
+  Docs     man <tool>       -- mandoc renders the imported OpenBSD manual
+  Firewall fail-closed by default: abzu-firewall status
+
+"The sea remembers everything." -- keep your backups off-box.

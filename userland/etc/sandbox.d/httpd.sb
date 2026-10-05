@@ -1,0 +1,18 @@
+/* httpd.sb — minimal web server for local docs / history archives.
+ * Upstream httpd pledges heavily: parent "stdio rpath inet sendfd proc exec",
+ * server "stdio rpath wpath cpath inet sendfd recvfd proc", fcgi "stdio rpath
+ * wpath inet recvfd sendfd". 'sendfd'/'recvfd' have no seatbelt analogue
+ * (pledge-map.tsv) -> logged as partial downgrades.
+ */
+(version 1)
+(allow default)
+(deny file-write*)
+(deny process-exec)
+(deny network*)
+(allow file-read* (subpath "/usr/local/archives") (subpath "/srv/www")
+                  (subpath "/etc/httpd") (subpath "/usr/sbin") (subpath "/usr/lib"))
+(allow file-write* (subpath "/var/run/httpd") (literal "/var/log/httpd-access.log"))
+(allow network* (local tcp ":80") (local tcp ":8080"))
+(allow process-fork)
+(allow signal (target same-sandbox))
+(deny file-read* (subpath "/etc/master.passwd"))

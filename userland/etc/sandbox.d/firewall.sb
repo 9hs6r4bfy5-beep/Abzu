@@ -1,0 +1,12 @@
+/* firewall.sb — abzu-firewall front-end (packages/homelab/abzu-firewall.sh).
+ * Needs to read the translated policy and talk to the Application Firewall
+ * helper; deliberately denied any outbound network of its own.
+ */
+(version 1)
+(allow default)
+(deny network*)
+(deny file-write*)
+(allow file-read* (literal "/etc/abzu/pf.abz.conf") (subpath "/usr/libexec/ApplicationFirewall"))
+(allow file-write* (literal "/etc/abzu/firewall.pending") (subpath "/var/db/abzu"))
+(allow process-exec (literal "/usr/libexec/ApplicationFirewall/socketfilterfw"))
+(allow process-fork)

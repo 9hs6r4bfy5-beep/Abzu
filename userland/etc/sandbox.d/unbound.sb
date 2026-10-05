@@ -1,0 +1,15 @@
+/* unbound.sb — validating resolver replacing OpenBSD unwind.
+ * pledge("stdio inet readfd rpath") + unveil of config, keys, pid dir.
+ */
+(version 1)
+(allow default)
+(deny file-write*)
+(deny process-exec)
+(deny network*)
+(allow file-read* (subpath "/etc/unbound") (subpath "/var/db/unbound")
+                  (subpath "/usr/sbin") (subpath "/usr/share/unbound"))
+(allow file-write* (literal "/var/run/unbound.pid") (subpath "/var/db/unbound"))
+(allow network* (local udp ":53") (local tcp ":53"))
+(allow network-outbound (remote udp/ip:*) (remote tcp/ip:*))
+(allow network-inbound (remote udp/ip:*))
+(deny file-read* (subpath "/etc/master.passwd"))

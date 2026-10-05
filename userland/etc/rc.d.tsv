@@ -1,0 +1,28 @@
+# Abzu service table - the rc.conf.local equivalent for Darwin.
+#
+# THIS FILE IS THE SINGLE SOURCE OF TRUTH. Both consumers read it:
+#   build/scripts/assemble-rootfs.sh          (Makefile pipeline, plist generation)
+#   build/derivations/rootfs.nix              (Nix pipeline, same contract)
+# userland/etc/sandbox.d/gen-profiles.sh uses column 4 to emit the profiles that
+# the generated plists reference -- closing the dangling-path defect recorded in
+# docs/OPENBSD-DIFFS.md section E8. `abzu-ctl enable|disable|status <tool>` maps
+# onto launchctl using these labels.
+#
+# Columns (TAB separated):
+#   1 tool            portmap tool name (must exist in import/portmap.tsv unless
+#                     state == blocked)
+#   2 label           launchd job label
+#   3 state           on | off | blocked   (blocked = never started, never installed)
+#   4 profile         seatbelt profile path in the image ('' when blocked)
+#   5 user            privilege-drop user (must exist in etc/master.passwd)
+#   6 phase           boot ordering hint consumed by abzu-init
+#   7 notes
+tool	label	state	profile	user	phase	notes
+sshd	com.abzu.sshd	on	/etc/sandbox.d/sshd.sb	_sshd	network	PasswordAuthentication no; root login only via doas
+ntpd	com.abzu.ntpd	on	/etc/sandbox.d/ntpd.sb	_ntp	time	constraint-based time sync; replaces Apple legacy daemons
+unbound	com.abzu.unbound	on	/etc/sandbox.d/unbound.sb	_unbound	network	validating resolver; replaces OpenBSD unwind (see import/skip.txt)
+httpd	com.abzu.httpd	off	/etc/sandbox.d/httpd.sb	_www	web	serves /usr/local/archives; enable on demand
+relayd	com.abzu.relayd	blocked		_relayd	web	BLOCKED: needs pf(4) shim -> see docs/OPENBSD-DIFFS.md B4; abzu-ctl refuses to enable
+cron	com.abzu.cron	on	/etc/sandbox.d/cron.sb		multi-user	OpenBSD cron with /etc/crontab + /var/cron/tabs
+syslogd	com.abzu.syslogd	on	/etc/sandbox.d/syslogd.sb		early-boot	writes /var/log; os_log bridge in roadmap M4
+abzu-firewall	com.abzu.firewall	on	/etc/sandbox.d/firewall.sb		early-boot	fail-closed: writes /etc/abzu/firewall.pending if no backend

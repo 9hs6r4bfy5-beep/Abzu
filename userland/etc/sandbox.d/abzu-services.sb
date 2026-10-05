@@ -1,0 +1,47 @@
+/* abzu-services.sb — default seatbelt profile for Abzu-shipped daemons.
+ *
+ * Referenced by every launchd plist generated from userland/etc/rc.d.tsv
+ * (build/scripts/assemble-rootfs.sh and build/derivations/rootfs.nix). It used
+ * to be a dangling path; this file closes that gap (docs/OPENBSD-DIFFS.md E8).
+ *
+ * Semantics: deny-by-default, then re-grant exactly what an OpenBSD daemon with
+ *   pledge("stdio rpath wpath inet proc") + unveil() would have been able to do.
+ * Per-tool profiles in this directory are narrower and take precedence.
+ */
+(version 1)
+
+(comment "Abzu default daemon profile - fail closed")
+
+(allow default)
+(deny  file-write*)
+(deny  process-exec)
+(deny  network*)
+
+;; --- baseline grants -------------------------------------------------------
+(allow file-read*)
+(allow file-write*
+    (subpath "/var/log")
+    (subpath "/var/run")
+    (subpath "/var/db/abzu")
+    (subpath "/private/var/tmp"))
+
+(allow file-ioctl (literal "/dev/tty") (regex #"^/dev/ttyp[0-9]+$"))
+(allow file-write* (literal "/dev/null") (regex #"^/dev/fd/[0-9]+$"))
+
+;; networking: daemons opt in via their own profile; the baseline only allows
+;; loopback so that privsep children and control sockets keep working.
+(allow network* (local ip "localhost:*"))
+(allow network-outbound (remote unix))
+(allow network-inbound (remote unix))
+
+;; process management needed by privsep parents (ntpd, sshd, httpd)
+(allow process-fork)
+(allow signal (target same-sandbox))
+(allow process-info* (target same-sandbox))
+
+;; --- always-denied, even for children --------------------------------------
+(deny file-read* file-write* (subpath "/etc"))          ;; /etc is read-only by design
+(deny file-read* (subpath "/etc/master.passwd"))
+(deny file-read* (subpath "/var/db/abzu/keys"))
+(deny iokit-open)
+(deny system*)
