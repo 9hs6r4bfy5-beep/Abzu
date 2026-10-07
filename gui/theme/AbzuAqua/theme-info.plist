@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//GNUstep//DTD plist 0.9//EN" "http://www.gnustep.org/plist-0_9.xml">
+<plist version="0.9">
+<dict>
+    <key>ThemeDescription</key>
+    <string>Abzu "Water and Light" Aqua Theme</string>
+    <key>ThemeDomain</key>
+    <dict>
+        <!-- Translucent Aqua Blue for Highlights -->
+        <key>NSHighlightColor</key>
+        <string>0.25 0.65 0.95 1.0</string>
+        
+        <!-- Soft, light blue/white for Window Backgrounds -->
+        <key>NSWindowBackgroundColor</key>
+        <string>0.92 0.95 0.98 1.0</string>
+        
+        <!-- Dark Navy/Charcoal for crisp, readable text -->
+        <key>NSTextColor</key>
+        <string>0.1 0.1 0.15 1.0</string>
+        
+        <!-- Classic Aqua Font Stack -->
+        <key>NSFont</key>
+        <dict>
+            <key>NSFontName</key>
+            <string>Lucida Grande</string>
+            <key>NSFontSize</key>
+            <string>12</string>
+        </dict>
+    </dict>
+</dict>
+</plist>
