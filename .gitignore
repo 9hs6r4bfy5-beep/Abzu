@@ -13,4 +13,7 @@ userland/doas/openbsd-doas-src/parse.tab.h
 # Build artifacts
 *.log
 *.tmp
+userland/out/
+userland/stage/
+userland/distfiles/
 EOF
