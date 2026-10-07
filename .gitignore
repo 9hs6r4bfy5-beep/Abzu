@@ -1,2 +1,16 @@
-(empty)
+cat << 'EOF' > .gitignore
+# macOS
 .DS_Store
+
+# Compiled binaries and object files for doas
+userland/doas/openbsd-doas-src/doas
+userland/doas/openbsd-doas-src/*.o
+userland/doas/openbsd-doas-src/y.tab.c
+userland/doas/openbsd-doas-src/y.tab.h
+userland/doas/openbsd-doas-src/parse.tab.c
+userland/doas/openbsd-doas-src/parse.tab.h
+
+# Build artifacts
+*.log
+*.tmp
+EOF
