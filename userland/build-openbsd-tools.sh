@@ -33,12 +33,10 @@ do_fetch() {
         case "${name}" in ''|'#'*) continue ;; esac
         f="src-${name}.tgz"
         [ -f "${DIST}/${f}" ] && { echo "    cached ${f}"; continue; }
-        # Upstream publishes monolithic src.tar.gz; we split per-tool at port
-        # time. Keep one canonical archive + checksummed signature.
         curl -fSL --retry 3 -o "${DIST}/src.tar.gz.part" \
             "${OPENBSD_SNAP}/src.tar.gz" && mv "${DIST}/src.tar.gz.part" "${DIST}/src.tar.gz"
         curl -fSL -o "${DIST}/sha256.sig" "${OPENBSD_SNAP}/sha256.sig" || true
-        break   # single archive covers all tools
+        break
     done < "${MANIFEST}"
     echo "==> fetching Darwin releases index (opensource.apple.com)"
     curl -fsSL -o "${DIST}/apple-releases.json" \
@@ -49,20 +47,59 @@ do_fetch() {
 do_port() {
     [ "$(uname -s)" = "Darwin" ] || echo "WARN: non-Darwin host; Mach-O link will be skipped"
     cd "${DIST}"
-    [ -f src.tar.gz ] || { echo "!! run '$0 fetch' first"; exit 1; }
-    tar xzf src.tar.gz          # yields usr/src/{bin,usr.bin,sbin,...}
+
+    # FAST TRACK: Build portable doas immediately without needing the massive OpenBSD src.tar.gz
+    for want in "$@"; do
+        if [ "${want}" = "doas" ]; then
+            echo "==> porting portable OpenBSD doas to Darwin"
+            DOAS_DIR="${DIST}/OpenDoas"
+            if [ ! -d "${DOAS_DIR}" ]; then
+                echo "    fetching portable doas source..."
+                git clone https://github.com/Duncaen/OpenDoas.git "${DOAS_DIR}"
+            fi
+            cd "${DOAS_DIR}"
+            
+            # CRITICAL: Run configure to generate config.mk before calling make
+            ./configure
+            
+            make clean >/dev/null 2>&1 || true
+            
+            # Use bison with yacc compatibility flags to bypass macOS xcode-select errors
+            if make YACC="${YACC:-bison}" YACCFLAGS="-y -d" 2>/dev/null; then
+                echo "    built successfully via make"
+            else
+                echo "    applying manual yacc compatibility build..."
+                ${YACC:-bison} -y -d parse.y
+                mv -f y.tab.c parse.c
+                mv -f y.tab.h parse.h
+                make
+            fi
+            
+            mkdir -p "${OUT}/usr/bin" "${OUT}/etc"
+            cp doas "${OUT}/usr/bin/"
+            cp doas.conf.sample "${OUT}/etc/doas.conf.sample"
+            cd "${DIST}"
+            continue
+        fi
+    done
+
+    # Now proceed with the rest of the tools that require the OpenBSD source tree
+    [ -f src.tar.gz ] || { echo "!! run '$0 fetch' first for other tools"; return 0; }
+    tar xzf src.tar.gz
     cd usr/src
 
     for want in "$@"; do
+        [ "${want}" = "doas" ] && continue # Skip doas, already built above
+        
         grep -qx "${want}" ../../import/skip.txt 2>/dev/null && {
             echo "==> SKIP ${want} (OpenBSD kernel coupling; see skip.txt)"; continue; }
+        
         echo "==> porting ${want} to Mach-O / Darwin"
         SRCDIR="$(find . -type d \( -path "./bin/${want}" -o -path "./usr.bin/${want}" \
                  -o -path "./sbin/${want}" -o -path "./usr.sbin/${want}" \
                  -o -path "./lib/libc" -a -name libc \) | head -1)"
         [ -n "${SRCDIR}" ] || { echo "    !! ${want}: source dir not found in tree"; continue; }
 
-        # Apply shim patch if present (namespace collisions, sysctl ABI, etc.)
         SHIM="${ROOT}/mach_compat/${want}.patch"
         if [ -f "${SHIM}" ]; then
             (cd "${SRCDIR%/*}" && patch -p1 < "${SHIM}") || echo "    !! shim failed for ${want}"
