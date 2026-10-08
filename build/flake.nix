@@ -67,12 +67,16 @@
           ];
         };
 
+        # ---- cuneiform input method --------------------------------------
+        cuneiform-input = pkgs.callPackage ./derivations/cuneiform-input.nix { };
+
         # ---- rootfs + ISO --------------------------------------------------
         rootfs-intel = pkgs.callPackage ./derivations/rootfs.nix {
           kernel = xnu-kernel;
           userland = openbsd-userland;
           gui = gui-core;
           packages = abzu-packages;
+          cuneiform-input = cuneiform-input;
           efistub = pkgs.callPackage ./derivations/refind.nix { };
         };
 
