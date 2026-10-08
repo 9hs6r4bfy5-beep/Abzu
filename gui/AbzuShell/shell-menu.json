@@ -1,0 +1,95 @@
+{
+  "menu": [
+    {
+      "name": "Workstation",
+      "items": [
+        { "name": "Terminal (Starship)", "exec": "Terminal.app" },
+        { "name": "Micro Editor", "exec": "Terminal.app -e micro" },
+        { "name": "File Manager", "exec": "GWorkspace" },
+        { "name": "LM Studio (Local AI)", "exec": "LMStudio.app" },
+        { "name": "Tor Browser (Privacy)", "exec": "TorBrowser.app" },
+        { "name": "Fono (Local Voice Assistant)", "exec": "fono-daemon" },
+        { "name": "Tether (iPhone Continuity)", "exec": "tether-daemon" }
+      ]
+    },
+    {
+      "name": "Utilities & Productivity",
+      "items": [
+        { "name": "SpeedCrunch (Calculator)", "exec": "SpeedCrunch.app" },
+        { "name": "Clocker (World Clock)", "exec": "Clocker.app" },
+        { "name": "Stats (System/GPU Monitor)", "exec": "Stats.app" },
+        { "name": "Weather (Terminal)", "exec": "Terminal.app -e 'curl wttr.in'" },
+        { "name": "Calendar (khal)", "exec": "Terminal.app -e 'khal'" },
+        { "name": "Reminders (todoman)", "exec": "Terminal.app -e 'todo'" }
+      ]
+    },
+    {
+      "name": "Media & Audio",
+      "items": [
+        { "name": "Strawberry Music Player", "exec": "Strawberry.app" },
+        { "name": "Audacity (Audio Editor)", "exec": "Audacity.app" },
+        { "name": "Beets (Music Library Manager)", "exec": "Terminal.app -e 'beet'" },
+        { "name": "IINA (Modern Video Player)", "exec": "IINA.app" }
+      ]
+    },
+    {
+      "name": "Creativity & SDR",
+      "items": [
+        { "name": "Krita (Digital Painting)", "exec": "Krita.app" },
+        { "name": "LyX (Document Processor)", "exec": "LyX.app" },
+        { "name": "OBS Studio (Broadcasting)", "exec": "OBS.app" },
+        { "name": "SDR++ (Software Defined Radio)", "exec": "SDR++.app" },
+        { "name": "Plash (Live Wallpapers)", "exec": "Plash.app" }
+      ]
+    },
+    {
+      "name": "Homelab & Server",
+      "items": [
+        { "name": "OpenBSD httpd", "exec": "Terminal.app -e 'doas /usr/sbin/httpd -f'" },
+        { "name": "PF Firewall Manager", "exec": "Terminal.app -e 'doas pfctl -s rules'" },
+        { "name": "Podman / Colima", "exec": "Terminal.app -e 'colima start'" },
+        { "name": "System Monitor", "exec": "Terminal.app -e 'top'" }
+      ]
+    },
+    {
+      "name": "History & Archives",
+      "items": [
+        { "name": "Stellarium (Babylonian MUL.APIN)", "exec": "Stellarium.app" },
+        { "name": "CunAI (Sumerian Semantic Search)", "exec": "CunAI.app" },
+        { "name": "Cuneo (Sumerian Dictionary)", "exec": "Cuneo.app" },
+        { "name": "Apple II Hardware Bridge (apple2pi)", "exec": "Terminal.app -e 'apple2pi-server'" },
+        { "name": "Classic Mac Emulator (Snow)", "exec": "Snow.app" },
+        { "name": "The Museum of All Things", "exec": "MOAT.app" }
+      ]
+    },
+    {
+      "name": "Health & Wellness",
+      "items": [
+        { "name": "GNUHealth (Personal Health Record)", "exec": "gnuhealth-client" },
+        { "name": "Dosage (Medication Tracker)", "exec": "Terminal.app -e 'dosage'" }
+      ]
+    },
+    {
+      "name": "Retro Networking, Gaming & Preservation",
+      "items": [
+        { "name": "Messages for Macintosh (Bridge)", "exec": "messages-mac-bridge" },
+        { "name": "Hotline Navigator", "exec": "Hotline-Navigator.app" },
+        { "name": "Intel SDE (AVX Emulator for older Macs)", "exec": "Terminal.app -e 'sde64 --help'" },
+        { "name": "Whisky (Windows Game Compatibility)", "exec": "Whisky.app" },
+        { "name": "Zaparoo (Retro Launcher)", "exec": "Zaparoo.app" },
+        { "name": "PC Game Cartridge Manager", "exec": "Terminal.app -e 'pc-cartridge-manager'" },
+        { "name": "Steam (Native)", "exec": "Steam.app" },
+        { "name": "Heroic Games Launcher", "exec": "Heroic.app" },
+        { "name": "SGDBoop (Steam Grid DB)", "exec": "SGDBoop.app" },
+        { "name": "Quiver Launcher", "exec": "Quiver.app" }
+      ]
+    },
+    {
+      "name": "Cloud & Sync",
+      "items": [
+        { "name": "iCloud Sync (Contacts/Calendar)", "exec": "Terminal.app -e 'vdirsyncer sync'" },
+        { "name": "iCloud Drive Manager", "exec": "icloud-drive-manager" }
+      ]
+    }
+  ]
+}
