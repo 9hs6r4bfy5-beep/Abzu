@@ -1,63 +1,90 @@
 {
-  "shelf": "homelab",
-  "collectionName": "The Shipwreck Yard (Karidi Erish)",
-  "policy": "every daemon ships a generated launchd plist AND a sandbox profile; sudo is absent — services are managed via doas + abzu-ctl",
+  "category": "homelab",
+  "description": "Workstation tools, privacy, local AI, and hardware bridges",
   "packages": [
     {
-      "name": "openssh",
-      "version": "OpenBSD_7_6 portable",
-      "source": "../userland (imported from OpenBSD -current)",
-      "license": "BSD-2-clause",
-      "provenance": "openbsd-current",
-      "role": "sshd hardened: KbdInteractiveAuthentication no, root login via doas only"
+      "name": "tor-browser",
+      "version": "13.5.3",
+      "source": "https://dist.torproject.org/torbrowser/13.5.3/TorBrowser-13.5.3-macos_aarch64_en-US.dmg",
+      "license": "MPL-2.0",
+      "provenance": "The Tor Project"
     },
     {
-      "name": "unbound",
-      "version": "1.21.1",
-      "source": "https://nlnetlabs.nl/projects/unbound/",
-      "license": "BSD-2-clause",
-      "provenance": "upstream-release",
-      "role": "local validating resolver (replaces OpenBSD unwind, see userland/import/skip.txt)"
+      "name": "lm-studio",
+      "version": "0.3.10",
+      "source": "https://download.lmstudio.ai/mac/LM-Studio-0.3.10-mac-arm64.dmg",
+      "license": "Proprietary (Free)",
+      "provenance": "LM Studio"
     },
     {
-      "name": "restic",
-      "version": "0.17.3",
-      "source": "https://github.com/restic/restic",
-      "license": "BSD-2-clause",
-      "provenance": "upstream-release",
-      "role": "encrypted dedup backups; abzu-init wires a nightly launchd job"
+      "name": "fono",
+      "version": "0.18.1",
+      "source": "https://github.com/bogdanr/fono/releases/download/v0.18.1/fono-v0.18.1-aarch64-apple-darwin.tar.gz",
+      "license": "GPL-3.0",
+      "provenance": "Bogdan Rădulescu"
     },
     {
-      "name": "rsync",
-      "version": "OpenBSD_7_6 import",
-      "source": "../userland",
-      "license": "GPL-3.0-or-later",
-      "provenance": "openbsd-current",
-      "role": "LAN sync agent"
-    },
-    {
-      "name": "wireguard-tools",
-      "version": "1.0.20240531",
-      "source": "https://git.zx2c4.com/wireguard-tools/",
-      "license": "GPL-2.0-only",
-      "provenance": "upstream-release",
-      "role": "userspace wg(8); kernel side uses Darwin NE backend (roadmap R-014)"
-    },
-    {
-      "name": "abzu-firewall",
-      "version": "0.1.0",
-      "source": "this repo: packages/homelab/abzu-firewall.sh",
+      "name": "tether",
+      "version": "0.2.35",
+      "source": "https://github.com/zackb/tether/releases/download/v0.2.35/tether-macos.tar.gz",
       "license": "MIT",
-      "provenance": "project-original",
-      "role": "pf.conf-compatible front-end translating to XNU netinfo/Application Firewall rules"
+      "provenance": "zackb"
     },
     {
-      "name": "gitea",
-      "version": "1.22.3",
-      "source": "https://github.com/go-gitea/gitea",
+      "name": "apple2pi",
+      "version": "1.0.0",
+      "source": "https://github.com/dschmenk/apple2pi/releases/download/v1.0.0/apple2pi-mac.tar.gz",
       "license": "MIT",
-      "provenance": "upstream-release",
-      "role": "optional self-hosted forge for the homelab persona"
+      "provenance": "dschmenk"
+    },
+    {
+      "name": "messages-mac-bridge",
+      "version": "1.0.0",
+      "source": "https://henlin.net/messages-mac-bridge.tar.gz",
+      "license": "MIT",
+      "provenance": "henlin"
+    },
+    {
+      "name": "strawberry",
+      "version": "1.0.28",
+      "source": "https://github.com/strawberrymusicplayer/strawberry/releases/download/1.0.28/Strawberry-1.0.28.dmg",
+      "license": "GPL-3.0",
+      "provenance": "Strawberry Project"
+    },
+    {
+      "name": "iina",
+      "version": "1.3.5",
+      "source": "https://github.com/iina/iina/releases/download/v1.3.5/IINA-v1.3.5.dmg",
+      "license": "GPL-3.0",
+      "provenance": "IINA Project"
+    },
+    {
+      "name": "obs-studio",
+      "version": "30.2.3",
+      "source": "https://github.com/obsproject/obs-studio/releases/download/30.2.3/OBS-Studio-30.2.3.dmg",
+      "license": "GPL-2.0",
+      "provenance": "OBS Project"
+    },
+    {
+      "name": "krita",
+      "version": "5.2.3",
+      "source": "https://download.kde.org/stable/krita/5.2.3/krita-5.2.3.dmg",
+      "license": "GPL-3.0",
+      "provenance": "Krita Foundation"
+    },
+    {
+      "name": "gnuhealth-client",
+      "version": "4.4.0",
+      "source": "https://www.gnuhealth.org/downloads/gnuhealth-client-mac.dmg",
+      "license": "GPL-3.0",
+      "provenance": "GNUHealth"
+    },
+    {
+      "name": "cuneo",
+      "version": "1.0.0",
+      "source": "https://github.com/heidefinnischen/cuneo/releases/download/v1.0.0/cuneo.dmg",
+      "license": "GPL-3.0",
+      "provenance": "heidefinnischen"
     }
   ]
 }
