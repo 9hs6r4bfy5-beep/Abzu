@@ -27,16 +27,35 @@
     , nixpkgs
     , darwin-nix
     , gnustep-src
-    }:
+    }@inputs:
     let
       systems = [ "x86_64-linux" "aarch64-linux" ];
       forAll = f: builtins.foldl' (r: s: r // f s) { } systems;
-      mkPkg = pkgs: rec {
+
+      # ---- aarch64-darwin (Apple Silicon) build host -----------------------
+      # Cross-compiled kernel/toolchain packages are produced on the native
+      # aarch64-darwin package set via pkgsCross.
+      pkgsNative = nixpkgs.legacyPackages.aarch64-darwin;
+      pkgsCrossIntel = pkgsNative.pkgsCross.x86_64-darwin;   # Intel target
+
+      # Single source of truth for upstream pins. xnuRev/xnuSha256 are filled
+      # by build/scripts/update-src-hashes.sh (tag → immutable commit + SRI).
+      srcInfo = {
+        xnuRepo = "https://github.com/apple-oss-distributions/xnu.git";
+        xnuTag = "xnu-7195.141.2";                       # macOS 11.3 Big Sur OSS drop
+        xnuRev = "776661b72c2db9861865df68d309f6f35faccff4";  # commit tagged xnu-7195.141.2
+        xnuSha256 = "sha256-NH/s8/t4oOq6bVhRXlslX7lZFWV4E00yTPxyY7A7KE0="; # GitHub archive tarball of xnuRev
+        openbsdSnap = "7.6";
+      };
+
+      mkPkg = pkgs: pkgsSystem: rec {
         inherit pkgs;
 
         # ---- kernel -------------------------------------------------------
         xnu-kernel = pkgs.callPackage ./derivations/xnu.nix {
           inherit srcInfo;
+          pkgsHost = pkgsSystem;
+          xnu-sources = pkgs.callPackage ./derivations/xnu-sources.nix { inherit srcInfo; };
           patches = ../kernel/patches;
         };
 
@@ -102,6 +121,7 @@
 
         iso-intel = pkgs.callPackage ./derivations/iso.nix {
           rootfs = rootfs-intel;
+          refind = pkgs.callPackage ./derivations/refind.nix { };
           volumeLabel = "ABZU_ABYS SOLITH";   # split below at build time
         };
 
@@ -111,22 +131,12 @@
       };
     in
     {
-      # Single source of truth for upstream pins. xnuRev/xnuSha256 are filled
-      # by build/scripts/update-src-hashes.sh (tag → immutable commit + SRI).
-      srcInfo = {
-        xnuRepo = "https://github.com/apple-oss-distributions/xnu.git";
-        xnuTag = "xnu-7195.141.2";                       # macOS 11.3 Big Sur OSS drop
-        xnuRev = "776661b72c2db9861865df68d309f6f35faccff4";  # commit tagged xnu-7195.141.2
-        xnuSha256 = "sha256-NH/s8/t4oOq6bVhRXlslX7lZFWV4E00yTPxyY7A7KE0="; # GitHub archive tarball of xnuRev
-        openbsdSnap = "7.6";
-      };
-
       devShells = forAll (s: {
         default = import ./shell.nix { pkgs = nixpkgs.legacyPackages.${s}; };
       });
 
       packages = forAll (s:
-        let m = mkPkg nixpkgs.legacyPackages.${s};
+        let m = mkPkg nixpkgs.legacyPackages.${s} nixpkgs.legacyPackages.${s};
         in {
           inherit (m)
             xnu-kernel openbsd-userland gui-core abzu-packages rootfs-intel;
@@ -134,7 +144,34 @@
           iso-intel = m.iso-intel;
           gui-theme = m.gui-theme;
           default = m.iso-intel;
-        });
+        }) // {
+        # ---- aarch64-darwin (Apple Silicon) host ----------------------------
+        # Cross-compilation system: Intel (x86_64-darwin) kernel built on the
+        # arm64 Apple Silicon package set via pkgsCross.
+        aarch64-darwin =
+          let
+            # The cross-compiled Intel kernel, built on the aarch64-darwin host.
+            mCross = mkPkg pkgsCrossIntel pkgsNative;
+
+            # Native tools for building the ISO (which consumes the
+            # cross-compiled x86_64 rootfs below).
+            mNative = mkPkg pkgsNative pkgsNative;
+          in
+          mNative // {
+            # The cross-compiled kernel (alias with the -intel suffix so it is
+            # discoverable as `nix build .#xnu-kernel-intel`).
+            xnu-kernel-intel = mCross.xnu-kernel;
+
+            # The cross-compiled Intel rootfs consumed by the native ISO
+            # builder — assembled from the cross kernel/userland/gui/pkg trees.
+            rootfs-intel = mCross.rootfs-intel;
+
+            # The native ISO builder (consumes the cross-compiled rootfs above).
+            iso-intel = mNative.iso-intel;
+
+            default = mNative.iso-intel;
+          };
+      };
 
       checks = forAll (s: {
         manifests-valid = nixpkgs.legacyPackages.${s}.runCommand "check-manifests" { } ''
