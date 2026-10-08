@@ -2,10 +2,10 @@
 # Darwin-conformant root filesystem tree, exactly the layout XNU and launchd
 # expect at boot (same contract as scripts/assemble-rootfs.sh in the Makefile
 # pipeline).
-{ lib, stdenvNoCC, runCommand, pkgs, kernel, userland, gui, packages, efistub }:
+{ lib, stdenvNoCC, runCommand, pkgs, kernel, userland, gui, packages, efistub, cuneiform-input }:
 
 runCommand "abzu-rootfs-intel" {
-  buildInputs = [ kernel userland gui packages ];   # realised into the sandbox
+  buildInputs = [ kernel userland gui packages cuneiform-input ];   # realised into the sandbox
   pathsToLink = [ "/bin" "/sbin" "/usr/bin" "/usr/sbin" "/usr/lib"
                   "/usr/local/archives" "/Library" "/System" "/Applications" ];
   meta.description = "Abzu x86_64 root filesystem staging tree (kernel + OpenBSD userland + GNUstep GUI + shelf)";
@@ -17,6 +17,11 @@ runCommand "abzu-rootfs-intel" {
   cp -r --no-preserve=ownership ${userland}/. $out/
   cp -r --no-preserve=ownership ${gui}/.      $out/
   cp -r --no-preserve=ownership ${packages}/. $out/
+
+  # ---- ABZU CORE FEATURES: Cuneiform Input ---------------------------------
+  echo "==> Installing Abzu Cuneiform input system..."
+  cp -r --no-preserve=ownership ${cuneiform-input}/Library $out/
+  cp -r --no-preserve=ownership ${cuneiform-input}/bin $out/
 
   # ---- Darwin skeleton directories (assemble-rootfs.sh parity) ------------
   mkdir -p $out/{dev,home,proc,Volumes,var/{db,log,tmp}} \
