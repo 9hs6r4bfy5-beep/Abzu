@@ -1,0 +1,15 @@
+# apple2pi server configuration for Abzu Darwin
+server:
+  port: 6502
+  host: "0.0.0.0"
+  # Automatically detect serial/USB devices connected to the Mac
+  auto_detect_serial: true
+  
+logging:
+  level: "info"
+  file: "~/.local/share/apple2pi/apple2pi.log"
+
+bridge:
+  # Default to standard Apple II serial baud rates
+  baud_rate: 19200
+  protocol: "serial"
