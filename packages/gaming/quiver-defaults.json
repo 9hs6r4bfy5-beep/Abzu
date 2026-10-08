@@ -1,0 +1,46 @@
+{
+  "version": "1.0",
+  "library": [
+    {
+      "id": "openmw",
+      "name": "OpenMW",
+      "description": "Open-source engine reimplementation of The Elder Scrolls III: Morrowind.",
+      "type": "recompilation",
+      "source_url": "https://github.com/OpenMW/openmw/releases",
+      "requires_data": true,
+      "data_hint": "Looks for Morrowind installation in ~/Games/Morrowind or Steam library."
+    },
+    {
+      "id": "daggerfall-unity",
+      "name": "Daggerfall Unity",
+      "description": "Open-source recreation of The Elder Scrolls II: Daggerfall.",
+      "type": "recompilation",
+      "source_url": "https://github.com/Interkarma/daggerfall-unity/releases",
+      "requires_data": true,
+      "data_hint": "Requires original Daggerfall Arena directory."
+    },
+    {
+      "id": "ship-of-harkinian",
+      "name": "Ship of Harkinian",
+      "description": "Enhanced PC port of The Legend of Zelda: Ocarina of Time.",
+      "type": "recompilation",
+      "source_url": "https://github.com/HarbourMasters/Shipwright/releases",
+      "requires_data": true,
+      "data_hint": "Requires a valid OoT NTSC 1.0 ROM for extraction."
+    },
+    {
+      "id": "racewave46",
+      "name": "Wave Race 64 (RT64)",
+      "description": "Recompilation with ray-traced water and modern enhancements.",
+      "type": "recompilation",
+      "source_url": "https://github.com/DomazinUS/RaceWave46",
+      "requires_data": true,
+      "data_hint": "Requires original N64 ROM."
+    }
+  ],
+  "settings": {
+    "auto_update": true,
+    "default_install_path": "~/Games/Abzu",
+    "theme": "abzu-aqua"
+  }
+}
