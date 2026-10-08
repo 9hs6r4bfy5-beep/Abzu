@@ -12,6 +12,7 @@ let
   mole = callPackage ./mole.nix { };
   davit = callPackage ./davit.nix { };
   antinote = callPackage ./antinote.nix { };
+  notproton = callPackage ./notproton.nix { };
 in
 
 runCommand "abzu-packages" {
