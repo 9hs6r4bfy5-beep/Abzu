@@ -85,6 +85,13 @@
       "source": "https://github.com/heidefinnischen/cuneo/releases/download/v1.0.0/cuneo.dmg",
       "license": "GPL-3.0",
       "provenance": "heidefinnischen"
+    },
+    {
+      "name": "cuneiform-input",
+      "version": "1.0.0",
+      "source": "local",
+      "license": "MIT",
+      "provenance": "Abzu Project / Oracc Nisaba Mapping"
     }
   ]
 }
