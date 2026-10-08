@@ -70,6 +70,16 @@
         # ---- cuneiform input method --------------------------------------
         cuneiform-input = pkgs.callPackage ./derivations/cuneiform-input.nix { };
 
+        # ---- Phase 5 use-case optimization defaults ------------------------
+        phase5-configs = pkgs.runCommand "abzu-phase5-configs" { } ''
+          mkdir -p $out
+          cp -r --no-preserve=ownership ${../packages/homelab/etc-skel} $out/etc-skel
+          cp -r --no-preserve=ownership ${../packages/history-archives/stellarium-defaults} $out/stellarium-defaults
+        '';
+
+        # the shelf source tree (gaming/quiver-defaults.json et al.) as a data dep
+        packages-shelf = ../packages;
+
         # ---- rootfs + ISO --------------------------------------------------
         rootfs-intel = pkgs.callPackage ./derivations/rootfs.nix {
           kernel = xnu-kernel;
@@ -78,6 +88,7 @@
           packages = abzu-packages;
           cuneiform-input = cuneiform-input;
           efistub = pkgs.callPackage ./derivations/refind.nix { };
+          inherit phase5-configs packages-shelf;
         };
 
         iso-intel = pkgs.callPackage ./derivations/iso.nix {

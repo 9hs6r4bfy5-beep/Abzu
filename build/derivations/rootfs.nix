@@ -2,7 +2,7 @@
 # Darwin-conformant root filesystem tree, exactly the layout XNU and launchd
 # expect at boot (same contract as scripts/assemble-rootfs.sh in the Makefile
 # pipeline).
-{ lib, stdenvNoCC, runCommand, pkgs, kernel, userland, gui, packages, efistub, cuneiform-input }:
+{ lib, stdenvNoCC, runCommand, pkgs, kernel, userland, gui, packages, efistub, cuneiform-input, phase5-configs, packages-shelf }:
 
 runCommand "abzu-rootfs-intel" {
   buildInputs = [ kernel userland gui packages cuneiform-input ];   # realised into the sandbox
@@ -83,4 +83,58 @@ PLIST
   else
     echo "installer-skeleton" > $out/.abzu-image-kind
   fi
+
+  # 5. PHASE 5: USE CASE OPTIMIZATION DEFAULTS
+  echo "==> Staging Phase 5 use-case optimizations..."
+
+  # Copy user skeleton files (vdirsyncer, khal, apple2pi)
+  mkdir -p $out/etc/skel/.config
+  cp -r --no-preserve=ownership ${phase5-configs}/etc-skel/.config/. \
+                               $out/etc/skel/.config/
+
+  # Copy Stellarium defaults to the Darwin application support location
+  mkdir -p $out/Library/Application\ Support/Stellarium
+  cp ${phase5-configs}/stellarium-defaults/config.ini \
+     $out/Library/Application\ Support/Stellarium/
+
+  # Copy Quiver defaults to a shared system location
+  mkdir -p $out/usr/share/abzu/defaults
+  cp ${packages-shelf}/gaming/quiver-defaults.json $out/usr/share/abzu/defaults/
+
+  # Set permissions
+  find $out -type d -exec chmod 755 {} \;
+  find $out -type f -exec chmod 644 {} \;
+  find $out/bin -type f -exec chmod 755 {} \;
+''
+
+# ---- Phase 5 variant: abzu-rootfs ------------------------------------------
+# Slim staging tree merging xnu-kernel + openbsd-userland + gui-core with the
+# Phase 5 use-case optimization defaults (etck skel, Stellarium, Quiver).
+{ lib, stdenvNoCC, runCommand, xnu-kernel, openbsd-userland, gui-core, cuneiform-input, packages-shelf, phase5-configs }:
+
+runCommand "abzu-rootfs" {
+  pathsToLink = [ "/bin" "/Library" "/usr" "/etc" ];
+} ''
+  set -e
+  mkdir -p $out
+
+  # ... [Existing kernel, userland, gui-core copies] ...
+
+  # 5. PHASE 5: USE CASE OPTIMIZATION DEFAULTS
+  echo "==> Staging Phase 5 use-case optimizations..."
+  
+  # Copy user skeleton files (vdirsyncer, khal, apple2pi)
+  mkdir -p $out/etc/skel/.config
+  cp -r ${ph…rium defaults
+  mkdir -p $out/Library/Application\ Support/Stellarium
+  cp ${phase5-configs}/stellarium-defaults/config.ini $out/Library/Application\ Support/Stellarium/
+  
+  # Copy Quiver defaults to a shared system location
+  mkdir -p $out/usr/share/abzu/defaults
+  cp ${packages-shelf}/gaming/quiver-defaults.json $out/usr/share/abzu/defaults/
+
+  # Set permissions
+  find $out -type d -exec chmod 755 {} \;
+  find $out -type f -exec chmod 644 {} \;
+  find $out/bin -type f -exec chmod 755 {} \;
 ''
