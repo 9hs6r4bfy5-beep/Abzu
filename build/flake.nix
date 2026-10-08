@@ -91,6 +91,15 @@
           inherit phase5-configs packages-shelf;
         };
 
+        # ---- slim Phase 5 rootfs (abzu-rootfs variant) ----------------------
+        # The slim "abzu-rootfs" derivation lives in its own module
+        # ./rootfs-slim.nix because callPackage can only reach a file's
+        # first top-level export (rootfs.nix exports abzu-rootfs-intel).
+        rootfs-phase5 = pkgs.callPackage ./derivations/rootfs-slim.nix {
+          inherit xnu-kernel openbsd-userland gui-core cuneiform-input
+                  phase5-configs packages-shelf;
+        };
+
         iso-intel = pkgs.callPackage ./derivations/iso.nix {
           rootfs = rootfs-intel;
           volumeLabel = "ABZU_ABYS SOLITH";   # split below at build time
@@ -121,6 +130,7 @@
         in {
           inherit (m)
             xnu-kernel openbsd-userland gui-core abzu-packages rootfs-intel;
+          rootfs-phase5 = m.rootfs-phase5;   # slim Phase 5 "abzu-rootfs"
           iso-intel = m.iso-intel;
           gui-theme = m.gui-theme;
           default = m.iso-intel;

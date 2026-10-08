@@ -107,34 +107,7 @@ PLIST
   find $out/bin -type f -exec chmod 755 {} \;
 ''
 
-# ---- Phase 5 variant: abzu-rootfs ------------------------------------------
-# Slim staging tree merging xnu-kernel + openbsd-userland + gui-core with the
-# Phase 5 use-case optimization defaults (etck skel, Stellarium, Quiver).
-{ lib, stdenvNoCC, runCommand, xnu-kernel, openbsd-userland, gui-core, cuneiform-input, packages-shelf, phase5-configs }:
+# The slim Phase 5 variant ("abzu-rootfs") lives in ./rootfs-slim.nix —
+# a Nix file can only export one top-level expression, so callPackage
+# needs it as its own module.
 
-runCommand "abzu-rootfs" {
-  pathsToLink = [ "/bin" "/Library" "/usr" "/etc" ];
-} ''
-  set -e
-  mkdir -p $out
-
-  # ... [Existing kernel, userland, gui-core copies] ...
-
-  # 5. PHASE 5: USE CASE OPTIMIZATION DEFAULTS
-  echo "==> Staging Phase 5 use-case optimizations..."
-  
-  # Copy user skeleton files (vdirsyncer, khal, apple2pi)
-  mkdir -p $out/etc/skel/.config
-  cp -r ${ph…rium defaults
-  mkdir -p $out/Library/Application\ Support/Stellarium
-  cp ${phase5-configs}/stellarium-defaults/config.ini $out/Library/Application\ Support/Stellarium/
-  
-  # Copy Quiver defaults to a shared system location
-  mkdir -p $out/usr/share/abzu/defaults
-  cp ${packages-shelf}/gaming/quiver-defaults.json $out/usr/share/abzu/defaults/
-
-  # Set permissions
-  find $out -type d -exec chmod 755 {} \;
-  find $out -type f -exec chmod 644 {} \;
-  find $out/bin -type f -exec chmod 755 {} \;
-''
