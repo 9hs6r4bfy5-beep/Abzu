@@ -1,0 +1,35 @@
+[general]
+status_path = "~/.local/share/vdirsyncer/status/"
+
+[pair my_contacts]
+a = "my_contacts_local"
+b = "my_contacts_remote"
+collections = ["from a", "from b"]
+
+[storage my_contacts_local]
+type = "filesystem"
+path = "~/.local/share/contacts/"
+fileext = ".vcf"
+
+[storage my_contacts_remote]
+type = "carddav"
+# User must replace 'pXX' with their actual iCloud principal number (e.g., p12)
+url = "https://pXX-caldav.icloud.com/"
+username = "YOUR_ICLOUD_EMAIL@apple.com"
+password.fetch = ["command", "security", "find-generic-password", "-s", "iCloud-vdirsyncer", "-w"]
+
+[pair my_calendars]
+a = "my_calendars_local"
+b = "my_calendars_remote"
+collections = ["from a", "from b"]
+
+[storage my_calendars_local]
+type = "filesystem"
+path = "~/.local/share/calendars/"
+fileext = ".ics"
+
+[storage my_calendars_remote]
+type = "caldav"
+url = "https://pXX-caldav.icloud.com/"
+username = "YOUR_ICLOUD_EMAIL@apple.com"
+password.fetch = ["command", "security", "find-generic-password", "-s", "iCloud-vdirsyncer", "-w"]
