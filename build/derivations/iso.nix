@@ -1,36 +1,51 @@
-# iso.nix — hybrid El Torito ISO: HFS+ root + FAT ESP with rEFInd, bootable on
-# Intel Macs via Option-boot → "EFI Boot" (mirrors scripts/make-iso.sh logic,
-# fully inside the sandbox using nixpkgs tooling).
-{ lib, stdenvNoCC, runCommand, pkgs, rootfs, efistub, volumeLabel ? "ABZU" }:
+# build/derivations/iso.nix
+# Generates a hybrid El Torito bootable ISO for Intel Macs (x86_64)
+# Built natively on the host (e.g., aarch64-darwin), but packages x86_64-darwin binaries.
+{ lib, stdenvNoCC, runCommand, rootfs, refind, xorriso, mtools, libisoburn }:
 
-let
-  inherit (pkgs) xorriso dosfstools mtools;
-  vol = builtins.substring 0 27 volumeLabel;   # safe for both HFS+ & ISO9660
-in runCommand "abzu-iso-intel" {
-  nativeBuildInputs = [ xorriso dosfstools mtools ];
-  meta.description = "Abzu bootable hybrid ISO (El Torito EFI, dd-able to USB)";
-} ''
-  set -e
+stdenvNoCC.mkDerivation rec {
+  pname = "abzu-iso-intel";
+  version = "0.1.0";
 
-  # ---- 1. FAT12 ESP image carrying rEFInd + fallback BOOTX64 --------------
-  dd if=/dev/zero of=esp.img bs=1M count=8 status=none
-  mkfs.vfat -F 12 -n ABZU_EFI esp.img >/dev/null
-  mmd -i esp.img ::/EFI ::/EFI/BOOT ::/EFI/refind
-  mcopy -i esp.img ${efistub}/EFI/BOOT/BOOTX64.EFI ::/EFI/BOOT/ 2>/dev/null || \
-    echo "WARN: no prebuilt BOOTX64.EFI; ISO ships as installer media" >&2
-  mcopy -i esp.img -s ${efistub}/EFI/refind ::/EFI/ 2>/dev/null || true
+  nativeBuildInputs = [ xorriso mtools libisoburn ];
 
-  # ---- 2. Root payload: raw HFS+ when a Darwin-side formatter exists,
-  #         otherwise a tar the first-boot installer unpacks. Kernel Mach-O
-  #         rides along either way under System/Library/Kernels.
-  mkdir -p iso-root
-  tar --format=ustar -C ${rootfs} -cf iso-root/ABZU_ROOTFS.tar .
-  cp ${rootfs}/System/Library/Kernels/kernel iso-root/kernel.macho 2>/dev/null || true
+  # We don't need to cross-compile the ISO builder itself, just its inputs
+  buildCommand = ''
+    runHook preBuild
+    
+    mkdir -p $out/iso_root
+    mkdir -p $out/esp/EFI/BOOT
+    mkdir -p $out/esp/EFI/refind
 
-  # ---- 3. Hybrid ISO --------------------------------------------------------
-  xorriso -as mkisofs \
-      -r -J -joliet-long -hfs -V "${vol}" \
-      -eltorito-alt-boot -e esp.img -no-emul-boot -isohybrid-gpt-basdat \
-      -append_partition 2 001 esp.img \
-      -o $out iso-root
-''
+    # 1. Stage the Darwin Root Filesystem (HFS+ compatible structure)
+    echo "==> Staging rootfs..."
+    cp -r ${rootfs}/. $out/iso_root/
+
+    # 2. Stage rEFInd (Includes bootia32.efi for MBP 4,1)
+    echo "==> Staging rEFInd..."
+    cp -r ${refind}/EFI/BOOT/. $out/esp/EFI/BOOT/
+    cp -r ${refind}/EFI/refind/. $out/esp/EFI/refind/
+
+    # 3. Create the Hybrid ISO using xorriso
+    echo "==> Building hybrid El Torito ISO..."
+    xorriso -as mkisofs \
+      -hfsplus \
+      -apm-block-size 2048 \
+      -efi-boot-part \
+      --efi-boot-image \
+      -no-emul-boot \
+      -V "Abzu_Install" \
+      -o $out/abzu-intel-installer.iso \
+      $out/iso_root \
+      $out/esp
+
+    echo "==> ISO successfully created at: $out/abzu-intel-installer.iso"
+    
+    runHook postBuild
+  '';
+
+  meta = with lib; {
+    description = "Bootable ISO image for Abzu Darwin (Intel x86_64)";
+    platforms = [ "x86_64-darwin" ];
+  };
+}
