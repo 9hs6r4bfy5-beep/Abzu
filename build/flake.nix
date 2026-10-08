@@ -70,6 +70,16 @@
         # ---- cuneiform input method --------------------------------------
         cuneiform-input = pkgs.callPackage ./derivations/cuneiform-input.nix { };
 
+        # ---- Phase 5 use-case optimization defaults ------------------------
+        phase5-configs = pkgs.runCommand "abzu-phase5-configs" { } ''
+          mkdir -p $out
+          cp -r --no-preserve=ownership ${../packages/homelab/etc-skel} $out/etc-skel
+          cp -r --no-preserve=ownership ${../packages/history-archives/stellarium-defaults} $out/stellarium-defaults
+        '';
+
+        # the shelf source tree (gaming/quiver-defaults.json et al.) as a data dep
+        packages-shelf = ../packages;
+
         # ---- rootfs + ISO --------------------------------------------------
         rootfs-intel = pkgs.callPackage ./derivations/rootfs.nix {
           kernel = xnu-kernel;
@@ -78,6 +88,16 @@
           packages = abzu-packages;
           cuneiform-input = cuneiform-input;
           efistub = pkgs.callPackage ./derivations/refind.nix { };
+          inherit phase5-configs packages-shelf;
+        };
+
+        # ---- slim Phase 5 rootfs (abzu-rootfs variant) ----------------------
+        # The slim "abzu-rootfs" derivation lives in its own module
+        # ./rootfs-slim.nix because callPackage can only reach a file's
+        # first top-level export (rootfs.nix exports abzu-rootfs-intel).
+        rootfs-phase5 = pkgs.callPackage ./derivations/rootfs-slim.nix {
+          inherit xnu-kernel openbsd-userland gui-core cuneiform-input
+                  phase5-configs packages-shelf;
         };
 
         iso-intel = pkgs.callPackage ./derivations/iso.nix {
@@ -110,6 +130,7 @@
         in {
           inherit (m)
             xnu-kernel openbsd-userland gui-core abzu-packages rootfs-intel;
+          rootfs-phase5 = m.rootfs-phase5;   # slim Phase 5 "abzu-rootfs"
           iso-intel = m.iso-intel;
           gui-theme = m.gui-theme;
           default = m.iso-intel;
