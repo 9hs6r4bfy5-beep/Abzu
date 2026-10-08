@@ -1,10 +1,10 @@
 # build/derivations/tor-browser.nix
-# Tor Browser: Privacy-focused web browser with built-in Tor network routing
-{ lib, stdenv, fetchurl, undmg, platforms }:
+# Fetcher for Tor Browser: System-agnostic (Intel/ARM) privacy browser
+{ lib, stdenv, fetchurl, undmg }:
 
 let
-  version = "13.5.3"; # Update to the latest stable Tor Browser version
-  # Dynamically select the correct architecture string for the URL
+  version = "13.5.3";
+  # Dynamically select the correct architecture string for the Tor Project URL
   arch = if stdenv.hostPlatform.isAarch64 then "macos_aarch64" else "osx64";
 in
 stdenv.mkDerivation rec {
@@ -21,18 +21,13 @@ stdenv.mkDerivation rec {
 
   installPhase = ''
     runHook preInstall
-    
     mkdir -p $out/Applications
     
-    # undmg extracts the contents of the DMG into the current directory
+    # undmg extracts the DMG contents into the current directory
     undmg $src
     
-    # The extracted app is typically named "Tor Browser.app"
-    # We use a wildcard or specific name to ensure it moves correctly
-    mv "Tor Browser.app" $out/Applications/ || mv *.app $out/Applications/
-    
-    # Ensure proper macOS permissions
-    chmod -R +w $out/Applications/"Tor Browser.app"
+    # Robustly find and move the .app bundle, regardless of slight naming variations
+    find . -maxdepth 2 -name "*.app" -exec mv {} $out/Applications/ \;
     
     runHook postInstall
   '';
@@ -42,6 +37,5 @@ stdenv.mkDerivation rec {
     homepage = "https://www.torproject.org/";
     license = licenses.mpl20;
     platforms = platforms.darwin;
-    maintainers = [ "9hs6r4bfy5-beep" ];
   };
 }
