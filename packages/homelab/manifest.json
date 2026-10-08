@@ -92,6 +92,27 @@
       "source": "local",
       "license": "MIT",
       "provenance": "Abzu Project / Oracc Nisaba Mapping"
+    },
+        {
+      "name": "mole",
+      "version": "1.0.0",
+      "source": "https://github.com/tw93/Mole/releases/download/v1.0.0/Mole.zip",
+      "license": "MIT",
+      "provenance": "tw93"
+    },
+    {
+      "name": "davit",
+      "version": "1.0.0",
+      "source": "https://davit.app/download/Davit.dmg",
+      "license": "Proprietary (Free)",
+      "provenance": "Davit App"
+    },
+    {
+      "name": "antinote",
+      "version": "1.0.0",
+      "source": "https://antinote.io/download/Antinote.dmg",
+      "license": "Proprietary (Free)",
+      "provenance": "Antinote"
     }
   ]
 }
