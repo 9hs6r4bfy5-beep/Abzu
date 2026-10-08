@@ -80,7 +80,7 @@
         # ---- packages shelf ----------------------------------------------
         abzu-packages = pkgs.callPackage ./derivations/packages.nix {
           manifests = [
-            ../packages/emulators/manifest.json
+            ../packages/gaming/manifest.json
             ../packages/history-archives/manifest.json
             ../packages/homelab/manifest.json
           ];
