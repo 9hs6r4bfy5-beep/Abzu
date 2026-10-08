@@ -12,7 +12,7 @@ stdenv.mkDerivation rec {
   inherit version;
 
   src = fetchurl {
-    url = "https://download.lmstudio.ai/mac/LM-Studio-${version}-mac-${arch}.dmg";
+    url = url = "https://download.lmstudio.ai/mac/LM-Studio-${version}-mac-${arch}.dmg";
     # Nix will fail on first run and give you the real hash. Replace this placeholder.
     hash = "sha256-BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=";
   };
