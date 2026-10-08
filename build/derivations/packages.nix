@@ -3,6 +3,13 @@
 # in (license/provenance gating happens in ../../build/scripts/verify-packages.sh);
 # first boot resolves entries against the vendored manifests.
 { lib, stdenvNoCC, runCommand, python3, manifests }:
+let
+  whisky = callPackage ./whisky.nix { };
+  iina = callPackage ./iina.nix { };
+  intel-sde = callPackage ./intel-sde.nix { };
+  tor-browser = callPackage ./tor-browser.nix { };
+  lm-studio = callPackage ./lm-studio.nix { };
+in
 
 runCommand "abzu-packages" {
   pathsToLink = [ "/usr/local/archives/manifests" ];
