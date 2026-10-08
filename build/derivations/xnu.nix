@@ -1,25 +1,16 @@
 # build/derivations/xnu.nix
 # Compiles the Apple XNU kernel for x86_64-darwin (Intel Macs)
-# Designed to be cross-compiled from aarch64-darwin (Apple Silicon) hosts.
-{ lib, stdenv, fetchurl, clang, llvm, cctools, xnu-sources, pkgsHost }:
+# When called via pkgsCrossIntel.callPackage, `stdenv` is ALREADY the x86_64-darwin cross-stdenv.
+{ lib, stdenv, clang, llvm, cctools, xnu-sources, srcInfo }:
 
-# We force the build to target x86_64-darwin, regardless of the host machine
-let
-  targetPlatform = pkgsHost.pkgsCross.x86_64-darwin;
-  crossStdenv = targetPlatform.stdenv;
-in
-crossStdenv.mkDerivation rec {
+stdenv.mkDerivation rec {
   pname = "xnu-kernel-intel";
-  version = "7195.101.2"; # macOS 11.3 Big Sur (last highly open/buildable XNU)
+  version = srcInfo.xnuTag; # e.g., "xnu-7195.141.2"
 
   src = xnu-sources;
 
-  # Native build tools (run on the Apple Silicon host)
+  # Native build tools run on the host (aarch64-darwin M4)
   nativeBuildInputs = [ clang llvm cctools ];
-
-  # Cross-compilation environment variables
-  NIX_CFLAGS_COMPILE = "-target x86_64-apple-darwin";
-  NIX_LDFLAGS = "-target x86_64-apple-darwin";
 
   buildPhase = ''
     runHook preBuild
@@ -36,7 +27,6 @@ crossStdenv.mkDerivation rec {
 
   installPhase = ''
     runHook preInstall
-    
     mkdir -p $out/System/Library/Kernels
     
     # The compiled Intel kernel
