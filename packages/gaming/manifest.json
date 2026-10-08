@@ -1,0 +1,55 @@
+{
+  "category": "gaming",
+  "description": "Game management, native decompilations, and Windows compatibility layers",
+  "packages": [
+    {
+      "name": "quiver-launcher",
+      "version": "1.0.0",
+      "source": "https://github.com/quiver-launcher/quiver/releases/download/v1.0.0/Quiver.dmg",
+      "license": "MIT",
+      "provenance": "Quiver Project"
+    },
+    {
+      "name": "heroic-games-launcher",
+      "version": "2.15.0",
+      "source": "https://github.com/Heroic-Games-Launcher/HeroicGamesLauncher/releases/download/v2.15.0/Heroic-2.15.0-mac.dmg",
+      "license": "GPL-3.0",
+      "provenance": "Heroic Games Launcher"
+    },
+    {
+      "name": "whisky",
+      "version": "4.5.105",
+      "source": "https://github.com/frankea/Whisky/releases/download/v4.5.105-beta.1/Whisky.zip",
+      "license": "GPL-3.0",
+      "provenance": "Frankea / Whisky Community"
+    },
+    {
+      "name": "sgdboop",
+      "version": "1.4.0",
+      "source": "https://github.com/SteamGridDB/SGDBoop/releases/download/v1.4.0/SGDBoop-v1.4.0-mac.dmg",
+      "license": "MIT",
+      "provenance": "SteamGridDB"
+    },
+    {
+      "name": "zaparoo",
+      "version": "1.0.0",
+      "source": "https://zaparoo.org/downloads/zaparoo-mac.dmg",
+      "license": "GPL-3.0",
+      "provenance": "Zaparoo Project"
+    },
+    {
+      "name": "pc-cartridge-manager",
+      "version": "1.0.0",
+      "source": "https://github.com/LewdM3at/PC-Cartridge-System/releases/download/v1.0.0/pc-cartridge-manager.dmg",
+      "license": "MIT",
+      "provenance": "LewdM3at"
+    },
+    {
+      "name": "intel-sde",
+      "version": "9.29.0",
+      "source": "https://downloadmirror.intel.com/831888/sde-external-9.29.0-2024-08-29-mac.tar.bz2",
+      "license": "Intel EULA",
+      "provenance": "Intel Corporation"
+    }
+  ]
+}
