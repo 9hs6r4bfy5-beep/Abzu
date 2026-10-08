@@ -9,6 +9,9 @@ let
   intel-sde = callPackage ./intel-sde.nix { };
   tor-browser = callPackage ./tor-browser.nix { };
   lm-studio = callPackage ./lm-studio.nix { };
+  mole = callPackage ./mole.nix { };
+  davit = callPackage ./davit.nix { };
+  antinote = callPackage ./antinote.nix { };
 in
 
 runCommand "abzu-packages" {
