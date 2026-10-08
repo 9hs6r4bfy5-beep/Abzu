@@ -21,8 +21,15 @@
       "version": "4.5.105",
       "source": "https://github.com/frankea/Whisky/releases/download/v4.5.105-beta.1/Whisky.zip",
       "license": "GPL-3.0",
-      "provenance": "Frankea / Whisky Community"
+      "provenance": "Frankea / Whisky Community (100% Free & Open Source)"
     },
+    {
+      "name": "notproton",
+      "version": "1.0.3",
+      "source": "https://github.com/NotProtonNot/NotProton/releases/download/1.0.3/NotProton-1.0.3.zip",
+      "license": "GPL-3.0",
+      "provenance": "NotProtonNot (Note: Officially requires active CrossOver license for Preview builds)"
+    }
     {
       "name": "sgdboop",
       "version": "1.4.0",
