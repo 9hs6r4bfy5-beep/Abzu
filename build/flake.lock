@@ -7,54 +7,51 @@
         ]
       },
       "locked": {
-        "lastModified": 1759824000,
-        "narHash": "sha256-000000000000000000000000000000000000000=",
-        "ref": "refs/heads/master",
-        "rev": "0000000000000000000000000000000000000000",
-        "revCount": 0,
-        "type": "git",
-        "url": "https://github.com/nix-darwin/nix-darwin"
+        "lastModified": 1786845137,
+        "narHash": "sha256-oQFip+v0luP8NIxJzmiW4Wu8bILsbFWom5l0zonl8hQ=",
+        "owner": "nix-darwin",
+        "repo": "nix-darwin",
+        "rev": "4cff07de74b50e64bdd68cd4e722ab5b6b35ee48",
+        "type": "github"
       },
       "original": {
+        "owner": "nix-darwin",
         "ref": "master",
         "repo": "nix-darwin",
-        "type": "github",
-        "owner": "nix-darwin"
+        "type": "github"
       }
     },
     "gnustep-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1759824000,
-        "narHash": "sha256-000000000000000000000000000000000000000=",
-        "ref": "refs/heads/master",
-        "rev": "0000000000000000000000000000000000000000",
-        "revCount": 0,
-        "type": "git",
-        "url": "https://github.com/gnustep/core"
+        "lastModified": 1497673123,
+        "narHash": "sha256-nBM0oWQOjb3ao3awNjOPXptt/nenPi1N0ooXp2RsGM0=",
+        "owner": "gnustep",
+        "repo": "core",
+        "rev": "9a776f98eaed02690237c428d232704e1647ff6b",
+        "type": "github"
       },
       "original": {
+        "owner": "gnustep",
         "ref": "master",
         "repo": "core",
-        "type": "github",
-        "owner": "gnustep"
+        "type": "github"
       }
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1759824000,
-        "narHash": "sha256-000000000000000000000000000000000000000=",
-        "ref": "refs/heads/nixos-24.05",
-        "rev": "0000000000000000000000000000000000000000",
-        "revCount": 0,
-        "type": "git",
-        "url": "https://github.com/NixOS/nixpkgs"
+        "lastModified": 1735563628,
+        "narHash": "sha256-OnSAY7XDSx7CtDoqNh8jwVwh4xNL/2HaJxGjryLWzX8=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "b134951a4c9f3c995fd7be05f3243f8ecd65d798",
+        "type": "github"
       },
       "original": {
+        "owner": "NixOS",
         "ref": "nixos-24.05",
         "repo": "nixpkgs",
-        "type": "github",
-        "owner": "NixOS"
+        "type": "github"
       }
     },
     "root": {
