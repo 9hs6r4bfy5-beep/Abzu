@@ -1,7 +1,7 @@
 # build/derivations/xnu.nix
-# Unified XNU kernel derivation: supports both native source compilation 
+# Unified XNU kernel derivation: supports both native source compilation
 # and pre-compiled binary fetching (for cross-compilation SDK workarounds).
-{ lib, stdenv, stdenvNoCC, fetchurl, writeText, clang ? null, llvm ? null, cctools ? null, xnu-sources ? null, srcInfo, patches ? [], precompiled ? false, machKernelPath ? null }:
+{ lib, stdenv, stdenvNoCC, fetchurl, writeText, clang ? null, llvm ? null, cctools ? null, xnu-sources ? null, srcInfo, patches ? [], precompiled ? false, machKernelPath ? null, machKernelHash ? null }:
 
 if precompiled then
   # MODE A: Pre-compiled binary (Bypasses macOS SDK requirement for cross-compilation)
@@ -156,10 +156,10 @@ else
     installPhase = ''
       runHook preInstall
       mkdir -p $out/System/Library/Kernels
-      
+
       cp BUILD/obj/RELEASE_X86_64/mach_kernel $out/System/Library/Kernels/kernel
       cp BUILD/obj/RELEASE_X86_64/mach_kernel.dSYM $out/System/Library/Kernels/ -r || true
-      
+
       runHook postInstall
     '';
 
