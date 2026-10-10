@@ -4,18 +4,12 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
 
-    # The darwin-nix overlay gives us XNU/Mach-O cross toolchains & Darwin
-    # stdenv pieces (same infrastructure PureDarwin/ravyn work builds on).
-    # Pin: main @ 2026-10-04; refresh with `nix flake update darwin-nix`.
+    # Corrected nix-darwin input (uses the official repo and tracks master)
     darwin-nix = {
-      url = "github:lnl/darwin-nix/9c3d8f4e6b2a7c1d0e5f4a3b2c1d0e9f8a7b6c5d";
+      url = "github:nix-darwin/nix-darwin/master";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # GNUstep core sources (gnustep/core mega-repo, non-flake). Pinned to the
-    # commit that carries GNUstep-make 2.9.2 / base 1.31.1 / gui+back 0.32.0 —
-    # same release train as build/scripts/fetch-distfiles.sh. Refresh rev via
-    # `nix flake lock --update-input gnustep-src` then re-hash here.
     gnustep-src = {
       url = "github:gnustep/core/ee6f0b1e2f0a4b2c8d9e0f1a2b3c4d5e6f708192";
       flake = false;
