@@ -9,7 +9,22 @@
 # by gui/build-gui.sh (`git apply -p1`, fail-closed). This derivation does NOT
 # postPatch them: it is a runCommand staging the theme/menu/binaries, with no
 # unpacked source phase to patch. Do not duplicate the apply step here.
-{ lib, stdenvNoCC, runCommand, src, themeDir, shellMenu, repoRoot, gnustep-core ? null }:
+#
+# FIX (build failure 2026-10-11, "mkdir: cannot create directory
+# '/nix/store/...-...-source/gui/cache': Permission denied"): the previous
+# version of this derivation invoked ${repoRoot}/gui/build-gui.sh from inside
+# the Nix sandbox. build-gui.sh derives its download cache from its own file
+# location (CACHE="$(dirname $0)/cache"), so calling the copy of the script
+# that lives in the *read-only* source store path made it try to mkdir
+# gui/cache inside /nix/store — which is immutable — and `set -e` aborted the
+# builder with exit 1, cascading into rootfs-intel and iso-intel. Note also
+# that the runtime branch was gated on `uname -s`, which reports the *host*
+# kernel even for cross-Darwin builds on a Linux builder, so the Darwin code
+# path ran (and failed) on Linux too. The fix: gate the fallback on the Nix
+# eval-time platform instead, and never call build-gui.sh from within the
+# sandbox — native GNUstep binaries must be provided via the gnustep-core
+# argument or by running gui/build-gui.sh outside Nix (see build/Makefile).
+{ lib, stdenvNoCC, runCommand, src, themeDir, shellMenu, repoRoot ? null, gnustep-core ? null }:
 
 runCommand "abzu-gui-core" {
   inherit themeDir shellMenu;
@@ -38,11 +53,12 @@ runCommand "abzu-gui-core" {
   ${lib.optionalString (gnustep-core != null) ''
     cp -r ${gnustep-core}/. "$out/usr/local/share/gnustep/" || true
   ''}${lib.optionalString (gnustep-core == null) ''
-    if [ "$(uname -s)" = "Darwin" ]; then
-      STAGE="$out" ${repoRoot}/gui/build-gui.sh || exit 1
-    else
-      echo "GNUstep binaries require a Darwin builder (see gui/build-gui.sh);" > "$out/STATUS"
-      echo "theme + shell menu are arch-independent and fully staged."       >> "$out/STATUS"
-    fi
+    # No prebuilt GNUstep supplied: stage a STATUS marker only. We must NOT
+    # invoke gui/build-gui.sh here — it derives its download cache from its own
+    # file location, so running it from the read-only source store path tries
+    # to mkdir gui/cache inside /nix/store and fails with "Permission denied".
+    echo "GNUstep binaries require a Darwin builder (run gui/build-gui.sh outside Nix," > "$out/STATUS"
+    echo "or pass gnustep-core to this derivation);"                                >> "$out/STATUS"
+    echo "theme + shell menu are arch-independent and fully staged."                >> "$out/STATUS"
   ''}
 ''
