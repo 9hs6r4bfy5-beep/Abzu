@@ -1,16 +1,18 @@
 # build/derivations/xnu.nix
 # Unified XNU kernel derivation: supports both native source compilation 
 # and pre-compiled binary fetching (for cross-compilation SDK workarounds).
-{ lib, stdenv, stdenvNoCC, fetchurl, clang, llvm, cctools, xnu-sources, srcInfo, patches ? [], precompiled ? false }:
+{ lib, stdenv, stdenvNoCC, fetchurl, clang ? null, llvm ? null, cctools ? null, xnu-sources ? null, srcInfo, patches ? [], precompiled ? false }:
 
 if precompiled then
+  # MODE A: Pre-compiled binary (Bypasses macOS SDK requirement for cross-compilation)
   stdenvNoCC.mkDerivation rec {
     pname = "xnu-kernel-precompiled";
-    version = "10.15.7";
+    version = "10.15.7"; # Catalina era kernel (OSX-KVM)
 
     src = fetchurl {
       url = "https://github.com/kholia/OSX-KVM/raw/master/OpenCore-Catalina/mach_kernel";
-      hash = "sha256-YOUR_REAL_HASH_HERE="; 
+      # ENSURE THIS IS THE REAL HASH FROM nix-prefetch-url
+      hash = "sha256-PLACEHOLDER_HASH_HERE="; 
     };
 
     buildCommand = ''
