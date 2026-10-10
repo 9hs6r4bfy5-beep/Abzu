@@ -1,19 +1,16 @@
-# packages.nix — the "shelf": resolve packages/*/manifest.json into an
-# install-on-demand catalogue shipped inside the ISO. Binaries are NOT baked
-# in (license/provenance gating happens in ../../build/scripts/verify-packages.sh);
+# build/derivations/packages.nix — the "shelf": resolve packages/*/manifest.json
+# into an install-on-demand catalogue shipped inside the ISO. Binaries are NOT
+# baked in (license/provenance gating happens in ../../build/scripts/verify-packages.sh);
 # first boot resolves entries against the vendored manifests.
+#
+# NOTE: the per-app derivations in this directory (whisky/iina/intel-sde/
+# tor-browser/lm-studio/mole/davit/antinote/notproton) are deliberately NOT
+# referenced here. They carry placeholder fetch hashes and Darwin-only assets;
+# they are opt-in on-demand installs handled by scripts/fetch-packages.sh, not
+# part of the ISO evaluation path. Referencing them via a bare `callPackage`
+# (which is not in scope at the top level of a derivation file) previously made
+# every ISO evaluation fail with "file 'callPackage' is not declared".
 { lib, stdenvNoCC, runCommand, python3, manifests }:
-let
-  whisky = callPackage ./whisky.nix { };
-  iina = callPackage ./iina.nix { };
-  intel-sde = callPackage ./intel-sde.nix { };
-  tor-browser = callPackage ./tor-browser.nix { };
-  lm-studio = callPackage ./lm-studio.nix { };
-  mole = callPackage ./mole.nix { };
-  davit = callPackage ./davit.nix { };
-  antinote = callPackage ./antinote.nix { };
-  notproton = callPackage ./notproton.nix { };
-in
 
 runCommand "abzu-packages" {
   pathsToLink = [ "/usr/local/archives/manifests" ];

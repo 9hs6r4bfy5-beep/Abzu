@@ -1,7 +1,14 @@
-# rootfs.nix — merge kernel + userland + gui + packages into one
-# Darwin-conformant root filesystem tree, exactly the layout XNU and launchd
-# expect at boot (same contract as scripts/assemble-rootfs.sh in the Makefile
-# pipeline).
+# build/derivations/rootfs.nix — merge kernel + userland + gui + packages into
+# one Darwin-conformant root filesystem tree, exactly the layout XNU and
+# launchd expect at boot (same contract as scripts/assemble-rootfs.sh in the
+# Makefile pipeline).
+#
+# LINUX / SKELETTON TOLERANCE: on a Linux builder the XNU derivation produces
+# no output (meta.platforms restricts it to x86_64-darwin) and GNUstep binaries
+# cannot be built. The ISO path advertises an "installer-skeleton" image for
+# that case, so every component copy below is guarded: missing trees are
+# skipped with a warning instead of aborting `set -e`, and the resulting image
+# kind is recorded in /.abzu-image-kind.
 { lib, stdenvNoCC, runCommand, pkgs, kernel, userland, gui, packages, efistub, cuneiform-input, phase5-configs, packages-shelf }:
 
 runCommand "abzu-rootfs-intel" {
@@ -12,16 +19,40 @@ runCommand "abzu-rootfs-intel" {
 } ''
   set -e
 
-  # ---- merged component trees ---------------------------------------------
-  cp -r --no-preserve=ownership ${kernel}/.   $out/
-  cp -r --no-preserve=ownership ${userland}/. $out/
-  cp -r --no-preserve=ownership ${gui}/.      $out/
-  cp -r --no-preserve=ownership ${packages}/. $out/
+  # ---- merged component trees (guarded — see header note) ------------------
+  copy_tree() { # label srcdir
+    _label="$1"; _src="$2"
+    if [ -e "$_src/." ]; then
+      cp -r --no-preserve=ownership "$_src/." $out/
+    else
+      echo "WARN: $_label payload absent ($_src) — installer-skeleton mode"
+    fi
+  }
+  copy_tree kernel    ${kernel}
+  copy_tree userland  ${userland}
+  copy_tree gui       ${gui}
+  copy_tree packages  ${packages}
 
   # ---- ABZU CORE FEATURES: Cuneiform Input ---------------------------------
   echo "==> Installing Abzu Cuneiform input system..."
-  cp -r --no-preserve=ownership ${cuneiform-input}/Library $out/
-  cp -r --no-preserve=ownership ${cuneiform-input}/bin $out/
+  [ -e ${cuneiform-input}/Library ] && cp -r --no-preserve=ownership ${cuneiform-input}/Library $out/ || echo "WARN: cuneiform Library payload absent"
+  [ -e ${cuneiform-input}/bin ]     && cp -r --no-preserve=ownership ${cuneiform-input}/bin $out/     || echo "WARN: cuneiform bin payload absent"
+
+  # ---- EFI boot stub staging (efistub was previously accepted but unused) --
+  # rEFInd chainloads \System\Library\CoreServices\boot.efi; stage whatever
+  # the kernel/efistub derivations provide so the ISO carries a coherent
+  # boot chain (or fails loudly at boot rather than silently mis-staging).
+  mkdir -p $out/System/Library/CoreServices
+  if [ -f ${kernel}/System/Library/CoreServices/boot.efi ]; then
+    install -m644 ${kernel}/System/Library/CoreServices/boot.efi \
+                  $out/System/Library/CoreServices/boot.efi
+  elif [ -f ${efistub}/System/Library/CoreServices/boot.efi ]; then
+    install -m644 ${efistub}/System/Library/CoreServices/boot.efi \
+                  $out/System/Library/CoreServices/boot.efi
+  else
+    echo "installer-skeleton: no boot.efi staged (Darwin builder required)" \
+         > $out/System/Library/CoreServices/.boot-efi-missing
+  fi
 
   # ---- Darwin skeleton directories (assemble-rootfs.sh parity) ------------
   mkdir -p $out/{dev,home,proc,Volumes,var/{db,log,tmp}} \
@@ -101,13 +132,12 @@ PLIST
   mkdir -p $out/usr/share/abzu/defaults
   cp ${packages-shelf}/gaming/quiver-defaults.json $out/usr/share/abzu/defaults/
 
-  # Set permissions
+  # Set permissions (guard /bin: on the Linux skeleton path it can be empty)
   find $out -type d -exec chmod 755 {} \;
   find $out -type f -exec chmod 644 {} \;
-  find $out/bin -type f -exec chmod 755 {} \;
+  [ -d $out/bin ] && find $out/bin -type f -exec chmod 755 {} \; || true
 ''
 
 # The slim Phase 5 variant ("abzu-rootfs") lives in ./rootfs-slim.nix —
 # a Nix file can only export one top-level expression, so callPackage
 # needs it as its own module.
-
