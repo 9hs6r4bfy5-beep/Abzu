@@ -44,8 +44,9 @@ stdenvNoCC.mkDerivation rec {
     runHook postBuild
   '';
 
-  meta = with lib; {
-    description = "Bootable ISO image for Abzu Darwin (Intel x86_64)";
-    platforms = [ "x86_64-darwin" ];
+ meta = with lib; {
+    description = "Bootable ISO image for Abzu Darwin (Intel x86_64), built natively on Apple Silicon";
+    # Allow building on the Apple Silicon host (aarch64-darwin) while targeting Intel (x86_64-darwin)
+    platforms = [ "aarch64-darwin" "x86_64-darwin" ];
   };
 }
