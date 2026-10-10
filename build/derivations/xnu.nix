@@ -62,6 +62,32 @@ if precompiled then
       Place the real Catalina mach_kernel at build/distfiles/mach_kernel-10.15.7
     '';
 
+    # FIX (unpackPhase failure): the xnu-kernel-precompiled build died in
+    # unpackPhase with
+    #   "do not know how to unpack source archive
+    #    .../abzu-mach-kernel-stub"
+    # because `src` was a *plain text file* produced by writeText. Nixpkgs'
+    # generic builder only knows how to unpack archives whose extension it
+    # recognizes (.tar.gz, .zip, ...); for an unrecognized plain file it
+    # consults `sourceRoot`/archive types and aborts before configure/build.
+    # The previous "fix" tried to dodge this by gating on a custom `isStub`
+    # attribute, but mkderivation.nix never forwards unknown attributes into
+    # the build environment — so `${if isStub then ...}` always expanded to
+    # the *else* branch at eval time, installPhase was never reached, and the
+    # opaque unpack error persisted (cascading into rootfs-intel -> iso-intel).
+    #
+    # Correct nixpkgs idiom: declare the source a raw, non-archive file via
+    #   dontUnpack = true; src = <path>;
+    # and reference $src directly in installPhase. This works uniformly for
+    # all three source kinds (writeText stub, builtins.path vendored file,
+    # fetchurl'd binary) because none of them needs unpacking.
+    #
+    # The stub/vendored distinction is detected at *runtime* inside
+    # installPhase by checking whether $src is our deterministic placeholder
+    # (grep for the stub marker). That is robust regardless of how `src` was
+    # produced and does not rely on eval-time-only attributes leaking into
+    # the build environment.
+
     # Integrity policy for operator-supplied binaries:
     #   - If the file is vendored in-repo (build/distfiles/mach_kernel-10.15.7),
     #     `builtins.path` hashes it *at evaluation time*, so the store path is
@@ -98,33 +124,43 @@ if precompiled then
       else if haveVendored then vendoredSrc
         else stub;
 
-    isStub = !haveVendored;
   in rec {
     pname = "xnu-kernel-precompiled";
     version = "10.15.7"; # Catalina era kernel (matches abzu ISO expectations)
 
     src = src_;
-    inherit isStub;
+
+    # THE FIX: the source is a raw single file (stub text / vendored Mach-O /
+    # fetched binary), never an archive. Without dontUnpack, the generic
+    # builder's unpackPhase tries to auto-detect an archive format, fails on
+    # the extensionless plain file and aborts with
+    #   "do not know how to unpack source archive .../abzu-mach-kernel-stub"
+    # which is exactly what broke xnu-kernel-precompiled and cascaded into
+    # abzu-rootfs-intel and abzu-iso-intel.
+    dontUnpack = true;
 
     dontConfigure = true;
     dontBuild = true;
 
     installPhase = ''
       runHook preInstall
-      ${if isStub then ''
+      # Runtime stub detection: our deterministic placeholder carries this
+      # marker string; a real Mach-O binary never matches it. (An eval-time
+      # boolean like the old `isStub` attr is invisible inside the build —
+      # unknown derivation attributes are not exported to the env.)
+      if grep -q 'ABZU-PRECOMPILED-KERNEL-STUB' "$src"; then
         echo "ERROR: no pre-compiled mach_kernel vendored." >&2
         echo "  Provide one of:" >&2
         echo "    1. build/distfiles/mach_kernel-10.15.7  (cp /System/Library/Kernels/kernel ...)" >&2
         echo "    2. a machKernelPath callPackage override" >&2
-        echo "  Then update vendoredHash in build/derivations/xnu.nix with:" >&2
-        echo "    nix-prefetch-url \"file://<your-mach_kernel>\"" >&2
+        echo "  Then point Nix at your binary, e.g. hash it with:" >&2
+        echo "    nix-prefetch-url file://<your-mach_kernel>" >&2
         exit 1
-      '' else ''
-        mkdir -p $out/System/Library/Kernels
-        cp $src $out/System/Library/Kernels/kernel
-        chmod +w $out/System/Library/Kernels/kernel
-        chmod +x $out/System/Library/Kernels/kernel
-      ''}
+      fi
+      mkdir -p $out/System/Library/Kernels
+      cp $src $out/System/Library/Kernels/kernel
+      chmod +w $out/System/Library/Kernels/kernel
+      chmod +x $out/System/Library/Kernels/kernel
       runHook postInstall
     '';
 
