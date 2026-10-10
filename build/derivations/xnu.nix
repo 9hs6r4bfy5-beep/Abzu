@@ -1,20 +1,27 @@
 # build/derivations/xnu.nix
-# Unified XNU kernel derivation: supports both native source compilation 
-# and pre-compiled binary fetching (for cross-compilation SDK workarounds).
-{ lib, stdenv, stdenvNoCC, fetchurl, clang ? null, llvm ? null, cctools ? null, xnu-sources ? null, srcInfo, patches ? [], precompiled ? false }:
+# Unified XNU kernel derivation: supports local pre-compiled binary fetching 
+# to bypass cross-compilation SDK requirements.
+{ lib, stdenvNoCC, fetchurl, clang ? null, llvm ? null, cctools ? null, xnu-sources ? null, srcInfo, patches ? [], precompiled ? false, kernelPath ? null }:
 
 if precompiled then
-  # MODE A: Pre-compiled binary (Bypasses macOS SDK requirement for cross-compilation)
+  # MODE A: Pre-compiled binary (Local file or URL)
   stdenvNoCC.mkDerivation rec {
     pname = "xnu-kernel-precompiled";
-    version = "10.15.7"; # Catalina era kernel (OSX-KVM)
+    version = "custom-intel";
 
-    src = fetchurl {
-      # Use raw.githubusercontent.com for reliable, direct fetching
-      url = "https://raw.githubusercontent.com/kholia/OSX-KVM/master/OpenCore-Catalina/mach_kernel";
-      # We will replace this placeholder with the real hash in Step 2
-      hash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="; 
-    };
+    # If kernelPath is provided, use it as a local file. Otherwise, fallback to a URL.
+    src = if kernelPath != null then
+      fetchurl {
+        url = "file://${kernelPath}";
+        # You will get the real hash in Step 3
+        hash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+      }
+    else
+      fetchurl {
+        # Fallback URL (update if a stable public mirror is found)
+        url = "https://github.com/jprx/mock-kernel-2023/raw/main/mach_kernel.orig";
+        hash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+      };
 
     buildCommand = ''
       runHook preBuild
@@ -25,8 +32,8 @@ if precompiled then
     '';
 
     meta = with lib; {
-      description = "Pre-compiled XNU Kernel (for cross-compilation bypass)";
-      platforms = [ "x86_64-darwin" "aarch64-darwin" ];
+      description = "Pre-compiled x86_64 XNU Kernel (from local Intel Mac)";
+      platforms = [ "x86_64-darwin" ];
     };
   }
 else
@@ -36,7 +43,6 @@ else
     version = srcInfo.xnuTag;
 
     src = xnu-sources;
-
     nativeBuildInputs = [ clang llvm cctools ];
 
     buildPhase = ''
@@ -52,10 +58,8 @@ else
     installPhase = ''
       runHook preInstall
       mkdir -p $out/System/Library/Kernels
-      
       cp BUILD/obj/RELEASE_X86_64/mach_kernel $out/System/Library/Kernels/kernel
       cp BUILD/obj/RELEASE_X86_64/mach_kernel.dSYM $out/System/Library/Kernels/ -r || true
-      
       runHook postInstall
     '';
 
