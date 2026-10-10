@@ -12,22 +12,34 @@ settings apply to every NSFont without app cooperation.
 Upstreaming: tracked per-patch in docs/ROADMAP.md.
 
 ---
+---
 diff --git a/Source/NSFont.m b/Source/NSFont.m
-index 6c692bc..14eb13e 100644
+index cac7b05..94655ca 100644
 --- a/Source/NSFont.m
 +++ b/Source/NSFont.m
-@@ -5,6 +5,12 @@
-     {
-       NSMutableDictionary *d = [[UserDefaults dictionaryForKey: GSFontKey]
- 				      mutableCopy];
-+      /* Abzu overlay: -GAFontAntialiasing (bool, default YES) takes
-+       * precedence over the generic GSFontKey dictionary so desktop-wide
-+       * smoothing applies to every NSFont without app cooperation. */
-+      [d setObject: ([UserDefaults boolForKey: @"-GAFontAntialiasing"]
-+					? @"YES" : @"NO")
-+				forKey: NSFontAntialias];
-       if (nil != fd)
- 	{
- 	  /* Merge any font descriptor attributes into the defaults. */
--- 
+@@ -462,6 +462,23 @@ static void setNSFont(NSString *key, NSFont *font)
+           defaults = RETAIN([NSUserDefaults standardUserDefaults]);
+         }
+ 
++      /* Abzu overlay: seed GSFontKey with the desktop-wide
++       * -GAFontAntialiasing default so text matches Aqua-style subpixel
++       * smoothing out of the box, without app cooperation. */
++      {
++        NSMutableDictionary *gsd = [[defaults dictionaryForKey: GSFontKey]
++                                     mutableCopy];
++        if (gsd != nil)
++          {
++            [gsd setObject: ([defaults boolForKey: @"-GAFontAntialiasing"]
++                              ? [NSNumber numberWithBool: YES]
++                              : [NSNumber numberWithBool: NO])
++                     forKey: NSFontAntialias];
++            [defaults registerDomain: gsd forKey: GSFontKey];
++            DESTROY(gsd);
++          }
++      }
++
+       _preferredFonts = [defaults objectForKey: @"NSPreferredFonts"];
+       [self setVersion: currentVersion];
+     }
+--
 2.45.0

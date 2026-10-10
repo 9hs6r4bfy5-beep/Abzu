@@ -10,25 +10,50 @@ even for freshly created accounts.
 Upstreaming: tracked per-patch in docs/ROADMAP.md.
 
 ---
+---
 diff --git a/Source/GSTheme.m b/Source/GSTheme.m
-index fed5cf2..69069be 100644
+index 2067be7..3b8a245 100644
 --- a/Source/GSTheme.m
 +++ b/Source/GSTheme.m
-@@ -3,6 +3,15 @@
-   NSString *userDomain;
-   NSMutableArray *paths = [NSMutableArray new];
- 
-+  /* Abzu overlay: system-wide theme locations win over user dirs so the
-+   * pinned AbzuAqua theme is applied machine-wide (see README). */
-+  [paths addObject: @"/System/Library/Themes"];
-+  {
-+    NSString *sysLib = NSSearchPathForDirectoriesInDomains(NSLibraryDirectory,
-+      NSLocalDomainMask, YES)[0];
-+    [paths addObject: [sysLib stringByAppendingPathComponent:
-+      @"Themes/AbzuAqua.theme"]];
-+  }
-   userDomain = NSHomeDirectory();
-   [paths addObject: [userDomain stringByAppendingPathComponent:
-     GSThemesDirectoryDefaultName]];
--- 
+@@ -462,7 +462,38 @@ typedef	struct {
+       else
+         {
+ 	  NSEnumerator	*enumerator;
+-
++	  NSMutableArray	*abzuPaths;
++
++	  /* Abzu overlay: system theme dirs (Local then System domain)
++	   * are searched before user domains, so the caustics-capable
++	   * AbzuAqua theme is effective even for fresh accounts. */
++	  abzuPaths = [NSMutableArray array];
++	  {
++	    NSArray	*libs = NSSearchPathForDirectoriesInDomains
++	      (NSAllLibrariesDirectory,
++	       NSLocalDomainMask | NSSystemDomainMask, YES);
++	    NSString	*lib;
++	    for (lib in libs)
++	      {
++	        [abzuPaths addObject:
++	          [lib stringByAppendingPathComponent: @"Themes"]];
++	      }
++	    [abzuPaths addObject: @"/System/Library/Themes"];
++	  }
++
++	  enumerator = [abzuPaths objectEnumerator];
++	  while ((path = [enumerator nextObject]) != nil)
++	    {
++	      path = [path stringByAppendingPathComponent: theme];
++	      if ([mgr fileExistsAtPath: path isDirectory: &isDir])
++	        {
++	          break;
++	        }
++	    }
++	  if (path == nil || ![mgr fileExistsAtPath: path isDirectory: &isDir])
++	    {
++	      path = nil;
++	    }
+ 	  enumerator = [NSSearchPathForDirectoriesInDomains
+ 	    (NSAllLibrariesDirectory, NSAllDomainsMask, YES) objectEnumerator];
+ 	  while ((path = [enumerator nextObject]) != nil)
+--
 2.45.0

@@ -11,23 +11,32 @@ bundle loader (gui/theme/), keeping the delta to gnustep-gui tiny.
 Upstreaming: tracked per-patch in docs/ROADMAP.md.
 
 ---
+---
 diff --git a/Source/NSView.m b/Source/NSView.m
-index d68c10b..4ecc8ee 100644
+index 88f78ae..4e0a8c2 100644
 --- a/Source/NSView.m
 +++ b/Source/NSView.m
-@@ -3,6 +3,13 @@
-   GSTheme	*theme = [GSTheme activeTheme];
-   BOOL		isFlipped = [self isFlipped];
- 
-+  /* Abzu overlay: caustics compositor hook -- blit the animated layer
-+   * from the active theme when Caustics.Enabled; themes without the
-+   * resource fall through unchanged. */
-+  if ([[NSUserDefaults standardUserDefaults] boolForKey: @"Caustics.Enabled"])
-+    {
-+      [theme drawImageNamed: @"caustics" inRect: aRect fromRect: NSZeroRect];
-+    }
-   if (theme != nil)
-     {
-       [theme drawImageNamed: name inRect: aRect fromRect: NSZeroRect];
--- 
+@@ -2610,6 +2610,21 @@ static void autoresize(CGFloat oldContainerSize,
+       /*
+        * Now we draw this view.
+        */
++      /* Abzu overlay: blit the animated caustic layer from the
++       * active theme when Caustics.Enabled, before drawing the view.
++       * Timer/frame loading lives in the AbzuAqua.theme bundle
++       * loader (gui/themes/abzu-aqua/caustics). */
++      if ([[NSUserDefaults standardUserDefaults]
++           boolForKey: @"Caustics.Enabled"])
++        {
++          GSTheme	*theme = [GSTheme currentTheme];
++          id	frames = [theme valueOfPrimary: @"caustics"];
++          if (frames != nil)
++            {
++              [self abzuDrawCausticsLayer: frames
++                                 inRect: aRect];
++            }
++        }
+       [self _lockFocusInContext: context inRect: aRect];
+       [self drawRect: aRect];
+       [self unlockFocusNeedsFlush: flush];
+--
 2.45.0

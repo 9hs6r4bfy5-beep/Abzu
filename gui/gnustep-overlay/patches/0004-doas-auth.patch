@@ -2,32 +2,61 @@ From: Abzu <abzu@localhost>
 Date: Sat, 10 Oct 2026 00:00:00 +0000
 Subject: [PATCH 4/4] gui: authorize privileged operations via doas(1)
 
-Abzu overlay (see ../README.md): security pillar -- GNUstep authorization
-must not shell out to sudo/askpass. Replace the hardcoded `sudo -S`
-front-end with `doas -u root`, which honours /etc/doas.conf (shipped by
-build/derivations/rootfs.nix under the Abzu policy) and fails closed.
+Abzu overlay (see ../README.md): security pillar -- privileged GNUstep
+operations must be authorized through doas(1), which honours /etc/doas.conf
+(shipped by build/derivations/rootfs.nix under the Abzu policy) and fails
+closed -- never sudo/askpass. Upstream gnustep-gui 0.32.0 contains no
+sudo/askpass call site, so this patch ADDS a helper method
+(-abzuAuthorizeAndRunAsRoot:) to NSWorkspace as Abzu-specific glue for
+GWorkspace/AbzuShell callers; smoke-test on first overlay build.
 
 Upstreaming: tracked per-patch in docs/ROADMAP.md.
 
 ---
-diff --git a/Source/GSSystemRootAction.m b/Source/GSSystemRootAction.m
-index 8ed882d..901c112 100644
---- a/Source/GSSystemRootAction.m
-+++ b/Source/GSSystemRootAction.m
-@@ -3,9 +3,11 @@
-   NSTask	*task = [NSTask new];
-   NSMutableData *out = [NSMutableData new];
+---
+diff --git a/Source/NSWorkspace.m b/Source/NSWorkspace.m
+index 6bc7f71..efd8abb 100644
+--- a/Source/NSWorkspace.m
++++ b/Source/NSWorkspace.m
+@@ -1778,6 +1778,39 @@ inFileViewerRootedAtPath: (NSString*)rootFullpath
+ 		      autolaunch: NO];
+ }
  
--  /* Default front-end: sudo reading the password from the askpass pipe. */
--  [task setLaunchPath: @"/usr/bin/sudo"];
--  [task setArguments: ([NSMutableArray arrayWithObject: @"-S"])];
-+  /* Abzu overlay: doas(1) is the only supported privilege front-end;
-+   * /etc/doas.conf is the single source of truth for who may run what. */
-+  [task setLaunchPath: @"/usr/bin/doas"];
-+  [task setArguments: ([NSMutableArray arrayWithObjects:
-+			@"-u", @"root", nil])];
-   [(NSMutableArray *)[task arguments] addObjectsFromArray: argv];
-   [task setStandardOutput: [NSPipe pipe]];
-   return YES;
--- 
++/**
++ * Abzu overlay (security pillar): privileged shell helpers must be
++ * authorized through doas(1), which honours /etc/doas.conf shipped by
++ * build/derivations/rootfs.nix and fails closed -- never sudo/askpass.
++ * Callers in GWorkspace/AbzuShell pass the argv they want run as root.
++ */
++- (BOOL) abzuAuthorizeAndRunAsRoot: (NSArray *)argv
++{
++  NSMutableArray	*args;
++
++  if ([argv count] == 0 || [argv objectAtIndex: 0] == nil)
++    {
++      return NO;
++    }
++
++  args = [NSMutableArray arrayWithObject: @"-u"];
++  [args addObject: @"root"];
++  [args addObjectsFromArray: argv];
++
++  try
++    {
++      NSTask	*t = [NSTask launchedTaskWithLaunchPath: @"/usr/bin/doas"
++                            arguments: args];
++      [t waitUntilExit];
++      return ([t terminationStatus] == 0);
++    }
++  catch NSException *e
++    {
++      NSLog(@"Abzu doas launch failed: %@", [e name]);
++      return NO;
++    }
++}
++
+ /**
+  * <p>Launches the specified application (unless it is already running).<br />
+  * If the autolaunch flag is yes, sets the autolaunch user default for the
+--
 2.45.0
