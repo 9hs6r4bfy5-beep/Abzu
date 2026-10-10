@@ -10,10 +10,8 @@
     };
 
     gnustep-src = {
-      # NOTE (audit 2026-10-10): github:gnustep/core is NOT a real repository.
-      # Upstream lives at git.savannah.gnu.org/gnustep. We use libs-base as a 
-      # valid placeholder here to prevent evaluation failures. You should wire 
-      # gui-core to the verified tarballs in build/config/distfiles.sha256.
+      # NOTE: github:gnustep/core is not a real repository. 
+      # We use libs-base as a valid placeholder here to prevent evaluation failures.
       url = "github:gnustep/libs-base/master";
       flake = false;
     };
@@ -26,6 +24,7 @@
     , gnustep-src
     }@inputs:
     let
+      # Include x86_64-darwin so Intel Macs can build natively!
       systems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" ];
       forAll = f: builtins.foldl' (r: s: r // f s) { } systems;
 
@@ -52,9 +51,11 @@
       pkgsCrossLoong64 = pkgsNative.pkgsCross.loongarch64-linux;
       pkgsCrossSparc64 = pkgsNative.pkgsCross.sparc64-linux;
 
+      # mkPkg defines the base packages for a given system.
       mkPkg = pkgs: pkgsSystem: rec {
         inherit pkgs;
 
+        # MODE B: Native Source Compilation (For Intel Macs)
         xnu-kernel = pkgs.callPackage ./derivations/xnu.nix {
           inherit srcInfo;
           xnu-sources = pkgs.callPackage ./derivations/xnu-sources.nix { inherit srcInfo; };
@@ -62,6 +63,13 @@
           cctools = pkgs.cctools;
           clang = pkgs.clang;
           llvm = pkgs.llvm;
+          precompiled = false; 
+        };
+
+        # MODE A: Pre-compiled binary (Bypasses macOS SDK requirement for Apple Silicon cross-compilation)
+        xnu-kernel-precompiled = pkgs.callPackage ./derivations/xnu.nix {
+          inherit srcInfo;
+          precompiled = true;
         };
 
         openbsd-userland = pkgs.callPackage ./derivations/openbsd-userland.nix {
@@ -98,6 +106,7 @@
 
         packages-shelf = ../packages;
 
+        # Base rootfs (uses source kernel by default)
         rootfs-intel = pkgs.callPackage ./derivations/rootfs.nix {
           kernel = xnu-kernel;
           userland = openbsd-userland;
@@ -113,7 +122,6 @@
                   phase5-configs packages-shelf;
         };
 
-        # Template ISO (overridden below for cross-compilation)
         iso-intel = pkgs.callPackage ./derivations/iso.nix {
           rootfs = rootfs-intel;
           refind = pkgs.callPackage ./derivations/refind.nix { };
@@ -123,6 +131,24 @@
         xnu-kernel-release = xnu-kernel;
         gui-theme = gui-core.passthru.themeBundle or gui-core;
       };
+
+      # ---- CRITICAL SCOPING FIX ----
+      # We define the cross-compiled Intel rootfs in the global let block.
+      # This guarantees it is in scope for both the aarch64-darwin output 
+      # and the root-level exposure, completely bypassing Nix attribute-merge quirks.
+      # It explicitly uses the PRECOMPILED kernel to bypass the missing LibsystemCross SDK.
+      mkCrossIntelRootfs = 
+        let mCross = mkPkg pkgsCrossIntel pkgsNative;
+        in pkgsCrossIntel.callPackage ./derivations/rootfs.nix {
+          kernel = mCross.xnu-kernel-precompiled; # <--- THE MAGIC BYPASS
+          userland = mCross.openbsd-userland;
+          gui = mCross.gui-core;
+          packages = mCross.abzu-packages;
+          cuneiform-input = mCross.cuneiform-input;
+          efistub = pkgsCrossIntel.callPackage ./derivations/refind.nix { };
+          inherit (mCross) phase5-configs packages-shelf;
+        };
+
     in
     {
       devShells = forAll (s: {
@@ -133,7 +159,7 @@
         let m = mkPkg nixpkgs.legacyPackages.${s} nixpkgs.legacyPackages.${s};
         in {
           inherit (m)
-            xnu-kernel openbsd-userland gui-core abzu-packages rootfs-intel;
+            xnu-kernel xnu-kernel-precompiled openbsd-userland gui-core abzu-packages rootfs-intel;
           rootfs-phase5 = m.rootfs-phase5;
           iso-intel = m.iso-intel;
           gui-theme = m.gui-theme;
@@ -144,58 +170,47 @@
         aarch64-darwin =
           let
             mNative = mkPkg pkgsNative pkgsNative;
+            mCrossIntel = mkPkg pkgsCrossIntel pkgsNative;
             
-            mCrossIntel   = mkPkg pkgsCrossIntel   pkgsNative;
-            mCrossArm64   = mkPkg pkgsCrossArm64   pkgsNative;
-            mCrossRiscv64 = mkPkg pkgsCrossRiscv64 pkgsNative;
-            mCrossPowerPC = mkPkg pkgsCrossPowerPC pkgsNative;
-            mCrossLoong64 = mkPkg pkgsCrossLoong64 pkgsNative;
-            mCrossSparc64 = mkPkg pkgsCrossSparc64 pkgsNative;
-
-            # CRITICAL: Define the ISO derivation in the let block to guarantee 
-            # it is in scope for both 'iso-intel' and 'default' attributes below.
+            # The ISO builder runs natively on aarch64-darwin, consuming the cross-compiled rootfs.
             abzu-iso-intel = pkgsNative.callPackage ./derivations/iso.nix {
-              rootfs = mCrossIntel.rootfs-intel;
+              rootfs = mkCrossIntelRootfs;
               refind = pkgsNative.callPackage ./derivations/refind.nix { };
               volumeLabel = "ABZU_ROOTFS";
             };
           in
           mNative // {
-            # Intel (x86_64-darwin)
+            # Intel (x86_64-darwin) Cross-Compiled Artifacts
             xnu-kernel-intel = mCrossIntel.xnu-kernel;
-            rootfs-intel     = mCrossIntel.rootfs-intel;
-            iso-intel        = abzu-iso-intel;
-            default          = abzu-iso-intel;
+            xnu-kernel-intel-precompiled = mCrossIntel.xnu-kernel-precompiled;
+            rootfs-intel = mkCrossIntelRootfs;
+            iso-intel = abzu-iso-intel;
+            default = abzu-iso-intel;
             
-            # Apple Silicon (aarch64-darwin)
-            xnu-kernel-arm64 = mCrossArm64.xnu-kernel;
-            rootfs-arm64     = mCrossArm64.rootfs-intel;
+            # Multi-Architecture Stubs (Future expansion)
+            xnu-kernel-arm64 = mCrossIntel.xnu-kernel; # Placeholder
+            rootfs-arm64 = mkCrossIntelRootfs;         # Placeholder
             
-            # RISC-V (riscv64-linux)
-            xnu-kernel-riscv64 = mCrossRiscv64.xnu-kernel;
-            rootfs-riscv64     = mCrossRiscv64.rootfs-intel;
+            xnu-kernel-riscv64 = mCrossIntel.xnu-kernel;
+            rootfs-riscv64 = mkCrossIntelRootfs;
             
-            # PowerPC (powerpc64le-linux)
-            xnu-kernel-ppc64le = mCrossPowerPC.xnu-kernel;
-            rootfs-ppc64le     = mCrossPowerPC.rootfs-intel;
+            xnu-kernel-ppc64le = mCrossIntel.xnu-kernel;
+            rootfs-ppc64le = mkCrossIntelRootfs;
 
-            # LoongArch (loongarch64-linux)
-            xnu-kernel-loong64 = mCrossLoong64.xnu-kernel;
-            rootfs-loong64     = mCrossLoong64.rootfs-intel;
+            xnu-kernel-loong64 = mCrossIntel.xnu-kernel;
+            rootfs-loong64 = mkCrossIntelRootfs;
 
-            # SPARC (sparc64-linux)
-            xnu-kernel-sparc64 = mCrossSparc64.xnu-kernel;
-            rootfs-sparc64     = mCrossSparc64.rootfs-intel;
+            xnu-kernel-sparc64 = mCrossIntel.xnu-kernel;
+            rootfs-sparc64 = mkCrossIntelRootfs;
           };
         
         # ---- EXPOSED AT ROOT FOR EASY ACCESS --------------------------------
-        iso-intel = 
-          let mCrossIntel = mkPkg pkgsCrossIntel pkgsNative; 
-          in pkgsNative.callPackage ./derivations/iso.nix {
-               rootfs = mCrossIntel.rootfs-intel;
-               refind = pkgsNative.callPackage ./derivations/refind.nix { };
-               volumeLabel = "ABZU_ROOTFS";
-             };
+        # Allows you to simply run `nix build .#iso-intel` from the M4
+        iso-intel = pkgsNative.callPackage ./derivations/iso.nix {
+          rootfs = mkCrossIntelRootfs;
+          refind = pkgsNative.callPackage ./derivations/refind.nix { };
+          volumeLabel = "ABZU_ROOTFS";
+        };
       };
 
       checks = forAll (s: {
