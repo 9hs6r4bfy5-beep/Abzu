@@ -24,11 +24,11 @@
     "gnustep-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1791576870,
-        "narHash": "sha256-4HlkvBlYs+1HO7SAX8VtY4oj1hN9Uf7MBbrFwr3Hgpk=",
+        "lastModified": 1791624229,
+        "narHash": "sha256-pPZXQwqfIlk+0aAqwaNawV5T9aGZYTf7GpPGYunFXMk=",
         "owner": "gnustep",
         "repo": "libs-base",
-        "rev": "b51b6703e2fe6101a34097d66e99ee3eb5abd7a3",
+        "rev": "2933c29ce8966a7315f9b1b4f2f3c3d485f8107c",
         "type": "github"
       },
       "original": {
