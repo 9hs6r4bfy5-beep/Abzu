@@ -5,8 +5,10 @@
 let
   version = "0.14.0.2";
   src = fetchzip {
-    url = "https://sourceforge.net/projects/refind/files/${version}/refind-bin-${version}.zip";
-    hash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="; # refreshed by scripts/update-src-hashes.sh
+    url = "https://downloads.sourceforge.net/project/refind/${version}/refind-bin-${version}.zip";
+    # Real SRI hash of the SourceForge archive (verified against the pinned
+    # release file; refresh with nix-prefetch-url if the mirror rotates).
+    hash = "sha256-Cir3n3D9RDWwDk/ZmOfdPgJWymtWtbukB2b9Gb1Bszw=";
     stripRoot = false;
   };
 in runCommand "abzu-refind-${version}" {
@@ -24,18 +26,25 @@ in runCommand "abzu-refind-${version}" {
   [ -f "$R/refind_aa64" ] && install -m755 "$R/refind_aa64" $out/EFI/BOOT/BOOTAA64.EFI || true
   [ -f "$R/refind_ia32" ] && install -m755 "$R/refind_ia32" $out/EFI/BOOT/BOOTIA32.EFI || true # CRITICAL for MBP 4,1
 
-  # Generate a clean, Abzu-themed rEFInd configuration
+  # Generate a clean, Abzu-themed rEFInd configuration.
+  #
+  # BOOT-CHAIN NOTE: XNU boots via its EFI boot stub (boot.efi), which the
+  # rootfs stages at /System/Library/CoreServices/boot.efi; rEFInd must chain
+  # that stub — pointing `loader` straight at \System\Library\Kernels\kernel
+  # is invalid because mach_kernel is a Mach-O binary, not an PE/COFF EFI
+  # application. The ISO's ESP also carries the standard fallback path
+  # \EFI\BOOT\BOOTX64.EFI (= this rEFInd binary).
   cat > $out/EFI/refind/refind.conf <<'CONF'
 timeout 5
 showtools shutdown, reboot, exit
 volume_label ABZU_ROOTFS
-# rEFInd will auto-detect the XNU kernel in /System/Library/Kernels/
-# We provide a custom menu entry to ensure it boots cleanly
+# rEFInd auto-detects macOS via the EFI boot stub; we pin the entry so the
+# volume label and boot-args stay under our control.
 menuentry "Abzu Darwin" {
     icon \EFI\refind\icons\os_mac.png
     volume "ABZU_ROOTFS"
-    loader \System\Library\Kernels\kernel
-    options "root=UUID=ABZU-ROOTFS rdshell=0"
+    loader \System\Library\CoreServices\boot.efi
+    options "-abzu-mode root=UUID=ABZU-ROOTFS rdshell=0"
 }
 CONF
 ''

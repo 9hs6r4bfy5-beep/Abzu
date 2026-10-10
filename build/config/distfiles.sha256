@@ -1,0 +1,21 @@
+# config/distfiles.sha256 — sha256 lock file for build/scripts/fetch-distfiles.sh
+# Format: <hex-sha256>  <filename-in-build/distfiles>   (verified via `sha256sum -c`)
+# Regenerate entries with:  sha256sum build/distfiles/<file>
+#
+# GNUstep core + GWorkspace (ftp.gnustep.org). NOTE: gnustep-base/gui/back/apps
+# live in per-category directories on the FTP mirror; fetch-distfiles.sh must
+# use those paths (the flat /pub/gnustep/core/ URLs 404 for everything but
+# gnustep-make).
+f540df9f0e1daeb3d23b08e14b204b2a46f1d0a4005cb171c95323413806e4e1  gnustep-make-2.9.2.tar.gz
+e7546f1c978a7c75b676953a360194a61e921cb45a4804497b4f346a460545cd  gnustep-base-1.31.1.tar.gz
+0c03a1b6313babd592ec58fcb825091f77eb27429a4ce4306ec3a7cfa7f9a1f6  gnustep-gui-0.32.0.tar.gz
+ce171095012ac5d845f6e1285a5c71e011fd00aa5981ea1d5a5183706478218d  gnustep-back-0.32.0.tar.gz
+533a1ca5d6595793725bca7641d9461a0f00dd1732dded3e4281196f5dd21736  gworkspace-1.1.0.tar.gz
+# rEFInd prebuilt EFI binaries (SourceForge mirrors rotate; verify before committing)
+0a2af79e70fd4435b00e4fd898e7dd3e0256ca6b56b5bba40b69fd19bd41b33c  refind-bin.zip
+# OpenBSD 7.6 source set — UNRESOLVED: https://cdn.openbsd.org/pub/OpenBSD/7.6/src.tar.gz
+# returns 404 (OpenBSD publishes sources as per-directory sets: src.tar.gz only
+# exists under snapshots/ during -current). Until a valid URL is pinned,
+# fetch-distfiles.sh skips verification for these two entries.
+# TBD  src.tar.gz
+# TBD  openbsd-sha256.txt

@@ -1,9 +1,13 @@
 {
-  "_comment": "APSL companion projects XNU's makefiles expect as siblings of xnu/, pinned to the macOS 11.3 (xnu-7195) release train. Refresh revs+sha256 with build/scripts/update-src-hashes.sh.",
-  "mach":       { "rev": "TBD", "sha256": "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" },
-  "libkern":    { "rev": "TBD", "sha256": "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" },
-  "IOKitUser":  { "rev": "TBD", "sha256": "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" },
-  "security_framework":  { "rev": "TBD", "sha256": "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" },
-  "apple_keystore":      { "rev": "TBD", "sha256": "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" },
-  "bsms":                { "rev": "TBD", "sha256": "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" }
+  "_comment": "APSL companion projects XNU's makefiles expect as siblings of xnu/, pinned to the macOS 11.3 (xnu-7195.141.2) release train. Only repos that actually exist under github.com/apple-oss-distributions are listed here; the historical 'mach'/'libkern' mirrors do not exist upstream (verified 404) and their code is vendored inside xnu/ itself, so they were dropped, as were security_framework/apple_keystore/bsms (no upstream mirror). Revs are immutable commit SHAs resolved from the release-train tags (IOKitUser-100076.120.9 / Libc-1439.141.1); sha256 values are SRI hashes of the GitHub archive tarballs, refreshable with build/scripts/update-src-hashes.sh --write.",
+  "IOKitUser": {
+    "tag": "IOKitUser-100076.120.9",
+    "rev": "f7302be6cb4e29e8d14bf63a5dffb4aa305e1d0b",
+    "sha256": "sha256-dQyLgKh2re6rP+R5lB2vTH6IPXAqssGMW6EA1uWD5MA="
+  },
+  "libc": {
+    "tag": "Libc-1439.141.1",
+    "rev": "a24fdd3c3ac6bc85f935d5f78980b45f0d3c8aa5",
+    "sha256": "sha256-cOYx/Hx6wxlWZNyDouQm1C8N0VciJpVUdgYy41BgycM="
+  }
 }

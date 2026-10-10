@@ -7,6 +7,11 @@
 # Takes the components by their flake-level attribute names and merges them
 # via buildInputs + pathsToLink plus explicit copies of the trees that carry
 # no linkable top-level dirs (kernel → /System, gui → /Applications).
+#
+# LINUX TOLERANCE: on Linux builders the kernel derivation has no output
+# (meta.platforms = x86_64-darwin) and gui-core never creates
+# /usr/local/share/gnustep; every copy below is guarded so the slim variant
+# still produces an installer-skeleton tree instead of aborting under set -e.
 { lib, stdenvNoCC, runCommand, xnu-kernel, openbsd-userland, gui-core, cuneiform-input, packages-shelf, phase5-configs }:
 
 runCommand "abzu-rootfs" {
@@ -18,19 +23,31 @@ runCommand "abzu-rootfs" {
   set -e
   mkdir -p $out
 
-  # ---- component trees ------------------------------------------------------
+  # ---- component trees (guarded — see header note) --------------------------
   # Kernel payload (System/Library/Kernels/kernel + bootstrap artifacts):
-  # /System is not in pathsToLink, so copy explicitly.
-  cp -r --no-preserve=ownership ${xnu-kernel}/System $out/
+  # /System is not in pathsToLink, so copy explicitly when present.
+  if [ -d ${xnu-kernel}/System ]; then
+    cp -r --no-preserve=ownership ${xnu-kernel}/System $out/
+  else
+    echo "WARN: kernel /System payload absent — installer-skeleton mode"
+  fi
   mkdir -p $out/bootstrap
-  cp -r --no-preserve=ownership ${xnu-kernel}/bootstrap/. $out/bootstrap/
+  if [ -d ${xnu-kernel}/bootstrap ]; then
+    cp -r --no-preserve=ownership ${xnu-kernel}/bootstrap/. $out/bootstrap/
+  fi
 
   # GUI core: /Library themes + shell menu arrive via pathsToLink;
   # /Applications and /usr/local/share/gnustep need explicit copies.
-  cp -r --no-preserve=ownership ${gui-core}/Applications $out/
-  mkdir -p $out/usr/local/share
-  cp -r --no-preserve=ownership ${gui-core}/usr/local/share/gnustep \
-                                 $out/usr/local/share/gnustep
+  if [ -d ${gui-core}/Applications ]; then
+    cp -r --no-preserve=ownership ${gui-core}/Applications $out/
+  fi
+  if [ -d ${gui-core}/usr/local/share/gnustep ]; then
+    mkdir -p $out/usr/local/share
+    cp -r --no-preserve=ownership ${gui-core}/usr/local/share/gnustep \
+                                   $out/usr/local/share/gnustep
+  else
+    echo "WARN: gnustep share payload absent (Darwin builder required)"
+  fi
 
   # Userland (/bin, /sbin, /usr, /etc) and the cuneiform input method
   # (/bin/cuneiform-toggle, /Library/Keyboard Layouts) merged via buildInputs.
