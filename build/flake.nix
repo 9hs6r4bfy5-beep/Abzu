@@ -26,7 +26,7 @@
     , gnustep-src
     }@inputs:
     let
-      systems = [ "x86_64-linux" "aarch64-linux" ];
+      systems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" ];
       forAll = f: builtins.foldl' (r: s: r // f s) { } systems;
 
       kernelPatches = builtins.sort builtins.lessThan ([
