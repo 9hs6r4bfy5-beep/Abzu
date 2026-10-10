@@ -57,7 +57,6 @@
 
         xnu-kernel = pkgs.callPackage ./derivations/xnu.nix {
           inherit srcInfo;
-          pkgsHost = pkgsSystem;
           xnu-sources = pkgs.callPackage ./derivations/xnu-sources.nix { inherit srcInfo; };
           patches = kernelPatches;
           cctools = pkgs.cctools;
