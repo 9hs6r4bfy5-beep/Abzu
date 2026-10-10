@@ -4,15 +4,13 @@
 { lib, stdenv, stdenvNoCC, fetchurl, clang, llvm, cctools, xnu-sources, srcInfo, patches ? [], precompiled ? false }:
 
 if precompiled then
-  # MODE A: Pre-compiled binary (Bypasses macOS SDK requirement for cross-compilation)
   stdenvNoCC.mkDerivation rec {
     pname = "xnu-kernel-precompiled";
-    version = "10.13.6"; # High Sierra era kernel, stable and widely compatible
+    version = "10.15.7";
 
     src = fetchurl {
       url = "https://github.com/kholia/OSX-KVM/raw/master/OpenCore-Catalina/mach_kernel";
-      # REPLACE THIS WITH THE HASH FROM nix-prefetch-url
-      hash = "sha256-PLACEHOLDER_HASH_HERE="; 
+      hash = "sha256-YOUR_REAL_HASH_HERE="; 
     };
 
     buildCommand = ''
