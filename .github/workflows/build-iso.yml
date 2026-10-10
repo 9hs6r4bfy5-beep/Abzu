@@ -1,0 +1,35 @@
+name: Build Abzu Intel ISO
+
+on:
+  # Allows you to trigger it manually from the GitHub Actions tab
+  workflow_dispatch:
+  # Also runs automatically if you push to main
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-iso:
+    # CRITICAL: macos-13 is an x86_64 (Intel) runner. 
+    # This means it builds NATIVELY!
+    runs-on: macos-13 
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Build the Intel ISO
+        run: |
+          cd build
+          # Build the Intel target natively on the runner
+          nix build .#packages.x86_64-darwin.iso-intel --extra-experimental-features "nix-command flakes"
+          
+      - name: Upload ISO Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: abzu-intel-iso
+          # The build output is symlinked to `result`
+          path: build/result/abzu-intel-installer.iso
+          retention-days: 7
