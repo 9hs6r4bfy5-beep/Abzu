@@ -1,47 +1,67 @@
 # build/derivations/xnu.nix
-# Compiles the Apple XNU kernel.
-# When called via pkgsCrossIntel.callPackage, `stdenv` is ALREADY the correct cross-stdenv.
-{ lib, stdenv, clang, llvm, cctools, xnu-sources, srcInfo, patches ? [] }:
+# Unified XNU kernel derivation: supports both native source compilation 
+# and pre-compiled binary fetching (for cross-compilation SDK workarounds).
+{ lib, stdenv, stdenvNoCC, fetchurl, clang, llvm, cctools, xnu-sources, srcInfo, patches ? [], precompiled ? false }:
 
-stdenv.mkDerivation rec {
-  pname = "xnu-kernel";
-  version = srcInfo.xnuTag;
+if precompiled then
+  # MODE A: Pre-compiled binary (Bypasses macOS SDK requirement for cross-compilation)
+  stdenvNoCC.mkDerivation rec {
+    pname = "xnu-kernel-precompiled";
+    version = "10.13.6"; # High Sierra era kernel, stable and widely compatible
 
-  src = xnu-sources;
+    src = fetchurl {
+      url = "https://github.com/kholia/OSX-KVM/raw/master/OpenCore-Catalina/mach_kernel";
+      # REPLACE THIS WITH THE HASH FROM nix-prefetch-url
+      hash = "sha256-PLACEHOLDER_HASH_HERE="; 
+    };
 
-  # Native build tools run on the host (aarch64-darwin M4)
-  nativeBuildInputs = [ clang llvm cctools ];
+    buildCommand = ''
+      runHook preBuild
+      mkdir -p $out/System/Library/Kernels
+      cp $src $out/System/Library/Kernels/kernel
+      chmod +x $out/System/Library/Kernels/kernel
+      runHook postBuild
+    '';
 
-  buildPhase = ''
-    runHook preBuild
-    
-    # XNU's make system requires specific SDK and architecture flags
-    make SDKROOT=macosx \
-         ARCH_CONFIGS=X86_64 \
-         KERNEL_CONFIGS=RELEASE \
-         TARGET_CONFIGS=X86_64 \
-         -j $NIX_BUILD_CORES
+    meta = with lib; {
+      description = "Pre-compiled XNU Kernel (for cross-compilation bypass)";
+      platforms = [ "x86_64-darwin" "aarch64-darwin" ];
+    };
+  }
+else
+  # MODE B: Native Source Compilation (For your Mac Pro 5,1)
+  stdenv.mkDerivation rec {
+    pname = "xnu-kernel";
+    version = srcInfo.xnuTag;
 
-    runHook postBuild
-  '';
+    src = xnu-sources;
 
-  installPhase = ''
-    runHook preInstall
-    mkdir -p $out/System/Library/Kernels
-    
-    # The compiled kernel
-    cp BUILD/obj/RELEASE_X86_64/mach_kernel $out/System/Library/Kernels/kernel
-    
-    # Also copy the dSYM for debugging (optional but recommended)
-    cp BUILD/obj/RELEASE_X86_64/mach_kernel.dSYM $out/System/Library/Kernels/ -r || true
-    
-    runHook postInstall
-  '';
+    nativeBuildInputs = [ clang llvm cctools ];
 
-  meta = with lib; {
-    description = "Apple XNU Kernel";
-    homepage = "https://opensource.apple.com/source/xnu/";
-    license = licenses.apsl20;
-    platforms = [ "x86_64-darwin" "aarch64-darwin" ];
-  };
-}
+    buildPhase = ''
+      runHook preBuild
+      make SDKROOT=macosx \
+           ARCH_CONFIGS=X86_64 \
+           KERNEL_CONFIGS=RELEASE \
+           TARGET_CONFIGS=X86_64 \
+           -j $NIX_BUILD_CORES
+      runHook postBuild
+    '';
+
+    installPhase = ''
+      runHook preInstall
+      mkdir -p $out/System/Library/Kernels
+      
+      cp BUILD/obj/RELEASE_X86_64/mach_kernel $out/System/Library/Kernels/kernel
+      cp BUILD/obj/RELEASE_X86_64/mach_kernel.dSYM $out/System/Library/Kernels/ -r || true
+      
+      runHook postInstall
+    '';
+
+    meta = with lib; {
+      description = "Apple XNU Kernel compiled from source";
+      homepage = "https://opensource.apple.com/source/xnu/";
+      license = licenses.apsl20;
+      platforms = [ "x86_64-darwin" "aarch64-darwin" ];
+    };
+  }
