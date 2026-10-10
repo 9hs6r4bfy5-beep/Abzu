@@ -108,6 +108,8 @@
 
         # Base rootfs (uses source kernel by default)
         rootfs-intel = pkgs.callPackage ./derivations/rootfs.nix {
+          # Explicitly pass python3 since rootfs.nix signature now requires it
+          python3 = pkgs.python3; 
           kernel = xnu-kernel;
           userland = openbsd-userland;
           gui = gui-core;
@@ -137,13 +139,13 @@
       # This guarantees it is in scope for both the aarch64-darwin output 
       # and the root-level exposure, completely bypassing Nix attribute-merge quirks.
       # 
-      # FIX: We explicitly pass `pkgs = pkgsNative` so that build-time tools 
+      # FIX: We explicitly pass `python3 = pkgsNative.python3` so that build-time tools 
       # (like python3 for generating launchd plists) use the native M4 toolchain, 
       # preventing "cannot coerce null to a string" errors in the cross environment.
       mkCrossIntelRootfs = 
         let mCross = mkPkg pkgsCrossIntel pkgsNative;
         in pkgsCrossIntel.callPackage ./derivations/rootfs.nix {
-          pkgs = pkgsNative; # <--- THE FIX: Use native M4 Python/tools for build scripts
+          python3 = pkgsNative.python3; # <--- THE FIX: Use native M4 Python for build scripts
           kernel = mCross.xnu-kernel-precompiled; # <--- THE BYPASS: Use pre-compiled kernel
           userland = mCross.openbsd-userland;
           gui = mCross.gui-core;
