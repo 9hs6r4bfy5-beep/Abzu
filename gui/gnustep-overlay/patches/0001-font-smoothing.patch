@@ -1,0 +1,45 @@
+From: Abzu <abzu@localhost>
+Date: Sat, 10 Oct 2026 00:00:00 +0000
+Subject: [PATCH 1/4] gui: honour GAFontAntialiasing defaults in NSFont attribute lookup
+
+Abzu overlay (see ../README.md): map the documented Abzu default
+-GAFontAntialiasing onto NSFont rendering so text matches Aqua-style
+subpixel smoothing out of the box. gnustep-gui reads the font user-defaults
+dictionary in _defaultAttributesForFontDescriptor; we override the
+NSFontAntialias entry from the dedicated GA* default there, so desktop-wide
+settings apply to every NSFont without app cooperation.
+
+Upstreaming: tracked per-patch in docs/ROADMAP.md.
+
+---
+---
+diff --git a/Source/NSFont.m b/Source/NSFont.m
+index cac7b05..94655ca 100644
+--- a/Source/NSFont.m
++++ b/Source/NSFont.m
+@@ -462,6 +462,23 @@ static void setNSFont(NSString *key, NSFont *font)
+           defaults = RETAIN([NSUserDefaults standardUserDefaults]);
+         }
+ 
++      /* Abzu overlay: seed GSFontKey with the desktop-wide
++       * -GAFontAntialiasing default so text matches Aqua-style subpixel
++       * smoothing out of the box, without app cooperation. */
++      {
++        NSMutableDictionary *gsd = [[defaults dictionaryForKey: GSFontKey]
++                                     mutableCopy];
++        if (gsd != nil)
++          {
++            [gsd setObject: ([defaults boolForKey: @"-GAFontAntialiasing"]
++                              ? [NSNumber numberWithBool: YES]
++                              : [NSNumber numberWithBool: NO])
++                     forKey: NSFontAntialias];
++            [defaults registerDomain: gsd forKey: GSFontKey];
++            DESTROY(gsd);
++          }
++      }
++
+       _preferredFonts = [defaults objectForKey: @"NSPreferredFonts"];
+       [self setVersion: currentVersion];
+     }
+--
+2.45.0

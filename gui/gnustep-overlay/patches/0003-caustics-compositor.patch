@@ -1,0 +1,42 @@
+From: Abzu <abzu@localhost>
+Date: Sat, 10 Oct 2026 00:00:00 +0000
+Subject: [PATCH 3/4] gui: blit animated caustic layer behind themed window backgrounds
+
+Abzu overlay (see ../README.md): when the active GSTheme ships a
+"caustics" image resource and the user default Caustics.Enabled is YES,
+the themed-background draw path composites the animated layer before the
+per-element theme image. The animation timer lives in the AbzuAqua.theme
+bundle loader (gui/theme/), keeping the delta to gnustep-gui tiny.
+
+Upstreaming: tracked per-patch in docs/ROADMAP.md.
+
+---
+---
+diff --git a/Source/NSView.m b/Source/NSView.m
+index 88f78ae..4e0a8c2 100644
+--- a/Source/NSView.m
++++ b/Source/NSView.m
+@@ -2610,6 +2610,21 @@ static void autoresize(CGFloat oldContainerSize,
+       /*
+        * Now we draw this view.
+        */
++      /* Abzu overlay: blit the animated caustic layer from the
++       * active theme when Caustics.Enabled, before drawing the view.
++       * Timer/frame loading lives in the AbzuAqua.theme bundle
++       * loader (gui/themes/abzu-aqua/caustics). */
++      if ([[NSUserDefaults standardUserDefaults]
++           boolForKey: @"Caustics.Enabled"])
++        {
++          GSTheme	*theme = [GSTheme currentTheme];
++          id	frames = [theme valueOfPrimary: @"caustics"];
++          if (frames != nil)
++            {
++              [self abzuDrawCausticsLayer: frames
++                                 inRect: aRect];
++            }
++        }
+       [self _lockFocusInContext: context inRect: aRect];
+       [self drawRect: aRect];
+       [self unlockFocusNeedsFlush: flush];
+--
+2.45.0

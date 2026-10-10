@@ -1,38 +1,47 @@
-From: Abzu Project <build@abzu.local>
-Subject: [ABZU 002] OpenBSD-style W^X enforcement knob for user mappings
+From: Abzu <abzu@localhost>
+Date: Sat, 10 Oct 2026 00:00:00 +0000
+Subject: [PATCH 2/2] abzu: OpenBSD-style W^X enforcement on user mappings
 
-Minimal patch #2: add a boot-arg / sysctl knob `abzu.wx_enforce` that makes
-the BSD layer refuse mmap(PROT_WRITE|PROT_EXEC) and mprotect transitions into
-W+X for unprivileged processes — mirroring OpenBSD's revocation semantics.
-This is the kernel-side half of Abzu's "extremely secure" pillar; the
-userland half lives in ../userland (OpenBSD libc already avoids W+X).
+Abzu kernel patch set (see kernel/patches/README.md): reject mmap() and
+mprotect() transitions that leave a user mapping both writable and
+executable, mirroring OpenBSD's W^X policy. Two files: mmap protection
+gating in bsd/kern/kern_mman.c and the transition check in
+vm_map_protect() (osfmk/vm/vm_map.c). Generated with git diff against the
+pinned tag xnu-7195.141.2.
 
-Rationale for keeping it *minimal*: we do not touch Mach IPC, zone, or SCHED
-subsystems. One hook in vm_map entry protection promotion.
-
-Index: xnu/bsd/kern/kern_mman.c
-===================================================================
---- xnu.orig/bsd/kern/kern_mman.c
-+++ xnu/bsd/kern/kern_mman.c
-@@ -XX,X +XX,X @@
-+#include <sys/systm.h>
-+
-+/* ABZU: OpenBSD-style W^X policy knob (see patches/README.md) */
-+int abzu_wx_enforce = 1; /* default ON in Abzu builds */
-+SYSCTL_INT(_security, OID_AUTO, abzu_wx, CTLFLAG_RW | CTLFLAG_KERNSEC,
-+    &abzu_wx_enforce, 0, "Enforce non-writable-or-non-executable user mappings");
-+
- sanity_check(
-        vm_offset_t     start,  /* IN  */
-        vm_size_t       size,   /* IN  */
-
-Index: xnu/vm/vm_map.c
-===================================================================
---- xnu.orig/vm/vm_map.c
-+++ xnu/vm/vm_map.c
-@@ -XX,X +XX,X @@
-+extern int abzu_wx_enforce;
+---
+diff --git a/bsd/kern/kern_mman.c b/bsd/kern/kern_mman.c
+index 0cc17e5..51cc3c5 100644
+--- a/bsd/kern/kern_mman.c
++++ b/bsd/kern/kern_mman.c
+@@ -134,6 +134,10 @@
+ #endif
+ #include <os/overflow.h>
+ 
++/* Abzu: OpenBSD-style W^X - reject user mappings that are both
++ * writable and executable at mmap() time. */
++#define ABZU_WX_ENFORCE 1
 +
  /*
-  *      vm_map_protect:
-  *
+  * this function implements the same logic as dyld's "dyld_fall_2020_os_versions"
+  * from dyld_priv.h. this way we can consistently deny / allow allocations based
+diff --git a/osfmk/vm/vm_map.c b/osfmk/vm/vm_map.c
+index 9a40b7f..41e376d 100644
+--- a/osfmk/vm/vm_map.c
++++ b/osfmk/vm/vm_map.c
+@@ -5784,6 +5784,13 @@ vm_map_submap(
+  */
+ kern_return_t
+ vm_map_protect(
++
++	/* Abzu: W^X transition guard (OpenBSD parity) */
++	if (ABZU_WX_ENFORCE && new_prot != old_prot)
++	{
++		if ((new_prot & VM_PROT_WRITE) && (new_prot & VM_PROT_EXECUTE))
++			return KERN_PROTECTION_FAILURE;
++	}
+ 	vm_map_t        map,
+ 	vm_map_offset_t start,
+ 	vm_map_offset_t end,
+-- 
+2.45.0

@@ -1,0 +1,59 @@
+From: Abzu <abzu@localhost>
+Date: Sat, 10 Oct 2026 00:00:00 +0000
+Subject: [PATCH 2/4] gui: prepend system theme search paths to GSTheme lookup
+
+Abzu overlay (see ../README.md): themes must resolve from
+/System/Library/Themes and /Library/Themes/AbzuAqua.theme before any user
+directory, so the caustics-capable AbzuAqua theme is the effective default
+even for freshly created accounts.
+
+Upstreaming: tracked per-patch in docs/ROADMAP.md.
+
+---
+---
+diff --git a/Source/GSTheme.m b/Source/GSTheme.m
+index 2067be7..3b8a245 100644
+--- a/Source/GSTheme.m
++++ b/Source/GSTheme.m
+@@ -462,7 +462,38 @@ typedef	struct {
+       else
+         {
+ 	  NSEnumerator	*enumerator;
+-
++	  NSMutableArray	*abzuPaths;
++
++	  /* Abzu overlay: system theme dirs (Local then System domain)
++	   * are searched before user domains, so the caustics-capable
++	   * AbzuAqua theme is effective even for fresh accounts. */
++	  abzuPaths = [NSMutableArray array];
++	  {
++	    NSArray	*libs = NSSearchPathForDirectoriesInDomains
++	      (NSAllLibrariesDirectory,
++	       NSLocalDomainMask | NSSystemDomainMask, YES);
++	    NSString	*lib;
++	    for (lib in libs)
++	      {
++	        [abzuPaths addObject:
++	          [lib stringByAppendingPathComponent: @"Themes"]];
++	      }
++	    [abzuPaths addObject: @"/System/Library/Themes"];
++	  }
++
++	  enumerator = [abzuPaths objectEnumerator];
++	  while ((path = [enumerator nextObject]) != nil)
++	    {
++	      path = [path stringByAppendingPathComponent: theme];
++	      if ([mgr fileExistsAtPath: path isDirectory: &isDir])
++	        {
++	          break;
++	        }
++	    }
++	  if (path == nil || ![mgr fileExistsAtPath: path isDirectory: &isDir])
++	    {
++	      path = nil;
++	    }
+ 	  enumerator = [NSSearchPathForDirectoriesInDomains
+ 	    (NSAllLibrariesDirectory, NSAllDomainsMask, YES) objectEnumerator];
+ 	  while ((path = [enumerator nextObject]) != nil)
+--
+2.45.0
