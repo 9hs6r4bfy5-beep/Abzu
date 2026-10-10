@@ -24,7 +24,7 @@
     , gnustep-src
     }@inputs:
     let
-      # Include x86_64-darwin so Intel Macs can build natively!
+      # Include x86_64-darwin so the Mac Pro 5,1 can build natively!
       systems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" ];
       forAll = f: builtins.foldl' (r: s: r // f s) { } systems;
 
@@ -55,7 +55,7 @@
       mkPkg = pkgs: pkgsSystem: rec {
         inherit pkgs;
 
-        # MODE B: Native Source Compilation (For Intel Macs)
+        # MODE B: Native Source Compilation (For your Mac Pro 5,1)
         xnu-kernel = pkgs.callPackage ./derivations/xnu.nix {
           inherit srcInfo;
           xnu-sources = pkgs.callPackage ./derivations/xnu-sources.nix { inherit srcInfo; };
@@ -66,7 +66,7 @@
           precompiled = false; 
         };
 
-        # MODE A: Pre-compiled binary (Bypasses macOS SDK requirement for Apple Silicon cross-compilation)
+        # MODE A: Pre-compiled binary (Bypasses macOS SDK requirement for M4 cross-compilation)
         xnu-kernel-precompiled = pkgs.callPackage ./derivations/xnu.nix {
           inherit srcInfo;
           precompiled = true;
@@ -132,20 +132,24 @@
         gui-theme = gui-core.passthru.themeBundle or gui-core;
       };
 
-      # ---- CRITICAL SCOPING FIX ----
+      # ---- CRITICAL SCOPING & CROSS-COMPILATION FIX ----
       # We define the cross-compiled Intel rootfs in the global let block.
       # This guarantees it is in scope for both the aarch64-darwin output 
       # and the root-level exposure, completely bypassing Nix attribute-merge quirks.
-      # It explicitly uses the PRECOMPILED kernel to bypass the missing LibsystemCross SDK.
+      # 
+      # FIX: We explicitly pass `pkgs = pkgsNative` so that build-time tools 
+      # (like python3 for generating launchd plists) use the native M4 toolchain, 
+      # preventing "cannot coerce null to a string" errors in the cross environment.
       mkCrossIntelRootfs = 
         let mCross = mkPkg pkgsCrossIntel pkgsNative;
         in pkgsCrossIntel.callPackage ./derivations/rootfs.nix {
-          kernel = mCross.xnu-kernel-precompiled; # <--- THE MAGIC BYPASS
+          pkgs = pkgsNative; # <--- THE FIX: Use native M4 Python/tools for build scripts
+          kernel = mCross.xnu-kernel-precompiled; # <--- THE BYPASS: Use pre-compiled kernel
           userland = mCross.openbsd-userland;
           gui = mCross.gui-core;
           packages = mCross.abzu-packages;
           cuneiform-input = mCross.cuneiform-input;
-          efistub = pkgsCrossIntel.callPackage ./derivations/refind.nix { };
+          efistub = pkgsNative.callPackage ./derivations/refind.nix { };
           inherit (mCross) phase5-configs packages-shelf;
         };
 
@@ -166,7 +170,7 @@
           default = m.iso-intel;
         }) // {
         
-        # ---- aarch64-darwin (Apple Silicon) host builds for multiple targets ----
+        # ---- aarch64-darwin (Apple Silicon M4) host builds for multiple targets ----
         aarch64-darwin =
           let
             mNative = mkPkg pkgsNative pkgsNative;
@@ -188,8 +192,8 @@
             default = abzu-iso-intel;
             
             # Multi-Architecture Stubs (Future expansion)
-            xnu-kernel-arm64 = mCrossIntel.xnu-kernel; # Placeholder
-            rootfs-arm64 = mkCrossIntelRootfs;         # Placeholder
+            xnu-kernel-arm64 = mCrossIntel.xnu-kernel; 
+            rootfs-arm64 = mkCrossIntelRootfs;         
             
             xnu-kernel-riscv64 = mCrossIntel.xnu-kernel;
             rootfs-riscv64 = mkCrossIntelRootfs;
