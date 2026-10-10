@@ -152,21 +152,29 @@
         in {
           inherit (m)
             xnu-kernel openbsd-userland gui-core abzu-packages rootfs-intel;
-          rootfs-phase5 = m.rootfs-phase5;   # slim Phase 5 "abzu-rootfs"
+          rootfs-phase5 = m.rootfs-phase5;
           iso-intel = m.iso-intel;
           gui-theme = m.gui-theme;
           default = m.iso-intel;
         }) // {
         # ---- aarch64-darwin (Apple Silicon) host ----------------------------
-        # NOTE: we deliberately do NOT expose an aarch64-darwin package set
-        # here. The old version referenced pkgsNative.cctools, which no
-        # longer exists in nixpkgs (the Darwin CCTools port was removed), so
-        # *evaluating* this attrset on any Linux machine failed outright —
-        # even `nix flake check`. XNU is only buildable on a Darwin host via
-        # the Makefile pipeline (kernel/build-xnu.sh); see README. When an
-        # Apple Silicon builder is wired up, re-add it behind
-        # `if builtins.currentSystem == "aarch64-darwin" then ... else { }`
-        # with a real clang/cctools-compatible stdenv.
+        aarch64-darwin =
+          let
+            mCross = mkPkg pkgsCrossIntel pkgsNative;
+            mNative = mkPkg pkgsNative pkgsNative;
+          in
+          mNative // {
+            xnu-kernel-intel = mCross.xnu-kernel;
+            rootfs-intel = mCross.rootfs-intel;
+            iso-intel = mNative.iso-intel;
+            default = mNative.iso-intel;
+          };
+        
+        # ---- EXPOSED AT ROOT FOR EASY ACCESS --------------------------------
+        # This allows you to simply run `nix build .#iso-intel`
+        iso-intel = 
+          let mNative = mkPkg pkgsNative pkgsNative; 
+          in mNative.iso-intel;
       };
 
       checks = forAll (s: {
