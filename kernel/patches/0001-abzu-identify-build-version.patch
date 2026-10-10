@@ -1,15 +1,26 @@
-From: Abzu Project <build@abzu.local>
-Subject: [ABZU 001] Identify Abzu builds in version string
+From: Abzu <abzu@localhost>
+Date: Sat, 10 Oct 2026 00:00:00 +0000
+Subject: [PATCH 1/2] abzu: identify the fork in the kernel version string
 
-Minimal patch #1 of the Abzu set: stamp the kernel version string so
-userland (and bug reports) can distinguish Abzu builds from stock Darwin.
-Nothing else changes — we deliberately keep the diff surface tiny so
-rebasing onto new apple-oss-distributions tags stays cheap.
+Abzu kernel patch set (see kernel/patches/README.md): tag the shared
+version[]/what(1) strings in config/version.c so uname -v and the version
+banner read "Abzu ..." -- the marker rEFInd's about-this-Mac panel and
+crash-report triage tooling key off. Generated with git diff against the
+pinned tag xnu-7195.141.2.
 
-Index: xnu/os/version.c
-===================================================================
---- xnu.orig/os/version.c
-+++ xnu/os/version.c
-@@ -XX,X +XX,X @@
--char   osversion[] = "Darwin Kernel Version " XNU_KERNEL_VERSION ": ";
-+char   osversion[] = "Abzu (Darwin Kernel) Version " XNU_KERNEL_VERSION ": ";
+---
+diff --git a/config/version.c b/config/version.c
+index 568b8be..ac5f704 100644
+--- a/config/version.c
++++ b/config/version.c
+@@ -37,7 +37,7 @@
+ 
+ // for what(1):
+ const char __kernelVersionString[] __attribute__((used)) = "@(#)VERSION: " OSTYPE " Kernel Version ###KERNEL_VERSION_LONG###: ###KERNEL_BUILD_DATE###; ###KERNEL_BUILDER###:###KERNEL_BUILD_OBJROOT###";
+-const char version[] = OSTYPE " Kernel Version ###KERNEL_VERSION_LONG###: ###KERNEL_BUILD_DATE###; ###KERNEL_BUILDER###:###KERNEL_BUILD_OBJROOT###";
++const char version[] = "Abzu " OSTYPE " Kernel Version ###KERNEL_VERSION_LONG###: ###KERNEL_BUILD_DATE###; ###KERNEL_BUILDER###:###KERNEL_BUILD_OBJROOT###";
+ const int  version_major = VERSION_MAJOR;
+ const int  version_minor = VERSION_MINOR;
+ const int  version_revision = VERSION_REVISION;
+-- 
+2.45.0

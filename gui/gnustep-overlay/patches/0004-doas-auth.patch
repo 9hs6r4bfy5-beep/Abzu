@@ -1,0 +1,33 @@
+From: Abzu <abzu@localhost>
+Date: Sat, 10 Oct 2026 00:00:00 +0000
+Subject: [PATCH 4/4] gui: authorize privileged operations via doas(1)
+
+Abzu overlay (see ../README.md): security pillar -- GNUstep authorization
+must not shell out to sudo/askpass. Replace the hardcoded `sudo -S`
+front-end with `doas -u root`, which honours /etc/doas.conf (shipped by
+build/derivations/rootfs.nix under the Abzu policy) and fails closed.
+
+Upstreaming: tracked per-patch in docs/ROADMAP.md.
+
+---
+diff --git a/Source/GSSystemRootAction.m b/Source/GSSystemRootAction.m
+index 8ed882d..901c112 100644
+--- a/Source/GSSystemRootAction.m
++++ b/Source/GSSystemRootAction.m
+@@ -3,9 +3,11 @@
+   NSTask	*task = [NSTask new];
+   NSMutableData *out = [NSMutableData new];
+ 
+-  /* Default front-end: sudo reading the password from the askpass pipe. */
+-  [task setLaunchPath: @"/usr/bin/sudo"];
+-  [task setArguments: ([NSMutableArray arrayWithObject: @"-S"])];
++  /* Abzu overlay: doas(1) is the only supported privilege front-end;
++   * /etc/doas.conf is the single source of truth for who may run what. */
++  [task setLaunchPath: @"/usr/bin/doas"];
++  [task setArguments: ([NSMutableArray arrayWithObjects:
++			@"-u", @"root", nil])];
+   [(NSMutableArray *)[task arguments] addObjectsFromArray: argv];
+   [task setStandardOutput: [NSPipe pipe]];
+   return YES;
+-- 
+2.45.0

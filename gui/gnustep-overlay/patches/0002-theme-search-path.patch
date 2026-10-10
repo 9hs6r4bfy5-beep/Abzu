@@ -1,0 +1,34 @@
+From: Abzu <abzu@localhost>
+Date: Sat, 10 Oct 2026 00:00:00 +0000
+Subject: [PATCH 2/4] gui: prepend system theme search paths to GSTheme lookup
+
+Abzu overlay (see ../README.md): themes must resolve from
+/System/Library/Themes and /Library/Themes/AbzuAqua.theme before any user
+directory, so the caustics-capable AbzuAqua theme is the effective default
+even for freshly created accounts.
+
+Upstreaming: tracked per-patch in docs/ROADMAP.md.
+
+---
+diff --git a/Source/GSTheme.m b/Source/GSTheme.m
+index fed5cf2..69069be 100644
+--- a/Source/GSTheme.m
++++ b/Source/GSTheme.m
+@@ -3,6 +3,15 @@
+   NSString *userDomain;
+   NSMutableArray *paths = [NSMutableArray new];
+ 
++  /* Abzu overlay: system-wide theme locations win over user dirs so the
++   * pinned AbzuAqua theme is applied machine-wide (see README). */
++  [paths addObject: @"/System/Library/Themes"];
++  {
++    NSString *sysLib = NSSearchPathForDirectoriesInDomains(NSLibraryDirectory,
++      NSLocalDomainMask, YES)[0];
++    [paths addObject: [sysLib stringByAppendingPathComponent:
++      @"Themes/AbzuAqua.theme"]];
++  }
+   userDomain = NSHomeDirectory();
+   [paths addObject: [userDomain stringByAppendingPathComponent:
+     GSThemesDirectoryDefaultName]];
+-- 
+2.45.0

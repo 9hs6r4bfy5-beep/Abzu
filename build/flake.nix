@@ -26,11 +26,16 @@
       systems = [ "x86_64-linux" "aarch64-linux" ];
       forAll = f: builtins.foldl' (r: s: r // f s) { } systems;
 
-      # ---- aarch64-darwin (Apple Silicon) build host -----------------------
-      # Cross-compiled kernel/toolchain packages are produced on the native
-      # aarch64-darwin package set via pkgsCross.
-      pkgsNative = nixpkgs.legacyPackages.aarch64-darwin;
-      pkgsCrossIntel = pkgsNative.pkgsCross.x86_64-darwin;   # Intel target
+      # Single source of truth for the Abzu XNU patch set. Nix has no glob,
+      # so we pin the list explicitly; `nix flake check` fails loudly if a
+      # file is added/renamed here without updating this list (and vice
+      # versa via the patches-present check below). xnu.nix applies them in
+      # sorted order with `patchFlags = [ "-p1" ]` (git-style a/ b/ prefixes;
+      # matches kernel/build-xnu.sh's plain `git apply`).
+      kernelPatches = builtins.sort builtins.lessThan ([
+        ../kernel/patches/0001-abzu-identify-build-version.patch
+        ../kernel/patches/0002-openbsd-wx-enforcement.patch
+      ]);
 
       # Single source of truth for upstream pins. xnuRev/xnuSha256 are filled
       # by build/scripts/update-src-hashes.sh (tag → immutable commit + SRI).
@@ -50,7 +55,7 @@
           inherit srcInfo;
           pkgsHost = pkgsSystem;
           xnu-sources = pkgs.callPackage ./derivations/xnu-sources.nix { inherit srcInfo; };
-          patches = ../kernel/patches;
+          patches = kernelPatches;   # explicit sorted file list (see let-block)
         };
 
         # ---- userland (OpenBSD tools → Mach-O) ----------------------------
@@ -116,7 +121,8 @@
         iso-intel = pkgs.callPackage ./derivations/iso.nix {
           rootfs = rootfs-intel;
           refind = pkgs.callPackage ./derivations/refind.nix { };
-          volumeLabel = "ABZU_ABYS SOLITH";   # split below at build time
+          # Unified label — derivations/iso.nix and refind.conf must agree.
+          volumeLabel = "ABZU_ROOTFS";
         };
 
         # convenience aliases
@@ -140,45 +146,49 @@
           default = m.iso-intel;
         }) // {
         # ---- aarch64-darwin (Apple Silicon) host ----------------------------
-        # Cross-compilation system: Intel (x86_64-darwin) kernel built on the
-        # arm64 Apple Silicon package set via pkgsCross.
-        aarch64-darwin =
-          let
-            # The cross-compiled Intel kernel, built on the aarch64-darwin host.
-            mCross = mkPkg pkgsCrossIntel pkgsNative;
-
-            # Native tools for building the ISO (which consumes the
-            # cross-compiled x86_64 rootfs below).
-            mNative = mkPkg pkgsNative pkgsNative;
-          in
-          mNative // {
-            # The cross-compiled kernel (alias with the -intel suffix so it is
-            # discoverable as `nix build .#xnu-kernel-intel`).
-            xnu-kernel-intel = mCross.xnu-kernel;
-
-            # The cross-compiled Intel rootfs consumed by the native ISO
-            # builder — assembled from the cross kernel/userland/gui/pkg trees.
-            rootfs-intel = mCross.rootfs-intel;
-
-            # The native ISO builder (consumes the cross-compiled rootfs above).
-            iso-intel = mNative.iso-intel;
-
-            default = mNative.iso-intel;
-          };
+        # NOTE: we deliberately do NOT expose an aarch64-darwin package set
+        # here. The old version referenced pkgsNative.cctools, which no
+        # longer exists in nixpkgs (the Darwin CCTools port was removed), so
+        # *evaluating* this attrset on any Linux machine failed outright —
+        # even `nix flake check`. XNU is only buildable on a Darwin host via
+        # the Makefile pipeline (kernel/build-xnu.sh); see README. When an
+        # Apple Silicon builder is wired up, re-add it behind
+        # `if builtins.currentSystem == "aarch64-darwin" then ... else { }`
+        # with a real clang/cctools-compatible stdenv.
       };
 
       checks = forAll (s: {
+        # Only *manifest* JSON is validated here; other *.json files in the
+        # shelf (e.g. gaming/quiver-defaults.json) are app defaults with a
+        # different schema and must not be subjected to the manifest keys.
         manifests-valid = nixpkgs.legacyPackages.${s}.runCommand "check-manifests" { } ''
           ${nixpkgs.legacyPackages.${s}.python3}/bin/python3 - <<'PY'
 import json,glob,sys
 ok=True
-for f in glob.glob("${../packages}/*/*.json"):
+for f in glob.glob("${../packages}/*/manifest.json"):
     d=json.load(open(f))
     for p in d["packages"]:
         for k in ("name","version","source","license","provenance"):
             if k not in p: print("MISSING",k,"in",f,p.get("name")); ok=False
 sys.exit(0 if ok else 1)
 PY
+          touch $out
+        '';
+
+        # Guard the explicit kernelPatches list against drift: every file
+        # that exists in ../kernel/patches must be listed above (and every
+        # listed path must exist — Nix would have failed evaluation already).
+        patches-listed = nixpkgs.legacyPackages.${s}.runCommand "check-patches-listed" { } ''
+          ${nixpkgs.legacyPackages.${s}.bash}/bin/bash -eu -o pipefail <<'SH'
+          shopt -s nullglob
+          listed=${builtins.toString (map (p: builtins.baseNameOf p) kernelPatches)}
+          for f in ${../kernel/patches}/*.patch; do
+            b=$(basename "$f")
+            case " $listed " in *" $b "*) ;; *)
+              echo "kernel patch not in flake kernelPatches list: $b"; exit 1;;
+            esac
+          done
+          SH
           touch $out
         '';
       });

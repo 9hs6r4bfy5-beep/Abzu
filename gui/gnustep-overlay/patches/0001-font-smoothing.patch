@@ -1,0 +1,33 @@
+From: Abzu <abzu@localhost>
+Date: Sat, 10 Oct 2026 00:00:00 +0000
+Subject: [PATCH 1/4] gui: honour GAFontAntialiasing defaults in NSFont attribute lookup
+
+Abzu overlay (see ../README.md): map the documented Abzu default
+-GAFontAntialiasing onto NSFont rendering so text matches Aqua-style
+subpixel smoothing out of the box. gnustep-gui reads the font user-defaults
+dictionary in _defaultAttributesForFontDescriptor; we override the
+NSFontAntialias entry from the dedicated GA* default there, so desktop-wide
+settings apply to every NSFont without app cooperation.
+
+Upstreaming: tracked per-patch in docs/ROADMAP.md.
+
+---
+diff --git a/Source/NSFont.m b/Source/NSFont.m
+index 6c692bc..14eb13e 100644
+--- a/Source/NSFont.m
++++ b/Source/NSFont.m
+@@ -5,6 +5,12 @@
+     {
+       NSMutableDictionary *d = [[UserDefaults dictionaryForKey: GSFontKey]
+ 				      mutableCopy];
++      /* Abzu overlay: -GAFontAntialiasing (bool, default YES) takes
++       * precedence over the generic GSFontKey dictionary so desktop-wide
++       * smoothing applies to every NSFont without app cooperation. */
++      [d setObject: ([UserDefaults boolForKey: @"-GAFontAntialiasing"]
++					? @"YES" : @"NO")
++				forKey: NSFontAntialias];
+       if (nil != fd)
+ 	{
+ 	  /* Merge any font descriptor attributes into the defaults. */
+-- 
+2.45.0

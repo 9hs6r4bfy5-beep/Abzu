@@ -24,8 +24,13 @@ stdenv.mkDerivation rec {
 
   # Apply the Abzu patch set in sorted order; the re-rolled diffs under
   # ../../kernel/patches carry valid hunk headers, so git apply works.
+  # NOTE: -p1 (the stdenv default) is REQUIRED: the .patch files are
+  # `git diff`-style with a/... b/ prefixes, and kernel/build-xnu.sh feeds
+  # them to plain `git apply` (which also defaults to -p1). Do not change
+  # this back to -p0 — nothing would match and the patches would silently
+  # no-op or fail depending on the phase runner.
   inherit patches;
-  patchFlags = [ "-p0" ];
+  patchFlags = [ "-p1" ];
 
   buildPhase = ''
     runHook preBuild
