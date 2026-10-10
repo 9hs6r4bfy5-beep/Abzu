@@ -11,7 +11,7 @@
     };
 
     gnustep-src = {
-      url = "github:gnustep/core/ee6f0b1e2f0a4b2c8d9e0f1a2b3c4d5e6f708192";
+      url = "github:gnustep/core/master";
       flake = false;
     };
   };
