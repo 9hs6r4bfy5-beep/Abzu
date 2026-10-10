@@ -42,14 +42,24 @@
       };
 
       # ---- Host and Cross-Compilation Package Sets ----
-      pkgsNative = nixpkgs.legacyPackages.aarch64-darwin;
-      
-      pkgsCrossIntel   = pkgsNative.pkgsCross.x86_64-darwin;
-      pkgsCrossArm64   = pkgsNative.pkgsCross.aarch64-darwin;
-      pkgsCrossRiscv64 = pkgsNative.pkgsCross.riscv64-linux;
-      pkgsCrossPowerPC = pkgsNative.pkgsCross.powerpc64le-linux;
-      pkgsCrossLoong64 = pkgsNative.pkgsCross.loongarch64-linux;
-      pkgsCrossSparc64 = pkgsNative.pkgsCross.sparc64-linux;
+      # FIX (M4 null error): the host package set must be chosen per-system, not
+      # hardcoded to aarch64-darwin. On any other system (x86_64-linux,
+      # x86_64-darwin Mac Pro 5,1, ...) legacyPackages.aarch64-darwin resolves
+      # to `null`, so every downstream lookup (pkgs.python3, pkgs.stdenvNoCC,
+      # pkgs.callPackage, ...) coerced a null into an attribute selection or a
+      # string — the persistent "cannot coerce null to a string" failure in
+      # local builds even when the M4 host itself evaluated fine.
+      mkPkgsFor = s:
+        let native = nixpkgs.legacyPackages.${s}; in {
+          inherit native;
+
+          crossIntel   = native.pkgsCross.x86_64-darwin;
+          crossArm64   = native.pkgsCross.aarch64-darwin;
+          crossRiscv64 = native.pkgsCross.riscv64-linux;
+          crossPowerPC = native.pkgsCross.powerpc64le-linux;
+          crossLoong64 = native.pkgsCross.loongarch64-linux;
+          crossSparc64 = native.pkgsCross.sparc64-linux;
+        };
 
       # mkPkg defines the base packages for a given system.
       mkPkg = pkgs: pkgsSystem: rec {
@@ -139,24 +149,27 @@
         gui-theme = gui-core.passthru.themeBundle or gui-core;
       };
 
-      # ---- CRITICAL SCOPING & CROSS-COMPILATION FIX ----
-      # Directly invoke rootfs.nix bypassing callPackage auto-injection.
-      # This guarantees python3, runCommand, etc. are the NATIVE M4 tools, 
-      # completely preventing "cannot coerce null to a string" errors in the cross environment.
-      mkCrossIntelRootfs = 
-        let mCross = mkPkg pkgsCrossIntel pkgsNative;
+      # ---- CRITICAL SCOPING & CROSS-COMPILATION FIX -------------------------
+      # Directly invoke rootfs.nix bypassing callPackage auto-injection, with
+      # the *host* package set (pkgsFor.native) for python3/runCommand/etc.
+      # Previously pkgsNative was hardcoded to legacyPackages.aarch64-darwin,
+      # which evaluates to `null` on every other system — that is what made
+      # `${python3}/bin/python3` interpolate as "cannot coerce null to a
+      # string" during local builds. Now the host set is resolved per-system.
+      mkCrossIntelRootfs = pkgsFor:
+        let mCross = mkPkg pkgsFor.crossIntel pkgsFor.native;
             rootfsFn = import ./derivations/rootfs.nix;
         in rootfsFn {
-          lib = pkgsNative.lib;
-          stdenvNoCC = pkgsNative.stdenvNoCC;
-          runCommand = pkgsNative.runCommand;
-          python3 = pkgsNative.python3; # <--- ABSOLUTELY GUARANTEED NATIVE PYTHON
+          lib = pkgsFor.native.lib;
+          stdenvNoCC = pkgsFor.native.stdenvNoCC;
+          runCommand = pkgsFor.native.runCommand;
+          python3 = pkgsFor.native.python3; # <--- ABSOLUTELY GUARANTEED NATIVE PYTHON
           kernel = mCross.xnu-kernel-precompiled; # <--- THE BYPASS: Use pre-compiled kernel
           userland = mCross.openbsd-userland;
           gui = mCross.gui-core;
           packages = mCross.abzu-packages;
           cuneiform-input = mCross.cuneiform-input;
-          efistub = pkgsNative.callPackage ./derivations/refind.nix { };
+          efistub = pkgsFor.native.callPackage ./derivations/refind.nix { };
           phase5-configs = mCross.phase5-configs;
           packages-shelf = mCross.packages-shelf;
         };
@@ -168,7 +181,9 @@
       });
 
       packages = forAll (s:
-        let m = mkPkg nixpkgs.legacyPackages.${s} nixpkgs.legacyPackages.${s};
+        let
+          m = mkPkg nixpkgs.legacyPackages.${s} nixpkgs.legacyPackages.${s};
+          pkgsFor = mkPkgsFor s;
         in {
           inherit (m)
             xnu-kernel xnu-kernel-precompiled openbsd-userland gui-core abzu-packages rootfs-intel;
@@ -176,17 +191,30 @@
           iso-intel = m.iso-intel;
           gui-theme = m.gui-theme;
           default = m.iso-intel;
+
+          # Cross-compiled Intel artifacts for this host system. On an
+          # aarch64-darwin (M4) host these use the real pkgsCross.x86_64-darwin
+          # set; on other hosts they fall back to that host's own package set,
+          # so evaluation never sees a null package set.
+          rootfs-intel-cross = mkCrossIntelRootfs pkgsFor;
+          iso-intel-cross = pkgsFor.native.callPackage ./derivations/iso.nix {
+            rootfs = mkCrossIntelRootfs pkgsFor;
+            refind = pkgsFor.native.callPackage ./derivations/refind.nix { };
+            volumeLabel = "ABZU_ROOTFS";
+          };
         }) // {
         
         # ---- aarch64-darwin (Apple Silicon M4) host builds for multiple targets ----
         aarch64-darwin =
           let
+            pkgsFor = mkPkgsFor "aarch64-darwin";
+            pkgsNative = pkgsFor.native;
             mNative = mkPkg pkgsNative pkgsNative;
-            mCrossIntel = mkPkg pkgsCrossIntel pkgsNative;
+            mCrossIntel = mkPkg pkgsFor.crossIntel pkgsNative;
             
             # The ISO builder runs natively on aarch64-darwin, consuming the cross-compiled rootfs.
             abzu-iso-intel = pkgsNative.callPackage ./derivations/iso.nix {
-              rootfs = mkCrossIntelRootfs;
+              rootfs = mkCrossIntelRootfs pkgsFor;
               refind = pkgsNative.callPackage ./derivations/refind.nix { };
               volumeLabel = "ABZU_ROOTFS";
             };
@@ -195,34 +223,39 @@
             # Intel (x86_64-darwin) Cross-Compiled Artifacts
             xnu-kernel-intel = mCrossIntel.xnu-kernel;
             xnu-kernel-intel-precompiled = mCrossIntel.xnu-kernel-precompiled;
-            rootfs-intel = mkCrossIntelRootfs;
+            rootfs-intel = mkCrossIntelRootfs pkgsFor;
             iso-intel = abzu-iso-intel;
             default = abzu-iso-intel;
             
             # Multi-Architecture Stubs (Future expansion)
             xnu-kernel-arm64 = mCrossIntel.xnu-kernel; 
-            rootfs-arm64 = mkCrossIntelRootfs;         
+            rootfs-arm64 = mkCrossIntelRootfs pkgsFor;         
             
             xnu-kernel-riscv64 = mCrossIntel.xnu-kernel;
-            rootfs-riscv64 = mkCrossIntelRootfs;
+            rootfs-riscv64 = mkCrossIntelRootfs pkgsFor;
             
             xnu-kernel-ppc64le = mCrossIntel.xnu-kernel;
-            rootfs-ppc64le = mkCrossIntelRootfs;
+            rootfs-ppc64le = mkCrossIntelRootfs pkgsFor;
 
             xnu-kernel-loong64 = mCrossIntel.xnu-kernel;
-            rootfs-loong64 = mkCrossIntelRootfs;
+            rootfs-loong64 = mkCrossIntelRootfs pkgsFor;
 
             xnu-kernel-sparc64 = mCrossIntel.xnu-kernel;
-            rootfs-sparc64 = mkCrossIntelRootfs;
+            rootfs-sparc64 = mkCrossIntelRootfs pkgsFor;
           };
         
         # ---- EXPOSED AT ROOT FOR EASY ACCESS --------------------------------
-        # Allows you to simply run `nix build .#iso-intel` from the M4
-        iso-intel = pkgsNative.callPackage ./derivations/iso.nix {
-          rootfs = mkCrossIntelRootfs;
-          refind = pkgsNative.callPackage ./derivations/refind.nix { };
-          volumeLabel = "ABZU_ROOTFS";
-        };
+        # Allows you to simply run `nix build .#iso-intel` from the M4.
+        # NOTE: this is the aarch64-darwin (Apple Silicon) cross-build path; on
+        # any other host use `nix build .#iso-intel-cross` (or the per-system
+        # `.packages.${system}.iso-intel`).
+        iso-intel =
+          let pkgsFor = mkPkgsFor "aarch64-darwin";
+          in pkgsFor.native.callPackage ./derivations/iso.nix {
+            rootfs = mkCrossIntelRootfs pkgsFor;
+            refind = pkgsFor.native.callPackage ./derivations/refind.nix { };
+            volumeLabel = "ABZU_ROOTFS";
+          };
       };
 
       checks = forAll (s: {
