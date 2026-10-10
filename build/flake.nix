@@ -134,25 +134,25 @@
         gui-theme = gui-core.passthru.themeBundle or gui-core;
       };
 
-      # ---- CRITICAL SCOPING & CROSS-COMPILATION FIX ----
-      # We define the cross-compiled Intel rootfs in the global let block.
-      # This guarantees it is in scope for both the aarch64-darwin output 
-      # and the root-level exposure, completely bypassing Nix attribute-merge quirks.
-      # 
-      # FIX: We explicitly pass `python3 = pkgsNative.python3` so that build-time tools 
-      # (like python3 for generating launchd plists) use the native M4 toolchain, 
-      # preventing "cannot coerce null to a string" errors in the cross environment.
+           # ---- CRITICAL SCOPING & CROSS-COMPILATION FIX ----
+      # Directly invoke rootfs.nix bypassing callPackage auto-injection.
+      # This guarantees python3 is the NATIVE Python, not a cross-compiled one.
       mkCrossIntelRootfs = 
         let mCross = mkPkg pkgsCrossIntel pkgsNative;
-        in pkgsCrossIntel.callPackage ./derivations/rootfs.nix {
-          python3 = pkgsNative.python3; # <--- THE FIX: Use native M4 Python for build scripts
-          kernel = mCross.xnu-kernel-precompiled; # <--- THE BYPASS: Use pre-compiled kernel
+            rootfsFn = import ./derivations/rootfs.nix;
+        in rootfsFn {
+          lib = pkgsNative.lib;
+          stdenvNoCC = pkgsNative.stdenvNoCC;
+          runCommand = pkgsNative.runCommand;
+          python3 = pkgsNative.python3; # <--- ABSOLUTELY GUARANTEED NATIVE PYTHON
+          kernel = mCross.xnu-kernel-precompiled;
           userland = mCross.openbsd-userland;
           gui = mCross.gui-core;
           packages = mCross.abzu-packages;
           cuneiform-input = mCross.cuneiform-input;
           efistub = pkgsNative.callPackage ./derivations/refind.nix { };
-          inherit (mCross) phase5-configs packages-shelf;
+          phase5-configs = mCross.phase5-configs;
+          packages-shelf = mCross.packages-shelf;
         };
 
     in
