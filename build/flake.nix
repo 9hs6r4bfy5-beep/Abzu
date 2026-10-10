@@ -107,17 +107,22 @@
         packages-shelf = ../packages;
 
         # Base rootfs (uses source kernel by default)
-        rootfs-intel = pkgs.callPackage ./derivations/rootfs.nix {
-          # Explicitly pass python3 since rootfs.nix signature now requires it
-          python3 = pkgs.python3; 
-          kernel = xnu-kernel;
-          userland = openbsd-userland;
-          gui = gui-core;
-          packages = abzu-packages;
-          cuneiform-input = cuneiform-input;
-          efistub = pkgs.callPackage ./derivations/refind.nix { };
-          inherit phase5-configs packages-shelf;
-        };
+        # FIX: Directly invoke rootfs.nix bypassing callPackage auto-injection.
+        rootfs-intel = 
+          let rootfsFn = import ./derivations/rootfs.nix;
+          in rootfsFn {
+            lib = pkgs.lib;
+            stdenvNoCC = pkgs.stdenvNoCC;
+            runCommand = pkgs.runCommand;
+            python3 = pkgs.python3;
+            kernel = xnu-kernel;
+            userland = openbsd-userland;
+            gui = gui-core;
+            packages = abzu-packages;
+            cuneiform-input = cuneiform-input;
+            efistub = pkgs.callPackage ./derivations/refind.nix { };
+            inherit phase5-configs packages-shelf;
+          };
 
         rootfs-phase5 = pkgs.callPackage ./derivations/rootfs-slim.nix {
           inherit xnu-kernel openbsd-userland gui-core cuneiform-input
@@ -134,9 +139,10 @@
         gui-theme = gui-core.passthru.themeBundle or gui-core;
       };
 
-           # ---- CRITICAL SCOPING & CROSS-COMPILATION FIX ----
+      # ---- CRITICAL SCOPING & CROSS-COMPILATION FIX ----
       # Directly invoke rootfs.nix bypassing callPackage auto-injection.
-      # This guarantees python3 is the NATIVE Python, not a cross-compiled one.
+      # This guarantees python3, runCommand, etc. are the NATIVE M4 tools, 
+      # completely preventing "cannot coerce null to a string" errors in the cross environment.
       mkCrossIntelRootfs = 
         let mCross = mkPkg pkgsCrossIntel pkgsNative;
             rootfsFn = import ./derivations/rootfs.nix;
@@ -145,7 +151,7 @@
           stdenvNoCC = pkgsNative.stdenvNoCC;
           runCommand = pkgsNative.runCommand;
           python3 = pkgsNative.python3; # <--- ABSOLUTELY GUARANTEED NATIVE PYTHON
-          kernel = mCross.xnu-kernel-precompiled;
+          kernel = mCross.xnu-kernel-precompiled; # <--- THE BYPASS: Use pre-compiled kernel
           userland = mCross.openbsd-userland;
           gui = mCross.gui-core;
           packages = mCross.abzu-packages;
