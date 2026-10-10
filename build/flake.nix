@@ -11,6 +11,12 @@
     };
 
     gnustep-src = {
+      # NOTE (audit 2026-10-10): github:gnustep/core is NOT a real repository
+      # (upstream lives at git.savannah.gnu.org/gnustep/{make,core,back}; the
+      # GitHub org gnustep-gnu has no repo literally named "core") — this
+      # input cannot be fetched as written. The tarballs pinned in
+      # build/config/distfiles.sha256 are the verified source of truth; wire
+      # gui-core to them (or Savannah gitTags) before first Nix evaluation.
       url = "github:gnustep/core/master";
       flake = false;
     };
@@ -44,7 +50,13 @@
         xnuTag = "xnu-7195.141.2";                       # macOS 11.3 Big Sur OSS drop
         xnuRev = "776661b72c2db9861865df68d309f6f35faccff4";  # commit tagged xnu-7195.141.2
         xnuSha256 = "sha256-NH/s8/t4oOq6bVhRXlslX7lZFWV4E00yTPxyY7A7KE0="; # GitHub archive tarball of xnuRev
-        openbsdSnap = "7.6";
+        # Version-agnostic: fetch-distfiles.sh resolves the newest published
+        # stable OpenBSD release at fetch time (override: ABZU_OPENBSD_VER).
+        # This field is a display label only — used in the userland derivation
+        # name/description and userland.json provenance stamp, never to build
+        # a URL. Refresh it opportunistically; staleness does not break builds.
+        # (Current resolution as of 2026-10-10: 7.9.)
+        openbsdSnap = "auto(7.9)";
       };
 
       mkPkg = pkgs: pkgsSystem: rec {

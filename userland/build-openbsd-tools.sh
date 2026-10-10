@@ -19,7 +19,28 @@ ROOT="$(cd "$(dirname "$0")" && pwd)"
 DIST="${DIST:-${ROOT}/distfiles}"
 OUT="${OUT:-${ROOT}/out}"
 STAGE="${STAGE:-${ROOT}/stage}"
-OPENBSD_SNAP="${OPENBSD_SNAP:-https://cdn.openbsd.org/pub/OpenBSD/7.6/source}"
+# Version-agnostic default: take the newest release dir on cdn.openbsd.org
+# whose amd64/SHA256 manifest exists (same rule as fetch-distfiles.sh's
+# resolver; "source/" is OpenBSD's alias for the per-release source tree).
+# Override with OPENBSD_SNAP=<url>.
+_obver_latest() {
+    _c=$(curl -fSL --retry 3 "https://cdn.openbsd.org/pub/OpenBSD/" 2>/dev/null \
+         | grep -oE 'href="[0-9]+\.[0-9]+/"' | grep -oE '[0-9]+\.[0-9]+' \
+         | sort -t. -k1,1n -k2,2n | tail -1) || true
+    while [ -n "${_c:-}" ]; do
+        if curl -fsIL --max-time 15 \
+           "https://cdn.openbsd.org/pub/OpenBSD/${_c}/amd64/SHA256" >/dev/null 2>&1; then
+            echo "${_c}"; return 0
+        fi
+        _maj=${_c%.*}; _min=${_c#*.}
+        [ "${_maj}" -le 7 ] && [ "${_min}" -lt 7 ] && break
+        _min=$((_min - 1)); [ "${_min}" -lt 0 ] && { _maj=$((_maj - 1)); _min=9; }
+        _c="${_maj}.${_min}"
+    done
+    return 1
+}
+OPENBSD_VER_DEFAULT="$(_obver_latest || echo 7.9)"
+OPENBSD_SNAP="${OPENBSD_SNAP:-https://cdn.openbsd.org/pub/OpenBSD/${OPENBSD_VER_DEFAULT}/source}"
 MANIFEST="${ROOT}/import/tools.manifest"
 
 usage() { echo "usage: $0 {fetch|port|stage|all} [tool...]" >&2; exit 1; }

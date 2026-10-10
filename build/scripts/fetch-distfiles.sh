@@ -20,9 +20,40 @@ fetch() { # url outfile
     curl -fSL --retry 3 -o "${_o}.part" "${_u}" && mv "${_o}.part" "${_o}"
 }
 
-# OpenBSD 7.6 source set (userland import)
-fetch "https://cdn.openbsd.org/pub/OpenBSD/7.6/src.tar.gz" src.tar.gz
-fetch "https://cdn.openbsd.org/pub/OpenBSD/7.6/amd64/SHA256" openbsd-sha256.txt
+# OpenBSD source set (userland import) — version-agnostic: always resolve the
+# latest *stable* release at fetch time. Probes $ver/amd64/SHA256, which only
+# exists for published stable releases (not -current), descending from a
+# ceiling. Ceiling auto-discovers the newest dir on the mirror root listing;
+# override with ABZU_OPENBSD_VER=<x.y> to pin explicitly. Verified live
+# 2026-10-10 against cdn.openbsd.org (root lists 7.7–8.0; 8.0 has no per-arch
+# manifests yet, so resolution correctly lands on the newest fully-published
+# release). NOTE: because the resolved version floats, src.tar.gz cannot carry
+# a static lock hash; integrity comes from the fetched signed SHA256 manifest.
+resolve_openbsd_ver() {
+    _c="${ABZU_OPENBSD_VER:-}"
+    if [ -z "${_c}" ]; then
+        # newest NN.N directory in the mirror root listing = ceiling guess
+        _c=$(curl -fSL --retry 3 "https://cdn.openbsd.org/pub/OpenBSD/" \
+             | grep -oE 'href="[0-9]+\.[0-9]+/"' | grep -oE '[0-9]+\.[0-9]+' \
+             | sort -t. -k1,1n -k2,2n | tail -1)
+    fi
+    while :; do
+        if curl -fsIL --max-time 15 \
+           "https://cdn.openbsd.org/pub/OpenBSD/${_c}/amd64/SHA256" >/dev/null 2>&1; then
+            echo "${_c}"; return 0
+        fi
+        _maj=${_c%.*}; _min=${_c#*.}
+        [ "${_maj}" -le 7 ] && [ "${_min}" -lt 7 ] && break   # floor: 7.7 (older trees are gone upstream)
+        _min=$((_min - 1)); [ "${_min}" -lt 0 ] && { _maj=$((_maj - 1)); _min=9; }
+        _c="${_maj}.${_min}"
+    done
+    echo "ERROR: could not resolve a published OpenBSD release (set ABZU_OPENBSD_VER)" >&2
+    return 1
+}
+OPENBSD_VER="$(resolve_openbsd_ver)"
+echo "openbsd $OPENBSD_VER"
+fetch "https://cdn.openbsd.org/pub/OpenBSD/${OPENBSD_VER}/src.tar.gz" src.tar.gz
+fetch "https://cdn.openbsd.org/pub/OpenBSD/${OPENBSD_VER}/amd64/SHA256" openbsd-sha256.txt
 
 # GNUstep core + GWorkspace (see gui/gnustep-overlay pins).
 # URL layout verified against ftp.gnustep.org directory listings: the four
