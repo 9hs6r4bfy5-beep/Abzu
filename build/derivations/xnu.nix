@@ -54,6 +54,26 @@ if precompiled then
     #   3. Fallback stub file: keeps evaluation pure and side-effect free,
     #      but the build phase aborts with a clear, actionable message
     #      instead of the old opaque network 404 cascade.
+    # FIX (build-failure root cause): the error in the build log is *not* a
+    # Nix code bug — patchPhase/updateAutotoolsGnuConfigScriptsPhase/
+    # installPhase all ran fine and the derivation deliberately aborted with
+    # this message because no kernel binary was vendored. Apple's Darwin OSS
+    # releases are source-only, so there is nothing to fetch: the Mach-O
+    # `mach_kernel` must be copied off a real macOS 10.15.7 install by the
+    # operator. Honour that here without impure eval: if the file exists in
+    # the working tree it is added to the source path (content-addressed via
+    # builtins.path); otherwise an environment variable lets the operator
+    # point at an out-of-tree copy, e.g.
+    #   ABZU_MACH_KERNEL=/path/to/mach_kernel nix build .#iso-intel-cross
+    # The env var is only consulted when its name is passed explicitly via
+    # --impure (nix build/configure default to pure eval), which is exactly
+    # how machKernelPath overrides already have to be threaded through.
+    distEnvVar = "ABZU_MACH_KERNEL";
+    distFromEnv =
+      let v = builtins.getEnv distEnvVar;
+      in if v != "" && builtins.pathExists v
+         then builtins.path { path = v; name = "abzu-mach-kernel-env"; }
+         else null;
     distfile = ../distfiles/mach_kernel-10.15.7;
 
     # Deterministic placeholder content used when nothing has been vendored.
@@ -120,8 +140,10 @@ if precompiled then
               and no hash argument is needed.
             ''
             else fetchurl { url = "file://${machKernelPath}"; hash = machKernelHash; }
-        # Prefer the vendored in-repo file when present.
+        # Prefer the vendored in-repo file when present,
       else if haveVendored then vendoredSrc
+        # then an operator-supplied out-of-tree binary via $ABZU_MACH_KERNEL,
+      else if distFromEnv != null then distFromEnv
         else stub;
 
   in rec {
@@ -152,7 +174,9 @@ if precompiled then
         echo "ERROR: no pre-compiled mach_kernel vendored." >&2
         echo "  Provide one of:" >&2
         echo "    1. build/distfiles/mach_kernel-10.15.7  (cp /System/Library/Kernels/kernel ...)" >&2
-        echo "    2. a machKernelPath callPackage override" >&2
+        echo "    2. ABZU_MACH_KERNEL=/path/to/mach_kernel nix build --impure ..." >&2
+        echo "       (add --impure so Nix may read the env var at eval time)" >&2
+        echo "    3. a machKernelPath + machKernelHash callPackage override" >&2
         echo "  Then point Nix at your binary, e.g. hash it with:" >&2
         echo "    nix-prefetch-url file://<your-mach_kernel>" >&2
         exit 1
