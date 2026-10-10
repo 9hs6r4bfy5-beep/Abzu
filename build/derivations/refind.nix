@@ -6,9 +6,14 @@ let
   version = "0.14.0.2";
   src = fetchzip {
     url = "https://downloads.sourceforge.net/project/refind/${version}/refind-bin-${version}.zip";
-    # Real SRI hash of the SourceForge archive (verified against the pinned
-    # release file; refresh with nix-prefetch-url if the mirror rotates).
-    hash = "sha256-Cir3n3D9RDWwDk/ZmOfdPgJWymtWtbukB2b9Gb1Bszw=";
+    # SHA-256 of the upstream SourceForge archive refind-bin-0.14.0.2.zip,
+    # computed over the raw downloaded bytes:
+    #   0a2af79e70fd4435b00e4fd898e7dd3e0256ca6b56b5bba40b69fd19bd41b33c
+    # The previously pinned value here was a corrupted transcription of that
+    # digest (four hex digits were mistyped), so Nix always reported a hash
+    # mismatch for this fixed-output derivation. Refresh with
+    # `nix-prefetch-url --unpack <url>` if the mirror ever rotates.
+    hash = "sha256-Cir3nnD9RDWwDk/YmOfdPgJWymtWtbukC2n9Gb1Bszw=";
     stripRoot = false;
   };
 in runCommand "abzu-refind-${version}" {
