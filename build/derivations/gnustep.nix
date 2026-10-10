@@ -26,12 +26,23 @@ runCommand "abzu-gui-core" {
 
   # GNUstep itself: either nixpkgs-provided or built from pinned sources on
   # a Darwin builder via ../gui/build-gui.sh (stages gnustep-make→back→GWorkspace).
-  if [ -n "${if gnustep-core != null then "yes" else ""}" ]; then
+  #
+  # FIX ("cannot coerce null to a string"): the previous version interpolated
+  # the gnustep-core path unconditionally into this buildCommand string,
+  # guarded only by a *runtime* shell test. Nix splices paths into the string
+  # at *eval* time, so whenever gnustep-core was null (the default -- nothing
+  # passes it), derivationStrict crashed while evaluating buildCommand of
+  # abzu-gui-core, which propagated up through rootfs-intel to abzu-iso-intel.
+  # The presence check must be done in Nix, via lib.optionalString, so the path
+  # is only ever interpolated when the derivation actually exists.
+  ${lib.optionalString (gnustep-core != null) ''
     cp -r ${gnustep-core}/. "$out/usr/local/share/gnustep/" || true
-  elif [ "$(uname -s)" = "Darwin" ]; then
-    STAGE="$out" ${repoRoot}/gui/build-gui.sh || exit 1
-  else
-    echo "GNUstep binaries require a Darwin builder (see gui/build-gui.sh);" > "$out/STATUS"
-    echo "theme + shell menu are arch-independent and fully staged."       >> "$out/STATUS"
-  fi
+  ''}${lib.optionalString (gnustep-core == null) ''
+    if [ "$(uname -s)" = "Darwin" ]; then
+      STAGE="$out" ${repoRoot}/gui/build-gui.sh || exit 1
+    else
+      echo "GNUstep binaries require a Darwin builder (see gui/build-gui.sh);" > "$out/STATUS"
+      echo "theme + shell menu are arch-independent and fully staged."       >> "$out/STATUS"
+    fi
+  ''}
 ''

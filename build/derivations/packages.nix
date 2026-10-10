@@ -19,11 +19,15 @@ runCommand "abzu-packages" {
 } ''
   set -e
   # One tiny output per shelf so we can merge them via pathsToLink.
-  ${lib.imap0 (i: m: ''
+  # NOTE: lib.imap0 is NOT lazy like map — it produces a *list of strings*, so
+  # it must be joined with lib.concatStrings before interpolation. Calling the
+  # list directly previously aborted evaluation with
+  # "attempt to call something which is not a function but a list".
+  ${lib.concatStrings (lib.imap0 (i: m: ''
     d=$(mktemp -d); mkdir -p $d/usr/local/archives/manifests
     cp ${m} $d/usr/local/archives/manifests/shelf-${toString (i + 1)}-$(basename $(dirname ${m})).json
     cp -r $d/. $out/
-  '') manifests ""}
+  '') manifests)}
 
   # Sanity: every staged manifest must parse and carry provenance fields —
   # mirrors scripts/verify-packages.sh so `nix flake check` catches drift.
