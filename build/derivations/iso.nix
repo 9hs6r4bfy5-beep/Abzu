@@ -1,7 +1,7 @@
 # build/derivations/iso.nix
 # Generates a hybrid El Torito bootable ISO for Intel Macs (x86_64)
 # Built natively on the host (e.g., aarch64-darwin), but packages x86_64-darwin binaries.
-{ lib, stdenvNoCC, runCommand, rootfs, refind, xorriso, mtools, libisoburn }:
+{ lib, stdenvNoCC, runCommand, rootfs, refind, xorriso, mtools, libisoburn, volumeLabel ? "ABZU_ROOTFS" }:
 
 stdenvNoCC.mkDerivation rec {
   pname = "abzu-iso-intel";
@@ -34,7 +34,7 @@ stdenvNoCC.mkDerivation rec {
       -efi-boot-part \
       --efi-boot-image \
       -no-emul-boot \
-      -V "Abzu_Install" \
+      -V "${volumeLabel}" \
       -o $out/abzu-intel-installer.iso \
       $out/iso_root \
       $out/esp
