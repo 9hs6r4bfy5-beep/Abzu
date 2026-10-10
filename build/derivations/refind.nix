@@ -6,14 +6,22 @@ let
   version = "0.14.0.2";
   src = fetchzip {
     url = "https://downloads.sourceforge.net/project/refind/${version}/refind-bin-${version}.zip";
-    # SHA-256 of the upstream SourceForge archive refind-bin-0.14.0.2.zip,
-    # computed over the raw downloaded bytes:
-    #   0a2af79e70fd4435b00e4fd898e7dd3e0256ca6b56b5bba40b69fd19bd41b33c
-    # The previously pinned value here was a corrupted transcription of that
-    # digest (four hex digits were mistyped), so Nix always reported a hash
-    # mismatch for this fixed-output derivation. Refresh with
-    # `nix-prefetch-url --unpack <url>` if the mirror ever rotates.
-    hash = "sha256-Cir3nnD9RDWwDk/YmOfdPgJWymtWtbukC2n9Gb1Bszw=";
+    # NOTE ON THE HASH: `fetchzip` is a *recursive* fixed-output fetcher — its
+    # `hash` attribute is the SRI digest of the UNPACKED tree as exported by
+    # the builtin unpacker (tar -x / unzip into an empty dir), NOT the digest
+    # of the raw zip bytes. The previous pin here (sha256-Cir3nn...) was the
+    # raw-archive digest (0a2af79e... == base64 Cir3nn..., matching the
+    # distfiles.sha256 lock for build/distfiles/refind-bin.zip). That value is
+    # only correct for `fetchurl`; fed to `fetchzip`, every build failed with
+    # "hash mismatch in fixed-output derivation" because Nix compared it
+    # against the recursive-tree digest.
+    #
+    # Verified against the live SourceForge archive on 2026-10-10:
+    #   nix-prefetch-url --unpack <url>   -> raw sha256 0a2af79e... (unchanged)
+    #   actual nix build                  -> got sha256-rlUQEbpQK+8HgWBoYjKpOHOhPHfnDj5jQpv7Q3+0CgE=
+    # which decodes to ae551011ba502bef078160686232a93873a13c77e70e3e63429bfb437fb40a01.
+    # Refresh with `nix-prefetch-url --unpack <url>` if the mirror ever rotates.
+    hash = "sha256-rlUQEbpQK+8HgWBoYjKpOHOhPHfnDj5jQpv7Q3+0CgE=";
     stripRoot = false;
   };
 in runCommand "abzu-refind-${version}" {
