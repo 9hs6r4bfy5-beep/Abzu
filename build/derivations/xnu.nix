@@ -11,8 +11,7 @@ if precompiled then
 
     src = fetchurl {
       url = "https://github.com/kholia/OSX-KVM/raw/master/OpenCore-Catalina/mach_kernel";
-      # ENSURE THIS IS THE REAL HASH FROM nix-prefetch-url
-      hash = "sha256-PLACEHOLDER_HASH_HERE="; 
+      hash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="; 
     };
 
     buildCommand = ''
