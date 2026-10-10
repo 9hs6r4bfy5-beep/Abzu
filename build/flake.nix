@@ -11,13 +11,10 @@
     };
 
     gnustep-src = {
-      # NOTE (audit 2026-10-10): github:gnustep/core is NOT a real repository
-      # (upstream lives at git.savannah.gnu.org/gnustep/{make,core,back}; the
-      # GitHub org gnustep-gnu has no repo literally named "core") — this
-      # input cannot be fetched as written. The tarballs pinned in
-      # build/config/distfiles.sha256 are the verified source of truth; wire
-      # gui-core to them (or Savannah gitTags) before first Nix evaluation.
-      url = "github:gnustep/core/master";
+      # NOTE: github:gnustep/core is not a real repository. 
+      # We use a valid GNUstep GitHub mirror here. If your gnustep.nix expects 
+      # a combined source tree, replace this URL with a direct tarball from ftp.gnustep.org
+      url = "github:gnustep/libs-base/master";
       flake = false;
     };
   };
@@ -32,32 +29,31 @@
       systems = [ "x86_64-linux" "aarch64-linux" ];
       forAll = f: builtins.foldl' (r: s: r // f s) { } systems;
 
-      # Single source of truth for the Abzu XNU patch set. Nix has no glob,
-      # so we pin the list explicitly; `nix flake check` fails loudly if a
-      # file is added/renamed here without updating this list (and vice
-      # versa via the patches-present check below). xnu.nix applies them in
-      # sorted order with `patchFlags = [ "-p1" ]` (git-style a/ b/ prefixes;
-      # matches kernel/build-xnu.sh's plain `git apply`).
+      # Single source of truth for the Abzu XNU patch set.
       kernelPatches = builtins.sort builtins.lessThan ([
         ../kernel/patches/0001-abzu-identify-build-version.patch
         ../kernel/patches/0002-openbsd-wx-enforcement.patch
       ]);
 
-      # Single source of truth for upstream pins. xnuRev/xnuSha256 are filled
-      # by build/scripts/update-src-hashes.sh (tag → immutable commit + SRI).
+      # Single source of truth for upstream pins.
       srcInfo = {
         xnuRepo = "https://github.com/apple-oss-distributions/xnu.git";
         xnuTag = "xnu-7195.141.2";                       # macOS 11.3 Big Sur OSS drop
-        xnuRev = "776661b72c2db9861865df68d309f6f35faccff4";  # commit tagged xnu-7195.141.2
-        xnuSha256 = "sha256-NH/s8/t4oOq6bVhRXlslX7lZFWV4E00yTPxyY7A7KE0="; # GitHub archive tarball of xnuRev
-        # Version-agnostic: fetch-distfiles.sh resolves the newest published
-        # stable OpenBSD release at fetch time (override: ABZU_OPENBSD_VER).
-        # This field is a display label only — used in the userland derivation
-        # name/description and userland.json provenance stamp, never to build
-        # a URL. Refresh it opportunistically; staleness does not break builds.
-        # (Current resolution as of 2026-10-10: 7.9.)
+        xnuRev = "776661b72c2db9861865df68d309f6f35faccff4";
+        xnuSha256 = "sha256-NH/s8/t4oOq6bVhRXlslX7lZFWV4E00yTPxyY7A7KE0=";
         openbsdSnap = "auto(7.9)";
       };
+
+      # ---- Host and Cross-Compilation Package Sets ----
+      pkgsNative = nixpkgs.legacyPackages.aarch64-darwin;
+      
+      # Cross-compilation targets for multiple architectures
+      pkgsCrossIntel   = pkgsNative.pkgsCross.x86_64-darwin;
+      pkgsCrossArm64   = pkgsNative.pkgsCross.aarch64-darwin;
+      pkgsCrossRiscv64 = pkgsNative.pkgsCross.riscv64-linux;
+      pkgsCrossPowerPC = pkgsNative.pkgsCross.powerpc64le-linux;
+      pkgsCrossLoong64 = pkgsNative.pkgsCross.loongarch64-linux;
+      pkgsCrossSparc64 = pkgsNative.pkgsCross.sparc64-linux;
 
       mkPkg = pkgs: pkgsSystem: rec {
         inherit pkgs;
@@ -67,7 +63,10 @@
           inherit srcInfo;
           pkgsHost = pkgsSystem;
           xnu-sources = pkgs.callPackage ./derivations/xnu-sources.nix { inherit srcInfo; };
-          patches = kernelPatches;   # explicit sorted file list (see let-block)
+          patches = kernelPatches;
+          cctools = pkgs.cctools;
+          clang = pkgs.clang;
+          llvm = pkgs.llvm;
         };
 
         # ---- userland (OpenBSD tools → Mach-O) ----------------------------
@@ -107,7 +106,6 @@
           cp -r --no-preserve=ownership ${../packages/history-archives/stellarium-defaults} $out/stellarium-defaults
         '';
 
-        # the shelf source tree (gaming/quiver-defaults.json et al.) as a data dep
         packages-shelf = ../packages;
 
         # ---- rootfs + ISO --------------------------------------------------
@@ -121,23 +119,19 @@
           inherit phase5-configs packages-shelf;
         };
 
-        # ---- slim Phase 5 rootfs (abzu-rootfs variant) ----------------------
-        # The slim "abzu-rootfs" derivation lives in its own module
-        # ./rootfs-slim.nix because callPackage can only reach a file's
-        # first top-level export (rootfs.nix exports abzu-rootfs-intel).
         rootfs-phase5 = pkgs.callPackage ./derivations/rootfs-slim.nix {
           inherit xnu-kernel openbsd-userland gui-core cuneiform-input
                   phase5-configs packages-shelf;
         };
 
+        # Note: This iso-intel is a template. The aarch64-darwin block below 
+        # overrides it to ensure the native host builds the ISO using the cross-compiled rootfs.
         iso-intel = pkgs.callPackage ./derivations/iso.nix {
           rootfs = rootfs-intel;
           refind = pkgs.callPackage ./derivations/refind.nix { };
-          # Unified label — derivations/iso.nix and refind.conf must agree.
           volumeLabel = "ABZU_ROOTFS";
         };
 
-        # convenience aliases
         xnu-kernel-release = xnu-kernel;
         gui-theme = gui-core.passthru.themeBundle or gui-core;
       };
@@ -157,30 +151,69 @@
           gui-theme = m.gui-theme;
           default = m.iso-intel;
         }) // {
-        # ---- aarch64-darwin (Apple Silicon) host ----------------------------
+        
+        # ---- aarch64-darwin (Apple Silicon) host builds for multiple targets ----
         aarch64-darwin =
           let
-            mCross = mkPkg pkgsCrossIntel pkgsNative;
+            # Native Apple Silicon build (used for tools like the ISO builder)
             mNative = mkPkg pkgsNative pkgsNative;
+            
+            # Cross-compiled builds
+            mCrossIntel   = mkPkg pkgsCrossIntel   pkgsNative;
+            mCrossArm64   = mkPkg pkgsCrossArm64   pkgsNative;
+            mCrossRiscv64 = mkPkg pkgsCrossRiscv64 pkgsNative;
+            mCrossPowerPC = mkPkg pkgsCrossPowerPC pkgsNative;
+            mCrossLoong64 = mkPkg pkgsCrossLoong64 pkgsNative;
+            mCrossSparc64 = mkPkg pkgsCrossSparc64 pkgsNative;
           in
           mNative // {
-            xnu-kernel-intel = mCross.xnu-kernel;
-            rootfs-intel = mCross.rootfs-intel;
-            iso-intel = mNative.iso-intel;
-            default = mNative.iso-intel;
+            # Intel (x86_64-darwin)
+            xnu-kernel-intel = mCrossIntel.xnu-kernel;
+            rootfs-intel     = mCrossIntel.rootfs-intel;
+            
+            # CRITICAL: The ISO builder runs natively on aarch64-darwin, 
+            # but consumes the cross-compiled Intel rootfs.
+            iso-intel = pkgsNative.callPackage ./derivations/iso.nix {
+              rootfs = mCrossIntel.rootfs-intel;
+              refind = pkgsNative.callPackage ./derivations/refind.nix { };
+              volumeLabel = "ABZU_ROOTFS";
+            };
+            
+            # Apple Silicon (aarch64-darwin)
+            xnu-kernel-arm64 = mCrossArm64.xnu-kernel;
+            rootfs-arm64     = mCrossArm64.rootfs-intel;
+            
+            # RISC-V (riscv64-linux)
+            xnu-kernel-riscv64 = mCrossRiscv64.xnu-kernel;
+            rootfs-riscv64     = mCrossRiscv64.rootfs-intel;
+            
+            # PowerPC (powerpc64le-linux)
+            xnu-kernel-ppc64le = mCrossPowerPC.xnu-kernel;
+            rootfs-ppc64le     = mCrossPowerPC.rootfs-intel;
+
+            # LoongArch (loongarch64-linux)
+            xnu-kernel-loong64 = mCrossLoong64.xnu-kernel;
+            rootfs-loong64     = mCrossLoong64.rootfs-intel;
+
+            # SPARC (sparc64-linux)
+            xnu-kernel-sparc64 = mCrossSparc64.xnu-kernel;
+            rootfs-sparc64     = mCrossSparc64.rootfs-intel;
+
+            default = iso-intel;
           };
         
         # ---- EXPOSED AT ROOT FOR EASY ACCESS --------------------------------
-        # This allows you to simply run `nix build .#iso-intel`
+        # This allows you to simply run `nix build .#iso-intel` from the repo root or build dir
         iso-intel = 
-          let mNative = mkPkg pkgsNative pkgsNative; 
-          in mNative.iso-intel;
+          let mCrossIntel = mkPkg pkgsCrossIntel pkgsNative; 
+          in pkgsNative.callPackage ./derivations/iso.nix {
+               rootfs = mCrossIntel.rootfs-intel;
+               refind = pkgsNative.callPackage ./derivations/refind.nix { };
+               volumeLabel = "ABZU_ROOTFS";
+             };
       };
 
       checks = forAll (s: {
-        # Only *manifest* JSON is validated here; other *.json files in the
-        # shelf (e.g. gaming/quiver-defaults.json) are app defaults with a
-        # different schema and must not be subjected to the manifest keys.
         manifests-valid = nixpkgs.legacyPackages.${s}.runCommand "check-manifests" { } ''
           ${nixpkgs.legacyPackages.${s}.python3}/bin/python3 - <<'PY'
 import json,glob,sys
@@ -195,9 +228,6 @@ PY
           touch $out
         '';
 
-        # Guard the explicit kernelPatches list against drift: every file
-        # that exists in ../kernel/patches must be listed above (and every
-        # listed path must exist — Nix would have failed evaluation already).
         patches-listed = nixpkgs.legacyPackages.${s}.runCommand "check-patches-listed" { } ''
           ${nixpkgs.legacyPackages.${s}.bash}/bin/bash -eu -o pipefail <<'SH'
           shopt -s nullglob
