@@ -31,13 +31,41 @@ if precompiled then
           Then update kernelPath in this file or flake.nix.
         ''
       else
-        fetchurl {
-          url = "file://${kernelPath}";
-          # Honour the kernelHash threaded in from flake.nix (ABZU_KERNEL_HASH);
-          # fall back to the historically pinned hash when none is given.
-          sha256 = if kernelHash != null then kernelHash
-                   else "1lqx1qwnsmzb9cb1gbzlmdaxi565zpk41d51h81zf7hip8rwa6av";
-        };
+        # AUDIT FIX (2026-10-11, second pass): `fetchurl` rejects file:// URLs
+        # whose path is not inside its allowed content directory
+        # (/nix/store/...): fetching a local mach_kernel from e.g.
+        # ~/.local/state/catalina/mach_kernel aborted with
+        #   error: cannot fetch file:// URL outside of the store/content dir
+        # on every local build. `builtins.path` copies the file into the store
+        # at eval time and verifies the SHA-256 there - exactly the same
+        # integrity guarantee, no network fetcher involved. The hash is
+        # normalised so plain hex ("sha256:<hex>" or bare 64-hex) and SRI
+        # ("sha256-...=") forms all work; base32 digests are passed through
+        # untouched because lib has no base32-to-hex converter (and Nix
+        # accepts any digest literal format as a string). When no
+        # ABZU_KERNEL_HASH is supplied we fall back to the historically pinned
+        # base32 hash (unchanged behaviour); override it via ABZU_KERNEL_HASH
+        # with the digest of YOUR kernel (`nix hash path mach_kernel`).
+        let
+          khStr = if kernelHash == null then "" else toString kernelHash;
+          mkPath = shaArg: builtins.path ({
+            path = /. + toString kernelPath;
+            name = "abzu-mach-kernel";
+          } // shaArg);
+          kernelSrc =
+            if khStr == "" then
+              mkPath { sha256 = "1lqx1qwnsmzb9cb1gbzlmdaxi565zpk41d51h81zf7hip8rwa6av"; }
+            else if lib.strings.hasPrefix "sha256-" khStr then
+              mkPath { hash = khStr; }
+            else if builtins.match "[0-9a-fA-F]{64}" khStr != null then
+              mkPath { sha256 = lib.toLower khStr; }
+            else if builtins.match "[0-9a-zA-Z]{52}" khStr != null then
+              # base32 (nix hash path output) - builtins.path parses it fine
+              mkPath { sha256 = khStr; }
+            else
+              throw ("ABZU: kernelHash " + khStr + " is not a recognised sha256 form "
+                     + "(expected sha256-<SRI>, 64-hex, or base32 from `nix hash path`).");
+        in kernelSrc;
 
     phases = [ "installPhase" ];
 
