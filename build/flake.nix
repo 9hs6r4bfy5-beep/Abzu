@@ -28,16 +28,27 @@
       systems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" ];
       forAll = f: builtins.foldl' (r: s: r // f s) { } systems;
 
-      kernelPatches = builtins.sort builtins.lessThan ([
+      kernelPatches = [
+        # AUDIT FIX: the old `builtins.sort builtins.lessThan` over path
+        # values compared derivation *store paths* (which begin with a hash),
+        # not file names — patch order was effectively random. Numeric
+        # filename prefixes are the intended ordering; list them explicitly.
         ../kernel/patches/0001-abzu-identify-build-version.patch
         ../kernel/patches/0002-openbsd-wx-enforcement.patch
-      ]);
+      ];
 
       srcInfo = {
         xnuRepo = "https://github.com/apple-oss-distributions/xnu.git";
-        xnuTag = "xnu-7195.141.2";
-        xnuRev = "776661b72c2db9861865df68d309f6f35faccff4";
-        xnuSha256 = "sha256-NH/s8/t4oOq6bVhRXlslX7lZFWV4E00yTPxyY7A7KE0=";
+        # AUDIT FIX: the project targets macOS Catalina (10.15). The previous
+        # pin was Big Sur (xnu-7195.141.2) while scripts defaulted to Sonoma
+        # tags — three-way drift. Pinned to Catalina 10.15.7's open-source
+        # tag; companion pins in build/config/sources.json must be refreshed
+        # for the xnu-4903 train via scripts/update-src-hashes.sh --write.
+        xnuTag = "xnu-4903.278.28";
+        xnuRev = "xnu-4903.278.28";   # tag name works as an archive ref for GitHub
+        # Placeholder recursive-tree hash: first `nix build` reports the real
+        # "got:" value; run scripts/update-src-hashes.sh --write to record it.
+        xnuSha256 = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
         openbsdSnap = "auto(7.9)";
       };
 
@@ -77,9 +88,21 @@
         };
 
         # MODE A: Pre-compiled binary (Bypasses macOS SDK requirement for M4 cross-compilation)
+        # AUDIT FIX: kernelPath must be threaded through or MODE A throws the
+        # "no Intel XNU kernel binary available" guard at build time. Point
+        # ABZU_KERNEL_PATH / ABZU_KERNEL_HASH env vars (or edit below) at the
+        # mach_kernel copied off your Catalina install, e.g.:
+        #   kernelPath  = /.local/catalina/mach_kernel
+        #   kernelHash  = "sha256:<base32 from `nix hash path mach_kernel`>"
         xnu-kernel-precompiled = pkgs.callPackage ./derivations/xnu.nix {
           inherit srcInfo;
           precompiled = true;
+          kernelPath  = builtins.getEnv "ABZU_KERNEL_PATH";      # "" => fail-closed message
+          kernelHash  = let h = builtins.getEnv "ABZU_KERNEL_HASH";
+                        in if h == "" then pkgs.lib.fakeSha256 else h;
+          bootEfiPath = builtins.getEnv "ABZU_BOOT_EFI_PATH";
+          bootEfiHash = let h = builtins.getEnv "ABZU_BOOT_EFI_HASH";
+                        in if h == "" then pkgs.lib.fakeSha256 else h;
         };
 
         openbsd-userland = pkgs.callPackage ./derivations/openbsd-userland.nix {

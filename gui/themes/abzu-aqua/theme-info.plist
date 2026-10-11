@@ -38,10 +38,23 @@
             <string>caustics/frame001.tiff</string>
             <string>caustics/frame002.tiff</string>
             <string>caustics/frame003.tiff</string>
+            <string>caustics/frame004.tiff</string>
+            <string>caustics/frame005.tiff</string>
+            <string>caustics/frame006.tiff</string>
+            <string>caustics/frame007.tiff</string>
         </array>
         <key>FPS</key>         <integer>12</integer>
         <key>Opacity</key>     <real>0.18</real>
         <key>BlendMode</key>   <string>overlay-lighten</string>
+    </dict>
+    <key>MachineCache</key>
+    <dict>
+        <!-- Rendered from caustics/*.ppm masters by gui/build-gui.sh
+             (PPM -> TIFF) and from masters/*.svg via inkscape. These paths
+             are STAGE-TIME artifacts; they are intentionally not committed
+             (see assets/README.md "Do not commit regenerated binaries"). -->
+        <key>GeneratedFrom</key>   <string>caustics/*.ppm, masters/*.svg</string>
+        <key>SoundsStatus</key>    <string>planned — no audio masters in-tree yet; loader must treat missing sounds as silent, not fatal</string>
     </dict>
     <key>MENISCUS</key>
     <dict>
