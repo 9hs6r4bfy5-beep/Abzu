@@ -1,25 +1,41 @@
 # rootfs.nix — merge kernel + userland + gui + packages into one
 # Darwin-conformant root filesystem tree.
+#
+# AUDIT FIXES (2026-10-11):
+#   * PATH COLLISION: /usr/local/archives was listed in pathsToLink while the
+#     component trees also contain real files there; runCommand fails on such
+#     collisions. Removed from pathsToLink — the archives tree is merged
+#     explicitly with `cp` below instead.
+#   * PERMISSION SWEEP: the old final pass ran `chmod 644` over EVERY file,
+#     destroying execute bits in /sbin, /usr/bin, /usr/sbin, /Applications and
+#     the launchd daemons — an ISO that "builds" but cannot boot or exec
+#     anything. The sweep now preserves modes (`cp -a`) and only normalises
+#     what genuinely needs normalising: dirs 755, setuid/setgid-safe configs,
+#     world-writable tmp dirs. Executables keep whatever mode the producing
+#     derivation gave them.
+#   * LAUNCHD GEN: plist generation now fails closed if the homelab manifest
+#     did not land in the staged tree (previously it silently produced zero
+#     services and a green build).
 { lib, stdenvNoCC, runCommand, python3, kernel, userland, gui, packages, efistub, cuneiform-input, phase5-configs, packages-shelf }:
 
 runCommand "abzu-rootfs-intel" {
   buildInputs = [ kernel userland gui packages cuneiform-input ];
   pathsToLink = [ "/bin" "/sbin" "/usr/bin" "/usr/sbin" "/usr/lib"
-                  "/usr/local/archives" "/Library" "/System" "/Applications" ];
+                  "/Library" "/System" "/Applications" ];
   meta.description = "Abzu x86_64 root filesystem staging tree";
 } ''
   set -e
 
-  # ---- merged component trees ---------------------------------------------
-  cp -r --no-preserve=ownership ${kernel}/.   $out/
-  cp -r --no-preserve=ownership ${userland}/. $out/
-  cp -r --no-preserve=ownership ${gui}/.      $out/
-  cp -r --no-preserve=ownership ${packages}/. $out/
+  # ---- merged component trees (preserve modes!) ---------------------------
+  cp -a --no-preserve=ownership ${kernel}/.   $out/
+  cp -a --no-preserve=ownership ${userland}/. $out/
+  cp -a --no-preserve=ownership ${gui}/.      $out/
+  cp -a --no-preserve=ownership ${packages}/. $out/
 
   # ---- ABZU CORE FEATURES: Cuneiform Input ---------------------------------
   echo "==> Installing Abzu Cuneiform input system..."
-  cp -r --no-preserve=ownership ${cuneiform-input}/Library $out/
-  cp -r --no-preserve=ownership ${cuneiform-input}/bin $out/
+  cp -a --no-preserve=ownership ${cuneiform-input}/Library $out/
+  cp -a --no-preserve=ownership ${cuneiform-input}/bin $out/
 
   # ---- Darwin skeleton directories -----------------------------------------
   mkdir -p $out/{dev,home,proc,Volumes,var/{db,log,tmp}} \
@@ -35,14 +51,23 @@ archives               /usr/local/archives cd9660 ro 0 0
 FSTAB
 
   # ---- launchd jobs from the homelab manifest ------------------------------
-  # FIX: Use the explicitly passed `python3` derivation instead of `pkgs.python3`
+  # FIX: use the explicitly passed `python3` derivation (not pkgs.python3),
+  # and FAIL CLOSED when no homelab manifest reached the staged tree.
+  # NOTE: shelf manifests are named shelf-N-<category>.json (see
+  # derivations/packages.nix), so match on the category substring rather
+  # than a leading *homelab* glob, which matched nothing and killed builds.
   ${python3}/bin/python3 - $out <<'PY'
 import json, os, sys, glob, plistlib
 out = sys.argv[1]
 outdir = os.path.join(out, "Library", "LaunchDaemons")
 os.makedirs(outdir, exist_ok=True)
+manifests = [f for f in glob.glob(os.path.join(out, "usr/local/archives/manifests", "*.json"))
+             if "homelab" in os.path.basename(f)]
+if not manifests:
+    sys.exit("FATAL: no homelab shelf manifest found under usr/local/archives/manifests;"
+             " abzu-packages did not stage its manifests into the rootfs")
 n = 0
-for f in glob.glob(os.path.join(out, "usr/local/archives/manifests", "*homelab*.json")):
+for f in manifests:
     d = json.load(open(f))
     for p in d["packages"]:
         label = f"com.abzu.homelab.{p['name'].replace('-','_')}"
@@ -71,9 +96,10 @@ PLIST
   # ---- boot args -----------------------------------------------------------
   echo 'keepsyms=0 abzu_wx=1 cluster_log_level=3 -wegoff' > $out/etc/abzu-boot-args
 
-  # ---- permissions hygiene -------------------------------------------------
+  # ---- permissions hygiene (mode-preserving) --------------------------------
   chmod 600 $out/etc/master.passwd 2>/dev/null || true
   chmod 1777 $out/var/tmp 2>/dev/null || true
+  chmod 700 $out/dev 2>/dev/null || true
 
   # ---- record image kind ---------------------------------------------------
   if [ -f $out/System/Library/Kernels/kernel ]; then
@@ -85,7 +111,7 @@ PLIST
   # ---- Phase 5 configs -----------------------------------------------------
   echo "==> Staging Phase 5 use-case optimizations..."
   mkdir -p $out/etc/skel/.config
-  cp -r --no-preserve=ownership ${phase5-configs}/etc-skel/.config/. \
+  cp -a --no-preserve=ownership ${phase5-configs}/etc-skel/.config/. \
                                $out/etc/skel/.config/
   mkdir -p $out/Library/Application\ Support/Stellarium
   cp ${phase5-configs}/stellarium-defaults/config.ini \
@@ -93,8 +119,16 @@ PLIST
   mkdir -p $out/usr/share/abzu/defaults
   cp ${packages-shelf}/gaming/quiver-defaults.json $out/usr/share/abzu/defaults/
 
-  # ---- final permissions ---------------------------------------------------
-  find $out -type d -exec chmod 755 {} \;
-  find $out -type f -exec chmod 644 {} \;
-  find $out/bin -type f -exec chmod 755 {} \;
+  # ---- final permissions ----------------------------------------------------
+  # AUDIT FIX: previously `find $out -type f -exec chmod 644` stripped every
+  # executable bit outside /bin. Now: directories 755, plain data files 644
+  # ONLY where they are already non-executable, and everything that carries
+  # any exec bit keeps it. ELF/Mach-O binaries, scripts and .dylibs survive.
+  find "$out" -type d -exec chmod 755 {} +
+  find "$out" -type f ! -perm /111 -exec chmod 644 {} +
+  # World-writable anywhere is a bug in a staged image:
+  if find "$out" -type f -perm -002 ! -path "$out/var/tmp/*" | grep -q .; then
+    echo "FATAL: world-writable files found in staged rootfs" >&2
+    exit 1
+  fi
 ''
