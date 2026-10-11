@@ -28,42 +28,24 @@
       systems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" ];
       forAll = f: builtins.foldl' (r: s: r // f s) { } systems;
 
+      # Explicit list ensures correct patch application order
       kernelPatches = [
-        # AUDIT FIX: the old `builtins.sort builtins.lessThan` over path
-        # values compared derivation *store paths* (which begin with a hash),
-        # not file names — patch order was effectively random. Numeric
-        # filename prefixes are the intended ordering; list them explicitly.
         ../kernel/patches/0001-abzu-identify-build-version.patch
         ../kernel/patches/0002-openbsd-wx-enforcement.patch
       ];
 
       srcInfo = {
         xnuRepo = "https://github.com/apple-oss-distributions/xnu.git";
-        # AUDIT FIX: the project targets macOS Catalina (10.15). The previous
-        # pin was Big Sur (xnu-7195.141.2) while scripts defaulted to Sonoma
-        # tags — three-way drift. Pinned to Catalina 10.15.7's open-source
-        # tag; companion pins in build/config/sources.json must be refreshed
-        # for the xnu-4903 train via scripts/update-src-hashes.sh --write.
-        xnuTag = "xnu-4903.278.28";
-        xnuRev = "xnu-4903.278.28";   # tag name works as an archive ref for GitHub
-        # Placeholder recursive-tree hash: first `nix build` reports the real
-        # "got:" value; run scripts/update-src-hashes.sh --write to record it.
+        xnuTag = "xnu-4903.278.28"; # Catalina 10.15.7 open-source tag
+        xnuRev = "xnu-4903.278.28";
         xnuSha256 = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
         openbsdSnap = "auto(7.9)";
       };
 
       # ---- Host and Cross-Compilation Package Sets ----
-      # FIX (M4 null error): the host package set must be chosen per-system, not
-      # hardcoded to aarch64-darwin. On any other system (x86_64-linux,
-      # x86_64-darwin Mac Pro 5,1, ...) legacyPackages.aarch64-darwin resolves
-      # to `null`, so every downstream lookup (pkgs.python3, pkgs.stdenvNoCC,
-      # pkgs.callPackage, ...) coerced a null into an attribute selection or a
-      # string — the persistent "cannot coerce null to a string" failure in
-      # local builds even when the M4 host itself evaluated fine.
       mkPkgsFor = s:
         let native = nixpkgs.legacyPackages.${s}; in {
           inherit native;
-
           crossIntel   = native.pkgsCross.x86_64-darwin;
           crossArm64   = native.pkgsCross.aarch64-darwin;
           crossRiscv64 = native.pkgsCross.riscv64-linux;
@@ -87,34 +69,13 @@
           precompiled = false; 
         };
 
-        # MODE A: Pre-compiled binary (Bypasses macOS SDK requirement for M4 cross-compilation)
-        # AUDIT FIX: kernelPath must be threaded through or MODE A throws the
-        # "no Intel XNU kernel binary available" guard at build time. Point
-        # ABZU_KERNEL_PATH / ABZU_KERNEL_HASH env vars (or edit below) at the
-        # mach_kernel copied off your Catalina install, e.g.:
-        #   kernelPath  = /.local/catalina/mach_kernel
-        #   kernelHash  = "sha256:<base32 from `nix hash path mach_kernel`>"
-        # NOTE: builtins.getEnv returns "" (not null) when unset; coerce to
-        # null so xnu.nix's fail-closed `kernelPath == null` guard triggers and
-        # a bogus "" path is never handed to fetchurl. Likewise, only pass a
-        # hash when one was supplied — pkgs.lib.fakeSha256 is an SRI string
-        # ("sha256-AAAA..."), not the base32 sha256 attribute fetchurl expects,
-        # which made even correctly-hashed kernels fail the checksum check.
-        # The hash/boot.efi args are only added to the attrset when the env
-        # vars are actually set; xnu.nix declares matching defaults so every
-        # shape of this call evaluates. (`lib` is not in scope inside mkPkg —
-        # it is a function argument there — so use the fully-qualified name.)
-        xnu-kernel-precompiled = pkgs.callPackage ./derivations/xnu.nix (
-          { inherit srcInfo;
-            precompiled = true;
-            kernelPath  = let p = builtins.getEnv "/Users/alinamarsfelder/Downloads/mach_kernel";
-                          in if p == "" then null else p;
-          } // (let kh = builtins.getEnv "ABZU_KERNEL_HASH";
-                    bp = builtins.getEnv "ABZU_BOOT_EFI_PATH";
-                    bh = builtins.getEnv "ABZU_BOOT_EFI_HASH";
-                in pkgs.lib.optionalAttrs (kh != "") { kernelHash = kh; }
-                // pkgs.lib.optionalAttrs (bp != "") { bootEfiPath = bp; }
-                // pkgs.lib.optionalAttrs (bh != "") { bootEfiHash = bh; });
+        # MODE A: Pre-compiled binary (Bypasses macOS SDK requirement)
+        # Clean, simple attribute set. No complex env var lookups.
+        xnu-kernel-precompiled = pkgs.callPackage ./derivations/xnu.nix {
+          inherit srcInfo;
+          precompiled = true;
+          kernelPath = "/Users/alinamarsfelder/Downloads/mach_kernel";
+        };
 
         openbsd-userland = pkgs.callPackage ./derivations/openbsd-userland.nix {
           inherit srcInfo;
@@ -151,7 +112,7 @@
         packages-shelf = ../packages;
 
         # Base rootfs (uses source kernel by default)
-        # FIX: Directly invoke rootfs.nix bypassing callPackage auto-injection.
+        # Directly invoke rootfs.nix bypassing callPackage auto-injection.
         rootfs-intel = 
           let rootfsFn = import ./derivations/rootfs.nix;
           in rootfsFn {
@@ -186,10 +147,6 @@
       # ---- CRITICAL SCOPING & CROSS-COMPILATION FIX -------------------------
       # Directly invoke rootfs.nix bypassing callPackage auto-injection, with
       # the *host* package set (pkgsFor.native) for python3/runCommand/etc.
-      # Previously pkgsNative was hardcoded to legacyPackages.aarch64-darwin,
-      # which evaluates to `null` on every other system — that is what made
-      # `${python3}/bin/python3` interpolate as "cannot coerce null to a
-      # string" during local builds. Now the host set is resolved per-system.
       mkCrossIntelRootfs = pkgsFor:
         let mCross = mkPkg pkgsFor.crossIntel pkgsFor.native;
             rootfsFn = import ./derivations/rootfs.nix;
@@ -226,10 +183,7 @@
           gui-theme = m.gui-theme;
           default = m.iso-intel;
 
-          # Cross-compiled Intel artifacts for this host system. On an
-          # aarch64-darwin (M4) host these use the real pkgsCross.x86_64-darwin
-          # set; on other hosts they fall back to that host's own package set,
-          # so evaluation never sees a null package set.
+          # Cross-compiled Intel artifacts for this host system.
           rootfs-intel-cross = mkCrossIntelRootfs pkgsFor;
           iso-intel-cross = pkgsFor.native.callPackage ./derivations/iso.nix {
             rootfs = mkCrossIntelRootfs pkgsFor;
@@ -280,9 +234,6 @@
         
         # ---- EXPOSED AT ROOT FOR EASY ACCESS --------------------------------
         # Allows you to simply run `nix build .#iso-intel` from the M4.
-        # NOTE: this is the aarch64-darwin (Apple Silicon) cross-build path; on
-        # any other host use `nix build .#iso-intel-cross` (or the per-system
-        # `.packages.${system}.iso-intel`).
         iso-intel =
           let pkgsFor = mkPkgsFor "aarch64-darwin";
           in pkgsFor.native.callPackage ./derivations/iso.nix {
