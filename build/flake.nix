@@ -70,11 +70,11 @@
         };
 
         # MODE A: Pre-compiled binary (Bypasses macOS SDK requirement)
-        # Clean, simple attribute set. No complex env var lookups.
+        # Clean, simple attribute set. Path updated to home directory root to bypass macOS Downloads folder permissions.
         xnu-kernel-precompiled = pkgs.callPackage ./derivations/xnu.nix {
           inherit srcInfo;
           precompiled = true;
-          kernelPath = "/Users/alinamarsfelder/Downloads/kernel";
+          kernelPath = "/Users/alinamarsfelder/kernel";
         };
 
         openbsd-userland = pkgs.callPackage ./derivations/openbsd-userland.nix {
