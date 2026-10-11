@@ -5,6 +5,15 @@
 , xnu-sources ? null, srcInfo, patches ? []
 , precompiled ? false
 , kernelPath ? "/Users/alinamarsfelder/Downloads/mach_kernel"
+# flake.nix threads the hash of the local mach_kernel through as `kernelHash`
+# (and, for boot.efi, `bootEfiPath` / `bootEfiHash`). The lambda used to accept
+# none of these, so `nix build .#iso-intel` died at eval time with:
+#   error: function 'anonymous lambda' called with unexpected argument 'kernelHash'
+# They are declared here so the call evaluates; kernelHash is consumed below in
+# place of the hardcoded SRI hash.
+, kernelHash ? null
+, bootEfiPath ? null
+, bootEfiHash ? null
 }:
 
 if precompiled then
@@ -24,7 +33,10 @@ if precompiled then
       else
         fetchurl {
           url = "file://${kernelPath}";
-          sha256 = "1lqx1qwnsmzb9cb1gbzlmdaxi565zpk41d51h81zf7hip8rwa6av";
+          # Honour the kernelHash threaded in from flake.nix (ABZU_KERNEL_HASH);
+          # fall back to the historically pinned hash when none is given.
+          sha256 = if kernelHash != null then kernelHash
+                   else "1lqx1qwnsmzb9cb1gbzlmdaxi565zpk41d51h81zf7hip8rwa6av";
         };
 
     phases = [ "installPhase" ];
