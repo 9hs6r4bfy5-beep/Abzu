@@ -24,7 +24,7 @@
     , gnustep-src
     }@inputs:
     let
-      # Include x86_64-darwin so the Mac Pro 5,1 can build natively!
+      # Include x86_64-darwin so Intel Macs can build natively!
       systems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" ];
       forAll = f: builtins.foldl' (r: s: r // f s) { } systems;
 
@@ -74,7 +74,7 @@
         xnu-kernel-precompiled = pkgs.callPackage ./derivations/xnu.nix {
           inherit srcInfo;
           precompiled = true;
-          kernelPath = "/Users/alinamarsfelder/Downloads/mach_kernel";
+          kernelPath = "/Users/alinamarsfelder/Downloads/kernel";
         };
 
         openbsd-userland = pkgs.callPackage ./derivations/openbsd-userland.nix {
