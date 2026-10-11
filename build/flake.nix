@@ -94,16 +94,27 @@
         # mach_kernel copied off your Catalina install, e.g.:
         #   kernelPath  = /.local/catalina/mach_kernel
         #   kernelHash  = "sha256:<base32 from `nix hash path mach_kernel`>"
-        xnu-kernel-precompiled = pkgs.callPackage ./derivations/xnu.nix {
-          inherit srcInfo;
-          precompiled = true;
-          kernelPath  = builtins.getEnv "ABZU_KERNEL_PATH";      # "" => fail-closed message
-          kernelHash  = let h = builtins.getEnv "ABZU_KERNEL_HASH";
-                        in if h == "" then pkgs.lib.fakeSha256 else h;
-          bootEfiPath = builtins.getEnv "ABZU_BOOT_EFI_PATH";
-          bootEfiHash = let h = builtins.getEnv "ABZU_BOOT_EFI_HASH";
-                        in if h == "" then pkgs.lib.fakeSha256 else h;
-        };
+        # NOTE: builtins.getEnv returns "" (not null) when unset; coerce to
+        # null so xnu.nix's fail-closed `kernelPath == null` guard triggers and
+        # a bogus "" path is never handed to fetchurl. Likewise, only pass a
+        # hash when one was supplied — pkgs.lib.fakeSha256 is an SRI string
+        # ("sha256-AAAA..."), not the base32 sha256 attribute fetchurl expects,
+        # which made even correctly-hashed kernels fail the checksum check.
+        # The hash/boot.efi args are only added to the attrset when the env
+        # vars are actually set; xnu.nix declares matching defaults so every
+        # shape of this call evaluates. (`lib` is not in scope inside mkPkg —
+        # it is a function argument there — so use the fully-qualified name.)
+        xnu-kernel-precompiled = pkgs.callPackage ./derivations/xnu.nix (
+          { inherit srcInfo;
+            precompiled = true;
+            kernelPath  = let p = builtins.getEnv "ABZU_KERNEL_PATH";
+                          in if p == "" then null else p;
+          } // (let kh = builtins.getEnv "ABZU_KERNEL_HASH";
+                    bp = builtins.getEnv "ABZU_BOOT_EFI_PATH";
+                    bh = builtins.getEnv "ABZU_BOOT_EFI_HASH";
+                in pkgs.lib.optionalAttrs (kh != "") { kernelHash = kh; }
+                // pkgs.lib.optionalAttrs (bp != "") { bootEfiPath = bp; }
+                // pkgs.lib.optionalAttrs (bh != "") { bootEfiHash = bh; });
 
         openbsd-userland = pkgs.callPackage ./derivations/openbsd-userland.nix {
           inherit srcInfo;
