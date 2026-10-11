@@ -107,7 +107,7 @@
         xnu-kernel-precompiled = pkgs.callPackage ./derivations/xnu.nix (
           { inherit srcInfo;
             precompiled = true;
-            kernelPath  = let p = builtins.getEnv "ABZU_KERNEL_PATH";
+            kernelPath  = let p = builtins.getEnv "/Users/alinamarsfelder/Downloads/mach_kernel";
                           in if p == "" then null else p;
           } // (let kh = builtins.getEnv "ABZU_KERNEL_HASH";
                     bp = builtins.getEnv "ABZU_BOOT_EFI_PATH";
